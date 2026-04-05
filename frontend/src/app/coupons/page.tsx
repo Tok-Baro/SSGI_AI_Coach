@@ -11,6 +11,8 @@ export default function CouponsPage() {
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<CreateCouponRequest>({
     title: "",
@@ -26,19 +28,25 @@ export default function CouponsPage() {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) { router.push("/"); return; }
     if (isAuthenticated) {
-      api.listCoupons().then(setCoupons).finally(() => setLoading(false));
+      api.listCoupons()
+        .then(setCoupons)
+        .catch((err) => setError(err.message || "쿠폰 목록을 불러오지 못했습니다."))
+        .finally(() => setLoading(false));
     }
   }, [isLoading, isAuthenticated, router]);
 
   const handleCreate = async () => {
     if (!form.title) return;
     setCreating(true);
+    setCreateError(null);
     try {
       const coupon = await api.createCoupon(form);
       setCoupons([coupon, ...coupons]);
       setShowCreate(false);
       setForm({ title: "", discount_type: "percent", discount_value: 10, description: "", valid_days: 7 });
-    } catch {}
+    } catch (err: any) {
+      setCreateError(err.message || "쿠폰 생성에 실패했습니다.");
+    }
     setCreating(false);
   };
 
@@ -46,6 +54,17 @@ export default function CouponsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-6">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-gray-100 rounded-lg">
+          다시 시도
+        </button>
       </div>
     );
   }
@@ -115,6 +134,7 @@ export default function CouponsPage() {
             </div>
 
             <div className="space-y-4">
+              {createError && <p className="text-red-500 text-sm">{createError}</p>}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">쿠폰명</label>
                 <input

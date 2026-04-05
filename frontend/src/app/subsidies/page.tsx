@@ -11,25 +11,33 @@ export default function SubsidiesPage() {
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
   const [data, setData] = useState<SubsidyMatchesResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<ApplyDraftResponse | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) { router.push("/"); return; }
     if (isAuthenticated) {
-      api.getSubsidyMatches().then(setData).finally(() => setLoading(false));
+      api.getSubsidyMatches()
+        .then(setData)
+        .catch((err) => setError(err.message || "데이터를 불러오지 못했습니다."))
+        .finally(() => setLoading(false));
     }
   }, [isLoading, isAuthenticated, router]);
 
   const handleGenerateDraft = async (subsidyId: string) => {
     setDraftLoading(true);
     setDraft(null);
+    setDraftError(null);
     try {
       const res = await api.generateApplyDraft(subsidyId);
       setDraft(res);
-    } catch {}
+    } catch (err: any) {
+      setDraftError(err.message || "사업계획서 생성에 실패했습니다.");
+    }
     setDraftLoading(false);
   };
 
@@ -37,6 +45,17 @@ export default function SubsidiesPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-6">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-gray-100 rounded-lg">
+          다시 시도
+        </button>
       </div>
     );
   }
@@ -117,6 +136,9 @@ export default function SubsidiesPage() {
                 &times;
               </button>
             </div>
+            {draftError && (
+              <p className="text-red-500 text-sm mb-3">{draftError}</p>
+            )}
             {draftLoading ? (
               <div className="flex items-center gap-2 py-8 justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400" />

@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     secret_key: str = "dev-secret-change-me"
     cors_origins: str = "http://localhost:3000"
 
+    @property
+    def is_production(self) -> bool:
+        return self.app_env == "production"
+
     # DB
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ai_coach"
 

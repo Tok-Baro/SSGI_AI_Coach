@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import STTButton from "@/components/common/STTButton";
@@ -9,6 +9,7 @@ import type { DashboardData } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, isLoading, checkAuth } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -205,10 +206,10 @@ export default function DashboardPage() {
       {/* 하단 네비게이션 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3">
         <div className="flex justify-around max-w-sm mx-auto">
-          <NavItem label="홈" active onClick={() => {}} />
-          <NavItem label="지원사업" onClick={() => router.push("/subsidies")} />
-          <NavItem label="쿠폰" onClick={() => router.push("/coupons")} />
-          <NavItem label="설정" onClick={() => {}} />
+          <NavItem label="홈" active={pathname === "/dashboard"} onClick={() => router.push("/dashboard")} />
+          <NavItem label="지원사업" active={pathname === "/subsidies"} onClick={() => router.push("/subsidies")} />
+          <NavItem label="쿠폰" active={pathname === "/coupons"} onClick={() => router.push("/coupons")} />
+          <NavItem label="설정" active={false} onClick={() => {}} />
         </div>
       </nav>
     </main>

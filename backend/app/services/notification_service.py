@@ -30,7 +30,7 @@ class NotificationService:
         status = "failed"
         error_message = None
 
-        # 1. 카카오톡 나에게 보내기
+        # 1. 카카오톡 나에게 보내기 (401 시 토큰 갱신 재시도)
         if user.kakao_access_token:
             try:
                 kakao = KakaoService()
@@ -42,8 +42,25 @@ class NotificationService:
                     channel = "kakao"
                     status = "sent"
             except Exception as e:
-                logger.warning(f"Kakao notification failed for user {user.id}: {e}")
-                error_message = str(e)
+                # 토큰 만료 시 갱신 시도
+                if "401" in str(e) and user.kakao_refresh_token:
+                    try:
+                        new_tokens = await kakao.refresh_token(user.kakao_refresh_token)
+                        if new_tokens and "access_token" in new_tokens:
+                            user.kakao_access_token = new_tokens["access_token"]
+                            if new_tokens.get("refresh_token"):
+                                user.kakao_refresh_token = new_tokens["refresh_token"]
+                            result = await kakao.send_to_me(
+                                user.kakao_access_token, text, link_url
+                            )
+                            if result:
+                                channel = "kakao"
+                                status = "sent"
+                    except Exception as refresh_err:
+                        logger.warning(f"Kakao token refresh failed for user {user.id}: {refresh_err}")
+                if status != "sent":
+                    logger.warning(f"Kakao notification failed for user {user.id}: {e}")
+                    error_message = str(e)
 
         # 2. Firebase FCM (카카오 실패 시)
         if status != "sent" and user.fcm_token:

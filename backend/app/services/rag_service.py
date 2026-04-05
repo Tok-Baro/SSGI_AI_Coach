@@ -1,4 +1,5 @@
 """RAG 파이프라인 서비스: ChromaDB + OpenAI Embeddings."""
+import asyncio
 import logging
 from datetime import date
 from typing import Optional
@@ -21,6 +22,7 @@ class RAGService:
     _client = None
     _collection = None
     _openai = None
+    _init_lock = asyncio.Lock()
 
     def __new__(cls):
         if cls._instance is None:
@@ -49,7 +51,8 @@ class RAGService:
 
     async def _get_embedding(self, text: str) -> list[float]:
         """OpenAI 임베딩 생성."""
-        self._init_clients()
+        async with self._init_lock:
+            self._init_clients()
         response = await self._openai.embeddings.create(
             model=EMBEDDING_MODEL,
             input=text,

@@ -15,6 +15,12 @@ from app.tasks.subsidy_indexer import reindex_subsidies
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)
 
+# 프로덕션 환경에서 기본 secret_key 사용 방지
+if settings.is_production and settings.secret_key == "dev-secret-change-me":
+    raise RuntimeError(
+        "SECRET_KEY를 반드시 변경하세요! `openssl rand -hex 32`로 생성하세요."
+    )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,8 +53,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # 라우터 등록

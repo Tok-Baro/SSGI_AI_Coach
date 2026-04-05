@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
+import { requestFCMToken } from "@/lib/firebase";
 import type { KakaoLocalSearchResult } from "@/types";
 
 type Step = "business_number" | "business_search" | "confirm" | "loading" | "done";
@@ -105,6 +106,11 @@ export default function OnboardingPage() {
       });
       setResult({ subsidy_count: res.subsidy_count, message: res.message });
       setStep("done");
+
+      // FCM 푸시 알림 등록 (비동기, 실패 무시)
+      requestFCMToken().then((token) => {
+        if (token) api.registerFcmToken(token).catch(() => {});
+      }).catch(() => {});
     } catch (err: any) {
       setError(err.message || "온보딩에 실패했습니다.");
       setStep("confirm");

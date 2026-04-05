@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { api } from "@/lib/api";
 import type { User } from "@/types";
 
@@ -13,7 +14,7 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuth = create<AuthState>((set) => ({
+export const useAuth = create<AuthState>()(persist((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -49,4 +50,8 @@ export const useAuth = create<AuthState>((set) => ({
     api.clearToken();
     set({ user: null, isAuthenticated: false, isLoading: false });
   },
+}), {
+  name: "auth-storage",
+  storage: createJSONStorage(() => localStorage),
+  partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
 }));

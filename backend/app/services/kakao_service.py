@@ -16,6 +16,23 @@ class KakaoService:
     LOCAL_SEARCH_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
     SEND_TO_ME_URL = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
 
+    @retry_async(max_retries=1, delay=0.5)
+    async def refresh_token(self, refresh_token: str) -> Optional[dict]:
+        """카카오 리프레시 토큰으로 액세스 토큰 갱신."""
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                self.TOKEN_URL,
+                data={
+                    "grant_type": "refresh_token",
+                    "client_id": settings.kakao_rest_api_key,
+                    "client_secret": settings.kakao_client_secret,
+                    "refresh_token": refresh_token,
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            response.raise_for_status()
+            return response.json()
+
     @retry_async(max_retries=2, delay=1.0)
     async def get_token(self, code: str) -> Optional[dict]:
         """카카오 인가 코드 → 액세스 토큰 교환."""

@@ -5,12 +5,14 @@
 - GET  /coupons/{id}: 쿠폰 상세
 - POST /coupons/{id}/scan: 스캔 카운트 증가
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from uuid import UUID
 from datetime import date
 from typing import List
+from collections import defaultdict
+import time
 
 from app.database import get_db
 from app.schemas.coupon import CreateCouponRequest, CouponResponse
@@ -19,6 +21,11 @@ from app.utils.auth import get_current_user
 from app.models import User, CouponTemplate
 
 router = APIRouter()
+
+# 스캔 rate limiting: IP당 쿠폰당 1분에 5회 제한
+_scan_tracker: dict[str, list[float]] = defaultdict(list)
+SCAN_RATE_LIMIT = 5
+SCAN_RATE_WINDOW = 60  # seconds
 
 
 @router.post("/create", response_model=CouponResponse)
@@ -84,8 +91,18 @@ async def get_coupon(coupon_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{coupon_id}/scan")
-async def scan_coupon(coupon_id: UUID, db: AsyncSession = Depends(get_db)):
-    """쿠폰 스캔 카운트 증가. 인증 불필요."""
+async def scan_coupon(coupon_id: UUID, request: Request, db: AsyncSession = Depends(get_db)):
+    """쿠폰 스캔 카운트 증가. 인증 불필요. IP 기반 rate limit 적용."""
+    client_ip = request.client.host if request.client else "unknown"
+    rate_key = f"{client_ip}:{coupon_id}"
+    now = time.time()
+
+    # 오래된 기록 제거 + 현재 윈도우 내 요청 수 확인
+    _scan_tracker[rate_key] = [t for t in _scan_tracker[rate_key] if now - t < SCAN_RATE_WINDOW]
+    if len(_scan_tracker[rate_key]) >= SCAN_RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="너무 많은 스캔 요청입니다. 잠시 후 다시 시도하세요.")
+    _scan_tracker[rate_key].append(now)
+
     stmt = select(CouponTemplate).where(CouponTemplate.id == coupon_id)
     result = await db.execute(stmt)
     coupon = result.scalar_one_or_none()
