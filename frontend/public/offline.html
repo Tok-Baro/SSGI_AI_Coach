@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오프라인 - AI 경영코치</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: #f9fafb; color: #374151;
+      padding: 24px; text-align: center;
+    }
+    .container { max-width: 320px; }
+    h1 { font-size: 24px; margin-bottom: 12px; }
+    p { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+    button {
+      background: #FEE500; color: #191919; border: none;
+      padding: 12px 32px; border-radius: 12px; font-size: 16px;
+      font-weight: 600; cursor: pointer;
+    }
+    button:hover { background: #FDD835; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>인터넷 연결이 필요합니다</h1>
+    <p>AI 경영코치는 실시간 데이터를 사용합니다. 네트워크 연결을 확인해주세요.</p>
+    <button onclick="location.reload()">다시 시도</button>
+  </div>
+</body>
+</html>

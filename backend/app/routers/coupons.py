@@ -92,4 +92,5 @@ async def scan_coupon(coupon_id: UUID, db: AsyncSession = Depends(get_db)):
     if not coupon:
         raise HTTPException(status_code=404, detail="쿠폰을 찾을 수 없습니다.")
     coupon.scan_count += 1
+    await db.flush()
     return {"success": True, "scan_count": coupon.scan_count}

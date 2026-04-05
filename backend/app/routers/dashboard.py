@@ -2,9 +2,9 @@
 대시보드 라우터
 - GET /dashboard: 메인 대시보드 데이터 (집계)
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from datetime import date, timedelta
 
 from app.database import get_db
@@ -24,6 +24,9 @@ async def get_dashboard(
     db: AsyncSession = Depends(get_db),
 ):
     """메인 대시보드 집계 데이터."""
+    if not current_user.onboarding_completed:
+        raise HTTPException(status_code=400, detail="온보딩을 먼저 완료해주세요.")
+
     today = date.today()
 
     # 오늘의 액션
@@ -70,14 +73,15 @@ async def get_dashboard(
     # 액션 완료율 (최근 30일)
     stmt = select(
         func.count(DailyAction.id),
-        func.count(DailyAction.id).filter(DailyAction.is_completed == True),
+        func.sum(case((DailyAction.is_completed == True, 1), else_=0)),
     ).where(
         DailyAction.user_id == current_user.id,
         DailyAction.date >= today - timedelta(days=30),
     )
     result = await db.execute(stmt)
     action_row = result.one()
-    total_actions, completed_actions = action_row
+    total_actions = action_row[0] or 0
+    completed_actions = action_row[1] or 0
     completion_rate = completed_actions / total_actions if total_actions > 0 else 0.0
 
     return {

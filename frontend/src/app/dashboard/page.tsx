@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
+import STTButton from "@/components/common/STTButton";
 import type { DashboardData } from "@/types";
 
 export default function DashboardPage() {
@@ -11,6 +12,7 @@ export default function DashboardPage() {
   const { user, isAuthenticated, isLoading, checkAuth } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -26,7 +28,10 @@ export default function DashboardPage() {
       return;
     }
     if (isAuthenticated && user?.onboarding_completed) {
-      api.getDashboard().then(setData).finally(() => setLoading(false));
+      api.getDashboard()
+        .then(setData)
+        .catch((err) => setError(err.message || "데이터를 불러오지 못했습니다."))
+        .finally(() => setLoading(false));
     }
   }, [isLoading, isAuthenticated, user, router]);
 
@@ -34,6 +39,17 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-6">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-gray-100 rounded-lg">
+          다시 시도
+        </button>
       </div>
     );
   }
@@ -182,6 +198,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* STT 음성 질의 버튼 */}
+      <STTButton />
 
       {/* 하단 네비게이션 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3">

@@ -1,0 +1,24 @@
+{
+  "name": "AI 경영코치 - 소상공인 경영 지원",
+  "short_name": "AI경영코치",
+  "description": "사장님이 모르고 놓치는 돈, AI가 찾아줍니다.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#FEE500",
+  "background_color": "#FFFFFF",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -3,10 +3,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
 from app.database import init_db
 from app.routers import auth, onboarding, dashboard, subsidies, actions, coupons, voice
+from app.tasks.daily_action_batch import generate_daily_actions_for_all
+from app.tasks.seoul_data_sync import sync_seoul_data
+from app.tasks.subsidy_indexer import reindex_subsidies
 
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)
@@ -18,13 +22,17 @@ async def lifespan(app: FastAPI):
     logger.info("Starting AI Coach Backend...")
     await init_db()
 
-    # TODO: Phase 5에서 APScheduler 크론 작업 등록
-    # scheduler.add_job(generate_daily_actions_for_all, "cron", hour=7, minute=0)
-    # scheduler.add_job(sync_seoul_data, "cron", day_of_week="mon", hour=3, minute=0)
-    # scheduler.add_job(reindex_subsidies, "cron", day_of_week="mon", hour=4, minute=0)
+    # APScheduler 크론 작업 등록
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(generate_daily_actions_for_all, "cron", hour=7, minute=0, id="daily_actions")
+    scheduler.add_job(sync_seoul_data, "cron", day_of_week="mon", hour=3, minute=0, id="seoul_sync")
+    scheduler.add_job(reindex_subsidies, "cron", day_of_week="mon", hour=4, minute=0, id="subsidy_index")
+    scheduler.start()
+    logger.info("Scheduler started: daily_actions(7AM), seoul_sync(Mon 3AM), subsidy_index(Mon 4AM)")
 
     yield
 
+    scheduler.shutdown()
     logger.info("Shutting down AI Coach Backend...")
 
 

@@ -84,10 +84,13 @@ export default function OnboardingPage() {
     const categories = selectedBusiness.category_name.split(" > ");
     const businessType = categories.length >= 2 ? categories[1] : categories[0];
 
-    // 주소에서 동명, 구명 추출
-    const addressParts = selectedBusiness.address_name.split(" ");
-    const guName = addressParts.find((p) => p.endsWith("구")) || "";
-    const dongName = addressParts.find((p) => p.endsWith("동")) || "";
+    // 주소에서 동명, 구명 추출 (서울시 행정구역 기준)
+    const fullAddress = selectedBusiness.address_name;
+    const addressParts = fullAddress.split(" ");
+    // "구"로 끝나는 것 중 실제 행정구 찾기 (예: "강남구", "종로구")
+    const guName = addressParts.find((p) => /^[가-힣]+구$/.test(p)) || "";
+    // "동"으로 끝나면서 숫자동(역삼1동)도 포함, 최소 2글자
+    const dongName = addressParts.find((p) => /^[가-힣0-9]{2,}동$/.test(p)) || "";
 
     try {
       const res = await api.completeOnboarding({
