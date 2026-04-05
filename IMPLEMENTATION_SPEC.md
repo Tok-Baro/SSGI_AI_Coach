@@ -2,7 +2,9 @@
 
 > **이 문서의 목적**: 개발자(또는 AI 코딩 어시스턴트)가 질문 없이 MVP 전체를 구현할 수 있도록, 모든 파일/함수/API/스키마/환경변수를 상세히 기술한다.
 >
-> **최종 수정**: 2026-04-04
+> **최종 수정**: 2026-04-06
+>
+> **구현 상태**: MVP 코드 완성 (백엔드 44파일, 프론트엔드 13파일). 검증 결과는 [`VERIFICATION_REPORT.md`](./VERIFICATION_REPORT.md) 참조.
 >
 > **기술 스택**: Next.js 14 (App Router, PWA) + FastAPI (Python 3.11+) + PostgreSQL 15 + ChromaDB + GPT-4o
 
@@ -48,7 +50,7 @@
 | `DATABASE_URL` | PostgreSQL 접속 URL | ✅ | `postgresql+asyncpg://user:pass@host:5432/db` |
 | `KAKAO_REST_API_KEY` | 카카오 REST API 키 | ✅ | `API_SECRETS.md § 1` 참조 |
 | `KAKAO_CLIENT_SECRET` | 카카오 Client Secret | ✅ | `API_SECRETS.md § 1` 참조 |
-| `KAKAO_REDIRECT_URI` | OAuth 콜백 URL | ❌ | `http://localhost:3000/api/auth/kakao/callback` |
+| `KAKAO_REDIRECT_URI` | OAuth 콜백 URL | ❌ | `http://localhost:3000/auth/kakao/callback` |
 | `NTS_API_KEY` | 국세청 API 인증키 | ✅ | `API_SECRETS.md § 2` 참조 |
 | `SEOUL_API_KEY` | 서울시 열린데이터 인증키 | ✅ | `API_SECRETS.md § 3` 참조 |
 | `OPENAI_API_KEY` | OpenAI API 키 | ✅ | `API_SECRETS.md § 4` 참조 |
@@ -97,7 +99,7 @@ CORS_ORIGINS=http://localhost:3000
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/ai_coach
 KAKAO_REST_API_KEY=CHANGE_ME
 KAKAO_CLIENT_SECRET=CHANGE_ME
-KAKAO_REDIRECT_URI=http://localhost:3000/api/auth/kakao/callback
+KAKAO_REDIRECT_URI=http://localhost:3000/auth/kakao/callback
 NTS_API_KEY=CHANGE_ME
 SEOUL_API_KEY=CHANGE_ME
 OPENAI_API_KEY=CHANGE_ME
