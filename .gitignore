@@ -1,0 +1,35 @@
+# Secrets
+API_SECRETS.md
+*.env
+*.env.*
+!*.env.example
+firebase-sa.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+
+# ChromaDB
+chroma_data/
+
+# Node
+node_modules/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Alembic
+alembic/versions/__pycache__/
