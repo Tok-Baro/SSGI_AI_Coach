@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_host: str = "0.0.0.0"
     app_port: int = 8000
-    secret_key: str = "dev-secret-change-me"
+    secret_key: str  # 필수값. 미설정 시 시작 실패. `openssl rand -hex 32`로 생성
     cors_origins: str = "http://localhost:3000"
 
     @property

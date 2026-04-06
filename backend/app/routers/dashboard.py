@@ -2,6 +2,8 @@
 대시보드 라우터
 - GET /dashboard: 메인 대시보드 데이터 (집계)
 """
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
@@ -37,30 +39,30 @@ async def get_dashboard(
     result = await db.execute(stmt)
     today_action = result.scalar_one_or_none()
 
-    # 지원사업 매칭
+    # 외부 API 병렬 호출
     rag = RAGService()
-    query = f"{current_user.gu_name} {current_user.dong_name} {current_user.business_type} 소상공인"
-    matched = await rag.search_subsidies(query, top_k=3)
-    total_amount = sum(s.get("max_amount", 0) for s in matched if s.get("max_amount"))
-
-    # 문화행사
     seoul = SeoulAPIService()
-    events = await seoul.get_cultural_events(current_user.gu_name or "")
-    upcoming_events = []
-    if events and not isinstance(events, Exception):
-        upcoming_events = events[:3]
-
-    # 유동인구
-    pop_data = await seoul.get_living_population(current_user.dong_name or "")
-    population_trend = None
-    if pop_data and not isinstance(pop_data, Exception):
-        population_trend = pop_data
-
-    # 사회적 증거
     social = SocialProofService(db)
-    social_proof = await social.get_message(
-        current_user.dong_name or "", current_user.business_type or ""
+
+    query = f"{current_user.gu_name} {current_user.dong_name} {current_user.business_type} 소상공인"
+
+    async def _safe(coro):
+        try:
+            return await coro
+        except Exception:
+            return None
+
+    matched, events, pop_data, social_proof = await asyncio.gather(
+        _safe(rag.search_subsidies(query, top_k=3)),
+        _safe(seoul.get_cultural_events(current_user.gu_name or "")),
+        _safe(seoul.get_living_population(current_user.dong_name or "")),
+        _safe(social.get_message(current_user.dong_name or "", current_user.business_type or "")),
     )
+
+    matched = matched or []
+    total_amount = sum(s.get("max_amount", 0) for s in matched if s.get("max_amount"))
+    upcoming_events = (events or [])[:3]
+    population_trend = pop_data
 
     # 쿠폰 통계
     stmt = select(

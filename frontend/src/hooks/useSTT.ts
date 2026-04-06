@@ -5,6 +5,7 @@ import { useState, useCallback, useRef } from "react";
 interface UseSTTReturn {
   isListening: boolean;
   transcript: string;
+  transcriptRef: { current: string };
   error: string | null;
   startListening: () => void;
   stopListening: () => void;
@@ -16,6 +17,7 @@ export function useSTT(): UseSTTReturn {
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef<string>("");
 
   const isSupported =
     typeof window !== "undefined" &&
@@ -29,6 +31,7 @@ export function useSTT(): UseSTTReturn {
 
     setError(null);
     setTranscript("");
+    transcriptRef.current = "";
 
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -46,6 +49,7 @@ export function useSTT(): UseSTTReturn {
       const results = event.results;
       const text = results[results.length - 1][0].transcript;
       setTranscript(text);
+      transcriptRef.current = text;
     };
 
     recognition.onerror = (event: any) => {
@@ -83,6 +87,7 @@ export function useSTT(): UseSTTReturn {
   return {
     isListening,
     transcript,
+    transcriptRef,
     error,
     startListening,
     stopListening,

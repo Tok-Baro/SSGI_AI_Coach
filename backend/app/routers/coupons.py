@@ -5,14 +5,15 @@
 - GET  /coupons/{id}: 쿠폰 상세
 - POST /coupons/{id}/scan: 스캔 카운트 증가
 """
+from collections import OrderedDict
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from uuid import UUID
 from datetime import date
 from typing import List
-from collections import defaultdict
-import time
 
 from app.database import get_db
 from app.schemas.coupon import CreateCouponRequest, CouponResponse
@@ -22,10 +23,35 @@ from app.models import User, CouponTemplate
 
 router = APIRouter()
 
-# 스캔 rate limiting: IP당 쿠폰당 1분에 5회 제한
-_scan_tracker: dict[str, list[float]] = defaultdict(list)
+# 스캔 rate limiting: IP당 쿠폰당 1분에 5회 제한 (LRU 방식 최대 10000 엔트리)
 SCAN_RATE_LIMIT = 5
 SCAN_RATE_WINDOW = 60  # seconds
+_SCAN_TRACKER_MAX = 10000
+
+
+class _BoundedRateTracker:
+    """메모리 제한이 있는 rate limiter."""
+
+    def __init__(self, max_entries: int = _SCAN_TRACKER_MAX):
+        self._data: OrderedDict[str, list[float]] = OrderedDict()
+        self._max = max_entries
+
+    def check(self, key: str) -> bool:
+        now = time.time()
+        timestamps = self._data.get(key, [])
+        timestamps = [t for t in timestamps if now - t < SCAN_RATE_WINDOW]
+        if len(timestamps) >= SCAN_RATE_LIMIT:
+            self._data[key] = timestamps
+            return False
+        timestamps.append(now)
+        self._data[key] = timestamps
+        self._data.move_to_end(key)
+        while len(self._data) > self._max:
+            self._data.popitem(last=False)
+        return True
+
+
+_scan_tracker = _BoundedRateTracker()
 
 
 @router.post("/create", response_model=CouponResponse)
@@ -95,19 +121,20 @@ async def scan_coupon(coupon_id: UUID, request: Request, db: AsyncSession = Depe
     """쿠폰 스캔 카운트 증가. 인증 불필요. IP 기반 rate limit 적용."""
     client_ip = request.client.host if request.client else "unknown"
     rate_key = f"{client_ip}:{coupon_id}"
-    now = time.time()
 
-    # 오래된 기록 제거 + 현재 윈도우 내 요청 수 확인
-    _scan_tracker[rate_key] = [t for t in _scan_tracker[rate_key] if now - t < SCAN_RATE_WINDOW]
-    if len(_scan_tracker[rate_key]) >= SCAN_RATE_LIMIT:
+    if not _scan_tracker.check(rate_key):
         raise HTTPException(status_code=429, detail="너무 많은 스캔 요청입니다. 잠시 후 다시 시도하세요.")
-    _scan_tracker[rate_key].append(now)
 
-    stmt = select(CouponTemplate).where(CouponTemplate.id == coupon_id)
+    # 원자적 scan_count 증가 (race condition 방지)
+    stmt = (
+        update(CouponTemplate)
+        .where(CouponTemplate.id == coupon_id)
+        .values(scan_count=CouponTemplate.scan_count + 1)
+        .returning(CouponTemplate.scan_count)
+    )
     result = await db.execute(stmt)
-    coupon = result.scalar_one_or_none()
-    if not coupon:
+    row = result.scalar_one_or_none()
+    if row is None:
         raise HTTPException(status_code=404, detail="쿠폰을 찾을 수 없습니다.")
-    coupon.scan_count += 1
     await db.flush()
-    return {"success": True, "scan_count": coupon.scan_count}
+    return {"success": True, "scan_count": row}

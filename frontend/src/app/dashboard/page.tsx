@@ -36,7 +36,18 @@ export default function DashboardPage() {
     }
   }, [isLoading, isAuthenticated, user, router]);
 
-  if (isLoading || loading) {
+  // 인증 확인 전에는 아무것도 렌더링하지 않음 (flash 방지)
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
@@ -65,7 +76,9 @@ export default function DashboardPage() {
         ...data,
         today_action: { ...data.today_action, is_completed: true },
       });
-    } catch {}
+    } catch (err) {
+      console.error("Action completion failed:", err);
+    }
   };
 
   return (
@@ -136,8 +149,8 @@ export default function DashboardPage() {
               매칭 지원사업 ({data.subsidy_matches.length}건)
             </h3>
             <div className="space-y-3">
-              {data.subsidy_matches.map((s, i) => (
-                <div key={i} className="p-3 bg-gray-50 rounded-lg">
+              {data.subsidy_matches.map((s) => (
+                <div key={s.id} className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex justify-between items-start">
                     <p className="font-medium text-sm text-gray-900">{s.title}</p>
                     {s.max_amount && (

@@ -9,6 +9,7 @@ from app.config import settings
 from app.models.user import User
 from app.models.notification import NotificationLog
 from app.services.kakao_service import KakaoService
+from app.utils.crypto import decrypt_token, encrypt_token
 
 logger = logging.getLogger(__name__)
 
@@ -31,27 +32,30 @@ class NotificationService:
         error_message = None
 
         # 1. 카카오톡 나에게 보내기 (401 시 토큰 갱신 재시도)
-        if user.kakao_access_token:
+        kakao_access = decrypt_token(user.kakao_access_token)
+        kakao_refresh = decrypt_token(user.kakao_refresh_token)
+        if kakao_access:
             try:
                 kakao = KakaoService()
                 text = f"[AI 경영코치] {title}\n\n{message}"
                 result = await kakao.send_to_me(
-                    user.kakao_access_token, text, link_url
+                    kakao_access, text, link_url
                 )
                 if result:
                     channel = "kakao"
                     status = "sent"
             except Exception as e:
                 # 토큰 만료 시 갱신 시도
-                if "401" in str(e) and user.kakao_refresh_token:
+                if "401" in str(e) and kakao_refresh:
                     try:
-                        new_tokens = await kakao.refresh_token(user.kakao_refresh_token)
+                        new_tokens = await kakao.refresh_token(kakao_refresh)
                         if new_tokens and "access_token" in new_tokens:
-                            user.kakao_access_token = new_tokens["access_token"]
+                            kakao_access = new_tokens["access_token"]
+                            user.kakao_access_token = encrypt_token(kakao_access)
                             if new_tokens.get("refresh_token"):
-                                user.kakao_refresh_token = new_tokens["refresh_token"]
+                                user.kakao_refresh_token = encrypt_token(new_tokens["refresh_token"])
                             result = await kakao.send_to_me(
-                                user.kakao_access_token, text, link_url
+                                kakao_access, text, link_url
                             )
                             if result:
                                 channel = "kakao"

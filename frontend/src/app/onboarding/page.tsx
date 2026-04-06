@@ -172,9 +172,9 @@ export default function OnboardingPage() {
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
           />
           <div className="mt-3 space-y-2">
-            {searchResults.map((biz, i) => (
+            {searchResults.map((biz) => (
               <button
-                key={i}
+                key={`${biz.place_name}-${biz.x}-${biz.y}`}
                 onClick={() => handleSelectBusiness(biz)}
                 className="w-full text-left p-3 bg-gray-50 rounded-xl hover:bg-yellow-50 border border-gray-100 transition-colors"
               >

@@ -15,10 +15,10 @@ from app.tasks.subsidy_indexer import reindex_subsidies
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)
 
-# 프로덕션 환경에서 기본 secret_key 사용 방지
-if settings.is_production and settings.secret_key == "dev-secret-change-me":
+# SECRET_KEY 최소 길이 검증 (모든 환경)
+if len(settings.secret_key) < 32:
     raise RuntimeError(
-        "SECRET_KEY를 반드시 변경하세요! `openssl rand -hex 32`로 생성하세요."
+        "SECRET_KEY는 최소 32자 이상이어야 합니다. `openssl rand -hex 32`로 생성하세요."
     )
 
 

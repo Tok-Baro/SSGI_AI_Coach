@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { VoiceQueryResponse } from "@/types";
 
 export default function STTButton() {
-  const { isListening, transcript, error, startListening, stopListening, isSupported } = useSTT();
+  const { isListening, transcript, transcriptRef, error, startListening, stopListening, isSupported } = useSTT();
   const [response, setResponse] = useState<VoiceQueryResponse | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
@@ -16,12 +16,13 @@ export default function STTButton() {
   const handleToggle = async () => {
     if (isListening) {
       stopListening();
-      // 음성 인식 완료 후 API 호출
-      if (transcript) {
+      // ref에서 최신 transcript 읽기 (stale closure 방지)
+      const finalText = transcriptRef.current;
+      if (finalText) {
         setIsProcessing(true);
         setShowPanel(true);
         try {
-          const res = await api.voiceQuery(transcript);
+          const res = await api.voiceQuery(finalText);
           setResponse(res);
         } catch {
           setResponse(null);
@@ -53,6 +54,7 @@ export default function STTButton() {
       {/* 플로팅 마이크 버튼 */}
       <button
         onClick={handleToggle}
+        aria-label={isListening ? "음성 인식 중지" : "음성 질문하기"}
         className={`fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all z-50 ${
           isListening
             ? "bg-red-500 animate-pulse"
@@ -104,9 +106,9 @@ export default function STTButton() {
             <div>
               <p className="text-sm text-gray-900 mb-3">{response.answer}</p>
               <div className="flex flex-wrap gap-2">
-                {response.suggestions.map((s, i) => (
+                {response.suggestions.map((s) => (
                   <button
-                    key={i}
+                    key={s}
                     onClick={() => handleSuggestion(s)}
                     className="text-xs px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-full hover:bg-yellow-100 transition-colors"
                   >

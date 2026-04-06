@@ -28,7 +28,7 @@ class KakaoService:
                     "client_secret": settings.kakao_client_secret,
                     "refresh_token": refresh_token,
                 },
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                headers={"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"},
             )
             response.raise_for_status()
             return response.json()
@@ -46,7 +46,7 @@ class KakaoService:
                     "redirect_uri": settings.kakao_redirect_uri,
                     "code": code,
                 },
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                headers={"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"},
             )
             response.raise_for_status()
             return response.json()

@@ -6,6 +6,7 @@ from typing import Optional
 
 from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.config import settings
 from app.models.user import User
@@ -160,7 +161,8 @@ class ActionGenerator:
             subsidy_data=matched_subsidies,
         )
 
-        daily_action = DailyAction(
+        # ON CONFLICT DO NOTHING으로 race condition 방지
+        values = dict(
             user_id=user.id,
             date=date.today(),
             action_type=action_data.get("action_type", "coupon"),
@@ -171,8 +173,21 @@ class ActionGenerator:
             cta_type=action_data.get("cta_type"),
             cta_payload=action_data.get("cta_payload"),
         )
-        db.add(daily_action)
-        await db.flush()
+        stmt = pg_insert(DailyAction).values(**values).on_conflict_do_nothing(
+            constraint="uq_daily_actions_user_date"
+        ).returning(DailyAction)
+        result = await db.execute(stmt)
+        daily_action = result.scalar_one_or_none()
+        if daily_action is None:
+            # 이미 존재하는 경우 기존 것 조회
+            from sqlalchemy import select
+            existing = await db.execute(
+                select(DailyAction).where(
+                    DailyAction.user_id == user.id,
+                    DailyAction.date == date.today(),
+                )
+            )
+            daily_action = existing.scalar_one()
         return daily_action
 
     async def generate_business_plan_draft(
@@ -188,10 +203,13 @@ class ActionGenerator:
 2. 실제 정보만 사용 (없는 정보는 [사장님 작성 필요]로 표기)
 3. 마크다운 형식"""
 
+        # 사업자번호 PII 마스킹 (외부 LLM에 전송 시)
+        masked_biz_num = f"{user.business_number[:3]}-**-*****" if user.business_number else "미등록"
+
         user_prompt = f"""## 사장님 정보
 상호: {user.business_name}
 업종: {user.business_type}
-사업자번호: {user.business_number}
+사업자번호: {masked_biz_num}
 주소: {user.address}
 
 ## 지원사업

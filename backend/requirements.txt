@@ -10,7 +10,7 @@ alembic==1.13.1
 
 # 인증
 python-jose[cryptography]==3.3.0
-passlib==1.7.4
+cryptography>=42.0.0
 httpx==0.27.0
 
 # AI / RAG

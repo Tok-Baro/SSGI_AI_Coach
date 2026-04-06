@@ -41,7 +41,17 @@ export default function SubsidiesPage() {
     setDraftLoading(false);
   };
 
-  if (isLoading || loading) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
@@ -132,7 +142,7 @@ export default function SubsidiesPage() {
               <h2 className="font-bold text-lg text-gray-900">
                 {draft ? draft.subsidy_title : "생성 중..."}
               </h2>
-              <button onClick={() => setDraft(null)} className="text-gray-400 hover:text-gray-600 text-xl">
+              <button onClick={() => { setDraft(null); setDraftLoading(false); setDraftError(null); }} className="text-gray-400 hover:text-gray-600 text-xl">
                 &times;
               </button>
             </div>

@@ -84,16 +84,16 @@ class SeoulAPIService:
         rows_y = data_y.get("SPOP_LOCAL_RESD_DONG", {}).get("row", [])
         rows_db = data_db.get("SPOP_LOCAL_RESD_DONG", {}).get("row", [])
 
-        # dong_name 필터
+        # dong_name 필터 (ADSTRD_CODE_NM: 행정동 이름 필드)
         pop_y = sum(
             float(r.get("TOT_LVPOP_CO", 0))
             for r in rows_y
-            if dong_name in r.get("ADSTRD_CODE_SE", "")
+            if dong_name in r.get("ADSTRD_CODE_NM", "")
         )
         pop_db = sum(
             float(r.get("TOT_LVPOP_CO", 0))
             for r in rows_db
-            if dong_name in r.get("ADSTRD_CODE_SE", "")
+            if dong_name in r.get("ADSTRD_CODE_NM", "")
         )
 
         if pop_y == 0 and pop_db == 0:
