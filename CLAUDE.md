@@ -130,6 +130,49 @@
 
 ---
 
+## 2.1 개발 커맨드
+
+### Backend 실행
+
+```bash
+cd backend
+cp .env.example .env          # 최초 1회, API 키 설정
+docker compose up -d           # PostgreSQL 15 시작 (root에서)
+source .venv/bin/activate      # 가상환경 (없으면: python -m venv .venv)
+pip install -r requirements.txt
+alembic upgrade head           # DB 마이그레이션 (최초 또는 스키마 변경 시)
+uvicorn app.main:app --reload  # http://localhost:8000/docs
+```
+
+### Frontend 실행
+
+```bash
+cd frontend
+npm install
+npm run dev                    # http://localhost:3000
+```
+
+### 검증 (작업 완료 후)
+
+```bash
+# Backend: import 에러 확인
+cd backend && python -c "from app.main import app; print('OK')"
+
+# Frontend: 빌드 + 타입체크
+cd frontend && npx next build
+```
+
+### 시드 데이터 & 마이그레이션
+
+```bash
+cd backend
+alembic revision --autogenerate -m "설명"   # 새 마이그레이션 생성
+alembic upgrade head                        # 마이그레이션 적용
+python -m scripts.seed_subsidies            # 보조금 15건 + ChromaDB 인덱싱
+```
+
+---
+
 ## 3. 코딩 규칙
 
 ### 3.1 Backend (Python)

@@ -75,7 +75,7 @@ async def complete_onboarding(
     # 2. 서울시 API 3종 병렬 호출
     seoul = SeoulAPIService()
     sales_task = seoul.get_commercial_sales(req.gu_name, req.dong_name, req.business_type)
-    population_task = seoul.get_living_population(req.dong_name)
+    population_task = seoul.get_living_population(req.dong_name, req.gu_name)
     events_task = seoul.get_cultural_events(req.gu_name)
 
     sales_data, population_data, events_data = await asyncio.gather(

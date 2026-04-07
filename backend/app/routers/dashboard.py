@@ -55,7 +55,7 @@ async def get_dashboard(
     matched, events, pop_data, social_proof = await asyncio.gather(
         _safe(rag.search_subsidies(query, top_k=3)),
         _safe(seoul.get_cultural_events(current_user.gu_name or "")),
-        _safe(seoul.get_living_population(current_user.dong_name or "")),
+        _safe(seoul.get_living_population(current_user.dong_name or "", current_user.gu_name or "")),
         _safe(social.get_message(current_user.dong_name or "", current_user.business_type or "")),
     )
 

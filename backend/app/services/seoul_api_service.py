@@ -59,24 +59,38 @@ class SeoulAPIService:
             "area_name": row.get("ADSTRD_NM", ""),
         }
 
+    # 서울시 구별 행정동 코드 앞 5자리 매핑 (통계청 기준)
+    GU_CODE_MAP = {
+        "종로구": "11110", "중구": "11140", "용산구": "11170", "성동구": "11200",
+        "광진구": "11215", "동대문구": "11230", "중랑구": "11260", "성북구": "11290",
+        "강북구": "11305", "도봉구": "11320", "노원구": "11350", "은평구": "11380",
+        "서대문구": "11410", "마포구": "11440", "양천구": "11470", "강서구": "11500",
+        "구로구": "11530", "금천구": "11545", "영등포구": "11560", "동작구": "11590",
+        "관악구": "11620", "서초구": "11650", "강남구": "11680", "송파구": "11710",
+        "강동구": "11740",
+    }
+
     @retry_async(max_retries=2, delay=1.0)
-    async def get_living_population(self, dong_name: str) -> Optional[dict]:
+    async def get_living_population(self, dong_name: str, gu_name: str = "") -> Optional[dict]:
         """
-        일별 생활인구 데이터 (T-1).
+        일별 생활인구 데이터 (T-1). gu_name으로 구 코드 필터링.
         Returns: { today, yesterday, change_percent, data_date }
         """
         yesterday = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
         day_before = (date.today() - timedelta(days=2)).strftime("%Y%m%d")
 
+        # 구 이름 → 코드 앞 5자리
+        gu_code = self.GU_CODE_MAP.get(gu_name, "")
+
         async with httpx.AsyncClient(timeout=15.0) as client:
-            # 어제 데이터
-            url_y = f"{BASE_URL}/{settings.seoul_api_key}/json/SPOP_LOCAL_RESD_DONG/1/20/{yesterday}"
+            # 어제 데이터 (전체 가져와서 필터)
+            url_y = f"{BASE_URL}/{settings.seoul_api_key}/json/SPOP_LOCAL_RESD_DONG/1/1000/{yesterday}"
             resp_y = await client.get(url_y)
             resp_y.raise_for_status()
             data_y = resp_y.json()
 
             # 그저께 데이터
-            url_db = f"{BASE_URL}/{settings.seoul_api_key}/json/SPOP_LOCAL_RESD_DONG/1/20/{day_before}"
+            url_db = f"{BASE_URL}/{settings.seoul_api_key}/json/SPOP_LOCAL_RESD_DONG/1/1000/{day_before}"
             resp_db = await client.get(url_db)
             resp_db.raise_for_status()
             data_db = resp_db.json()
@@ -84,17 +98,13 @@ class SeoulAPIService:
         rows_y = data_y.get("SPOP_LOCAL_RESD_DONG", {}).get("row", [])
         rows_db = data_db.get("SPOP_LOCAL_RESD_DONG", {}).get("row", [])
 
-        # dong_name 필터 (ADSTRD_CODE_NM: 행정동 이름 필드)
-        pop_y = sum(
-            float(r.get("TOT_LVPOP_CO", 0))
-            for r in rows_y
-            if dong_name in r.get("ADSTRD_CODE_NM", "")
-        )
-        pop_db = sum(
-            float(r.get("TOT_LVPOP_CO", 0))
-            for r in rows_db
-            if dong_name in r.get("ADSTRD_CODE_NM", "")
-        )
+        # 구 코드 앞 5자리로 필터 (행정동 코드는 8자리, 앞 5자리가 구)
+        def _match(row: dict) -> bool:
+            code = row.get("ADSTRD_CODE_SE", "")
+            return code.startswith(gu_code) if gu_code else False
+
+        pop_y = sum(float(r.get("TOT_LVPOP_CO", 0)) for r in rows_y if _match(r))
+        pop_db = sum(float(r.get("TOT_LVPOP_CO", 0)) for r in rows_db if _match(r))
 
         if pop_y == 0 and pop_db == 0:
             return None

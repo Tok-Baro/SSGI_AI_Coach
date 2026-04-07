@@ -46,7 +46,7 @@ async def _fetch_data_for_user(
 
     if pop_key not in data_cache.get("population", {}):
         try:
-            data_cache.setdefault("population", {})[pop_key] = await seoul.get_living_population(pop_key)
+            data_cache.setdefault("population", {})[pop_key] = await seoul.get_living_population(pop_key, user.gu_name or "")
         except Exception:
             data_cache.setdefault("population", {})[pop_key] = None
     population_data = data_cache["population"].get(pop_key)

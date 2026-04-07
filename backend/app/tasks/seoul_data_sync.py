@@ -42,7 +42,7 @@ async def sync_seoul_data():
             # 상권 매출
             await seoul.get_commercial_sales(gu_name, dong_name, business_type or "")
             # 생활인구
-            await seoul.get_living_population(dong_name)
+            await seoul.get_living_population(dong_name, gu_name)
             # 문화행사
             await seoul.get_cultural_events(gu_name)
             success_count += 1
