@@ -11,13 +11,14 @@ type Step = "business_number" | "business_search" | "confirm" | "loading" | "don
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading, checkAuth } = useAuth();
+  const { user, isAuthenticated, isLoading, checkAuth, refreshUser } = useAuth();
   const [step, setStep] = useState<Step>("business_number");
   const [businessNumber, setBusinessNumber] = useState("");
   const [businessStatus, setBusinessStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<KakaoLocalSearchResult[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<KakaoLocalSearchResult | null>(null);
+  const [verificationToken, setVerificationToken] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ subsidy_count: number; message: string } | null>(null);
 
@@ -43,8 +44,9 @@ export default function OnboardingPage() {
     setError("");
     try {
       const res = await api.verifyBusiness(businessNumber);
-      if (res.is_valid) {
+      if (res.is_valid && res.verification_token) {
         setBusinessStatus(res.business_status);
+        setVerificationToken(res.verification_token);
         setStep("business_search");
       } else {
         setError(`사업자 상태: ${res.business_status}. 계속사업자만 이용 가능합니다.`);
@@ -85,17 +87,21 @@ export default function OnboardingPage() {
     const categories = selectedBusiness.category_name.split(" > ");
     const businessType = categories.length >= 2 ? categories[1] : categories[0];
 
-    // 주소에서 동명, 구명 추출 (서울시 행정구역 기준)
-    const fullAddress = selectedBusiness.address_name;
-    const addressParts = fullAddress.split(" ");
-    // "구"로 끝나는 것 중 실제 행정구 찾기 (예: "강남구", "종로구")
-    const guName = addressParts.find((p) => /^[가-힣]+구$/.test(p)) || "";
-    // "동"으로 끝나면서 숫자동(역삼1동)도 포함, 최소 2글자
-    const dongName = addressParts.find((p) => /^[가-힣0-9]{2,}동$/.test(p)) || "";
+    // 주소에서 동명, 구명 추출 (지번주소 + 도로명주소 모두 탐색)
+    const allAddressParts = [
+      ...selectedBusiness.address_name.split(" "),
+      ...(selectedBusiness.road_address_name || "").split(" "),
+    ];
+    const guName = allAddressParts.find((p) => /^[가-힣]+구$/.test(p)) || "";
+    // "동" 또는 "가"로 끝나는 행정동 (삼선동2가, 역삼1동 등)
+    const dongName = allAddressParts.find((p) => /^[가-힣]{2,}[0-9]*동[0-9]*$/.test(p))
+      || allAddressParts.find((p) => /^[가-힣]{2,}[0-9]*가$/.test(p))
+      || "";
 
     try {
       const res = await api.completeOnboarding({
         business_number: businessNumber,
+        verification_token: verificationToken,
         business_name: selectedBusiness.place_name,
         business_type: businessType,
         address: selectedBusiness.road_address_name || selectedBusiness.address_name,
@@ -106,6 +112,9 @@ export default function OnboardingPage() {
       });
       setResult({ subsidy_count: res.subsidy_count, message: res.message });
       setStep("done");
+
+      // 유저 정보 갱신 (onboarding_completed=true 반영)
+      await refreshUser();
 
       // FCM 푸시 알림 등록 (비동기, 실패 무시)
       requestFCMToken().then((token) => {
@@ -142,7 +151,7 @@ export default function OnboardingPage() {
             value={businessNumber}
             onChange={(e) => setBusinessNumber(e.target.value.replace(/\D/g, ""))}
             placeholder="10자리 숫자 입력"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-lg"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-lg text-gray-900"
           />
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
           <button
@@ -169,7 +178,7 @@ export default function OnboardingPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="가게 이름을 검색하세요"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-gray-900"
           />
           <div className="mt-3 space-y-2">
             {searchResults.map((biz) => (

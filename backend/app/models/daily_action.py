@@ -21,6 +21,7 @@ class DailyAction(Base):
     data_source = Column(String(100), nullable=True)
     cta_type = Column(String(50), nullable=True)  # create_coupon | apply_subsidy | view_detail
     cta_payload = Column(JSONB, nullable=True)
+    risk_factors = Column(JSONB, nullable=True)  # 위험도 요인 분석 결과
     is_completed = Column(Boolean, default=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)

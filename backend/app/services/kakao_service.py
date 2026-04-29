@@ -76,6 +76,47 @@ class KakaoService:
             return data.get("documents", [])
 
     @retry_async(max_retries=2, delay=1.0)
+    async def count_nearby_by_category(
+        self, lat: float, lng: float, category_code: str, radius: int = 500
+    ) -> int:
+        """반경 내 카테고리별 업체 수 (카카오 카테고리 검색)."""
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                "https://dapi.kakao.com/v2/local/search/category.json",
+                params={
+                    "category_group_code": category_code,
+                    "x": lng, "y": lat,
+                    "radius": radius, "size": 1,
+                },
+                headers={"Authorization": f"KakaoAK {settings.kakao_rest_api_key}"},
+            )
+            response.raise_for_status()
+            return response.json().get("meta", {}).get("total_count", 0)
+
+    async def get_radius_competitor_summary(
+        self, lat: float, lng: float
+    ) -> dict:
+        """반경 500m 내 업종별 업체 수 종합."""
+        categories = {
+            "FD6": "음식점",
+            "CE7": "카페",
+            "CS2": "편의점",
+            "HP8": "병원",
+            "BK9": "은행",
+            "MT1": "대형마트",
+            "CT1": "문화시설",
+            "AT4": "관광명소",
+        }
+        results = {}
+        for code, name in categories.items():
+            try:
+                count = await self.count_nearby_by_category(lat, lng, code)
+                results[name] = count
+            except Exception:
+                results[name] = 0
+        return results
+
+    @retry_async(max_retries=2, delay=1.0)
     async def send_to_me(
         self, access_token: str, text: str, link_url: str = ""
     ) -> Optional[bool]:

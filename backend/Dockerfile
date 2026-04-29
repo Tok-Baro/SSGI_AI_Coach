@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 시스템 의존성
+# 시스템 의존성 (한글 폰트는 PDF 리포트 렌더링용)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev \
+    gcc libpq-dev fonts-nanum \
     && rm -rf /var/lib/apt/lists/*
 
 # Python 의존성

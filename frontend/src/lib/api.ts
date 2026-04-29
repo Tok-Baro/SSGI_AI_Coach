@@ -133,7 +133,13 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.detail || "요청에 실패했습니다.");
+      const detail = error.detail;
+      const message = typeof detail === "string"
+        ? detail
+        : Array.isArray(detail)
+          ? detail.map((d: any) => d.msg).join(", ")
+          : "요청에 실패했습니다.";
+      throw new Error(message);
     }
 
     return response.json();
@@ -172,6 +178,7 @@ class ApiClient {
 
   async completeOnboarding(data: {
     business_number: string;
+    verification_token: string;
     business_name: string;
     business_type: string;
     address: string;
@@ -223,6 +230,27 @@ class ApiClient {
     });
   }
 
+  async logSubsidySignal(
+    subsidyId: string,
+    signalType: "view" | "click" | "draft" | "apply" = "click",
+  ): Promise<{ ok: boolean; signal_type: string }> {
+    return this.request(
+      `/subsidies/${subsidyId}/signal?signal_type=${signalType}`,
+      { method: "POST" }
+    );
+  }
+
+  async getIcpProfile(): Promise<{
+    has_signals: boolean;
+    signal_count: number;
+    weighted_signal_total: number;
+    preferred_organizations: { name: string; score: number }[];
+    amount_range: { median: number; min: number; max: number } | null;
+    top_keywords: { word: string; score: number }[];
+  }> {
+    return this.request("/subsidies/icp-profile");
+  }
+
   // ===== 쿠폰 =====
   async createCoupon(data: CreateCouponRequest): Promise<Coupon> {
     return this.request("/coupons/create", {
@@ -241,6 +269,43 @@ class ApiClient {
 
   async scanCoupon(couponId: string): Promise<{ success: boolean; scan_count: number }> {
     return this.request(`/coupons/${couponId}/scan`, { method: "POST" }, false);
+  }
+
+  // ===== 인사이트 =====
+  async getCompetitionAnalysis(): Promise<any> {
+    return this.request("/insights/competition");
+  }
+
+  async getMarketingStrategy(refresh = false): Promise<any> {
+    return this.request(`/insights/marketing${refresh ? "?refresh=true" : ""}`, {}, true);
+  }
+
+  async getDeepReport(refresh = false): Promise<any> {
+    return this.request(`/insights/deep-report${refresh ? "?refresh=true" : ""}`, {
+      signal: AbortSignal.timeout(60_000),
+    });
+  }
+
+  async getCompetitionAnalysisRefresh(): Promise<any> {
+    return this.request("/insights/competition?refresh=true");
+  }
+
+
+  // ===== 주간 리포트 =====
+  async downloadWeeklyReport(): Promise<Blob> {
+    if (!this.token) {
+      throw new Error("인증이 필요합니다.");
+    }
+    const res = await fetch(`${API_URL}/reports/weekly`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${this.token}` },
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "리포트 생성에 실패했습니다.");
+    }
+    return res.blob();
   }
 
   // ===== 음성 =====

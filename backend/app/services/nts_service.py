@@ -39,19 +39,13 @@ class NTSService:
             }
 
         item = items[0]
-        b_stt = item.get("b_stt", "")
+        b_stt = item.get("b_stt", "")          # "계속사업자", "휴업자", "폐업자"
+        b_stt_cd = item.get("b_stt_cd", "")     # "01", "02", "03"
         tax_type = item.get("tax_type", "")
 
-        # b_stt: "01"=계속, "02"=휴업, "03"=폐업
-        status_map = {
-            "01": "계속사업자",
-            "02": "휴업자",
-            "03": "폐업자",
-        }
-
         return {
-            "is_valid": b_stt == "01",
-            "business_status": status_map.get(b_stt, "확인불가"),
+            "is_valid": b_stt_cd == "01",
+            "business_status": b_stt or "확인불가",
             "business_name": item.get("b_nm") or None,
             "tax_type": tax_type or None,
         }

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import date
 from sqlalchemy import select
-from app.database import engine, AsyncSessionLocal, init_db
+from app.database import engine, async_session_factory as AsyncSessionLocal, init_db
 from app.models.subsidy import Subsidy
 from app.services.rag_service import RAGService
 
@@ -198,6 +198,79 @@ SEED_SUBSIDIES = [
         "description": "노원구의 사회적경제 활성화를 위해 교육, 돌봄, 먹거리, 재활용 관련 소상공인에게 운영비, 마케팅비 등을 최대 600만원까지 지원합니다.",
         "application_url": "https://www.nowon.kr",
         "source": "노원구 사회적경제과",
+    },
+    # === 전국 대상 지원사업 (비서울 지역도 매칭) ===
+    {
+        "title": "소상공인 정책자금 (일반경영안정자금)",
+        "organization": "중소벤처기업부",
+        "deadline": date(2026, 12, 31),
+        "max_amount": 7000,
+        "target_business_types": ["전 업종"],
+        "target_regions": ["전국"],
+        "eligibility_summary": "소상공인 확인서 보유, 업력 무관",
+        "description": "소상공인의 경영안정을 위한 정책자금으로, 운전자금 및 시설자금을 최대 7,000만원까지 연 3.0~4.5% 금리로 지원합니다. 소상공인 확인서를 발급받은 모든 업체가 신청 가능합니다.",
+        "application_url": "https://ols.semas.or.kr",
+        "source": "소상공인시장진흥공단",
+    },
+    {
+        "title": "소상공인 역량강화 교육",
+        "organization": "소상공인시장진흥공단",
+        "deadline": date(2026, 11, 30),
+        "max_amount": 0,
+        "target_business_types": ["전 업종"],
+        "target_regions": ["전국"],
+        "eligibility_summary": "소상공인 및 예비 창업자",
+        "description": "디지털 마케팅, 세무·회계, 고객관리, 메뉴개발 등 경영 역량강화 교육을 무료로 제공합니다. 온라인 과정도 있어 전국 어디서나 수강 가능합니다.",
+        "application_url": "https://edu.semas.or.kr",
+        "source": "소상공인시장진흥공단",
+    },
+    {
+        "title": "소상공인 컨설팅 지원",
+        "organization": "중소벤처기업부",
+        "deadline": date(2026, 10, 31),
+        "max_amount": 100,
+        "target_business_types": ["전 업종"],
+        "target_regions": ["전국"],
+        "eligibility_summary": "소상공인 확인서 보유 업체",
+        "description": "경영, 마케팅, 세무, 법률, 기술 등 분야별 전문 컨설턴트가 1:1 방문 컨설팅을 최대 5회 무료 제공합니다. 소상공인시장진흥공단 지역센터에서 신청하세요.",
+        "application_url": "https://www.semas.or.kr",
+        "source": "소상공인시장진흥공단",
+    },
+    {
+        "title": "소상공인 폐업 재기 지원",
+        "organization": "중소벤처기업부",
+        "deadline": None,
+        "max_amount": 2000,
+        "target_business_types": ["전 업종"],
+        "target_regions": ["전국"],
+        "eligibility_summary": "폐업 후 재창업 또는 취업 희망 소상공인",
+        "description": "폐업 소상공인의 재기를 위해 재기교육, 취업연계, 재창업자금(최대 2,000만원)을 지원합니다. 사업정리 컨설팅, 법률·세무 상담도 무료 제공됩니다.",
+        "application_url": "https://www.semas.or.kr",
+        "source": "소상공인시장진흥공단",
+    },
+    {
+        "title": "소공인 특화자금",
+        "organization": "중소벤처기업부",
+        "deadline": date(2026, 9, 30),
+        "max_amount": 5000,
+        "target_business_types": ["제조업", "수공예", "전 업종"],
+        "target_regions": ["전국"],
+        "eligibility_summary": "상시근로자 10인 미만 제조업",
+        "description": "소공인(상시근로자 10인 미만 제조업)의 생산성 향상을 위해 설비자금 및 운전자금을 최대 5,000만원까지 저금리로 지원합니다.",
+        "application_url": "https://ols.semas.or.kr",
+        "source": "소상공인시장진흥공단",
+    },
+    {
+        "title": "학원업 특화 경영개선 지원",
+        "organization": "중소벤처기업부",
+        "deadline": date(2026, 8, 31),
+        "max_amount": 300,
+        "target_business_types": ["학원", "교육", "전 업종"],
+        "target_regions": ["전국"],
+        "eligibility_summary": "학원법에 따른 등록 학원 운영 소상공인",
+        "description": "학원업 소상공인의 온라인 교육 전환, 학사관리 시스템 구축, 홍보 마케팅 등을 최대 300만원까지 지원합니다. 대면·비대면 혼합 교육 환경 구축에 활용하세요.",
+        "application_url": "https://www.semas.or.kr",
+        "source": "소상공인시장진흥공단",
     },
 ]
 

@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 경영코치 - UI 와이어프레임 (실제 코드 기반)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Noto Sans KR', sans-serif; background: #111827; color: #333; padding: 40px 20px; }
+
+  h1.page-title { color: #fff; text-align: center; font-size: 28px; margin-bottom: 6px; }
+  p.page-subtitle { color: #9ca3af; text-align: center; margin-bottom: 50px; font-size: 13px; }
+
+  .wireframe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(375px, 375px));
+    gap: 50px;
+    justify-content: center;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+
+  .screen-wrapper { display: flex; flex-direction: column; align-items: center; }
+  .screen-label { color: #facc15; font-size: 12px; font-weight: 700; margin-bottom: 4px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .screen-sublabel { color: #6b7280; font-size: 11px; margin-bottom: 12px; text-align: center; }
+
+  .phone-frame {
+    width: 375px; height: 812px; background: #fff; border-radius: 44px; overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.5); position: relative; border: 6px solid #1f2937;
+  }
+  .phone-screen { width: 100%; height: 100%; overflow-y: auto; position: relative; }
+  .phone-screen::-webkit-scrollbar { display: none; }
+
+  .notch { width: 150px; height: 28px; background: #1f2937; border-radius: 0 0 18px 18px; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 20; }
+  .status-bar { height: 50px; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 28px 6px; font-size: 12px; font-weight: 600; color: #333; }
+
+  /* Section divider */
+  .section-wrap { text-align: center; width: 100%; grid-column: 1 / -1; margin: 20px 0 10px; }
+  .section-title { color: #facc15; font-size: 15px; font-weight: 700; padding: 10px 28px; background: rgba(250,204,21,0.08); border: 1px solid rgba(250,204,21,0.15); border-radius: 30px; display: inline-block; }
+
+  /* Shared components */
+  .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #f3f4f6; }
+  .input-f { width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 14px; background: #fff; color: #333; }
+  .btn { display: block; width: 100%; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 600; text-align: center; border: none; cursor: pointer; }
+  .btn-yellow { background: #facc15; color: #111827; }
+  .btn-yellow:disabled { opacity: 0.5; }
+  .btn-gray { background: #f3f4f6; color: #374151; }
+
+  .spinner { width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #facc15; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse-ring { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } }
+
+  /* Bottom nav from actual code */
+  .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #f3f4f6; display: flex; justify-content: space-around; padding: 12px 24px 30px; z-index: 10; }
+  .nav-item { font-size: 11px; font-weight: 500; color: #9ca3af; text-align: center; cursor: pointer; }
+  .nav-item.active { color: #ca8a04; }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .tag-yellow { background: #fef9c3; color: #a16207; }
+  .tag-red { background: #fef2f2; color: #dc2626; }
+  .tag-green { background: #f0fdf4; color: #16a34a; }
+
+  /* Footer */
+  .page-footer { text-align: center; margin-top: 60px; padding-bottom: 40px; grid-column: 1 / -1; }
+  .page-footer p { color: #6b7280; font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">AI 경영코치 - 전체 UI 와이어프레임</h1>
+<p class="page-subtitle">SSGI_AI_Coach/frontend 실제 코드 기반 | Next.js 14 PWA | 총 9개 화면 + 2개 모달</p>
+
+<div class="wireframe-grid">
+
+<!-- ========== SECTION 1: 인증 ========== -->
+<div class="section-wrap"><span class="section-title">1. 인증 플로우</span></div>
+
+<!-- Screen 1: 랜딩/로그인 (page.tsx) -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 1</div>
+  <div class="screen-sublabel">랜딩 / 로그인<br><code>app/page.tsx</code></div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#fff;">
+      <div class="status-bar"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:700px; padding:0 24px;">
+        <!-- Header -->
+        <div style="text-align:center; margin-bottom:48px;">
+          <h1 style="font-size:28px; font-weight:700; color:#111827; margin-bottom:12px;">AI 경영코치</h1>
+          <p style="font-size:16px; color:#4b5563;">사장님이 모르고 놓치는 돈, AI가 찾아줍니다.</p>
+        </div>
+
+        <!-- ValueCard x3 -->
+        <div style="width:100%; max-width:350px; margin-bottom:48px;">
+          <div style="background:#f9fafb; border:1px solid #f3f4f6; border-radius:12px; padding:16px; margin-bottom:12px;">
+            <p style="font-weight:600; color:#111827; margin-bottom:4px;">지원금 자동 매칭</p>
+            <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">연 400~700만원 지원사업, 자격 자동 판별</p>
+            <p style="font-size:13px; font-weight:500; color:#ef4444;">놓치면 내년까지 없어요</p>
+          </div>
+          <div style="background:#f9fafb; border:1px solid #f3f4f6; border-radius:12px; padding:16px; margin-bottom:12px;">
+            <p style="font-weight:600; color:#111827; margin-bottom:4px;">유동인구 기반 이벤트</p>
+            <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">QR 쿠폰 1탭 생성 + 카카오톡 발송</p>
+            <p style="font-size:13px; font-weight:500; color:#ef4444;">이벤트 없이 지나가고 있어요</p>
+          </div>
+          <div style="background:#f9fafb; border:1px solid #f3f4f6; border-radius:12px; padding:16px;">
+            <p style="font-weight:600; color:#111827; margin-bottom:4px;">경쟁 가게 모니터링</p>
+            <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">같은 동네 개폐업 알림 + AI 대응 전략</p>
+            <p style="font-size:13px; font-weight:500; color:#ef4444;">옆 가게는 이미 시작했어요</p>
+          </div>
+        </div>
+
+        <!-- Kakao Login -->
+        <a style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; max-width:350px; background:#FEE500; color:#191919; font-weight:600; padding:16px; border-radius:12px; text-decoration:none; font-size:16px; margin-bottom:16px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="#191919"><path d="M10 3C5.58 3 2 5.79 2 9.25c0 2.18 1.45 4.1 3.63 5.2l-.93 3.45c-.08.3.26.54.52.37l4.12-2.72c.22.02.44.03.66.03 4.42 0 8-2.79 8-6.25S14.42 3 10 3z"/></svg>
+          카카오로 15초 만에 시작하기
+        </a>
+        <p style="font-size:11px; color:#9ca3af;">카카오 로그인 + 상호명 입력 = 15초</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 2: 카카오 콜백 (auth/kakao/callback/page.tsx) -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 2</div>
+  <div class="screen-sublabel">카카오 인증 처리<br><code>app/auth/kakao/callback/page.tsx</code></div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#fff;">
+      <div class="status-bar"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:700px;">
+        <div class="spinner" style="margin-bottom:16px;"></div>
+        <p style="color:#6b7280; font-size:15px;">로그인 중...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 2-b: 카카오 콜백 에러 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 2-b</div>
+  <div class="screen-sublabel">카카오 인증 에러<br><code>app/auth/kakao/callback/page.tsx</code></div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#fff;">
+      <div class="status-bar"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:700px; padding:0 24px;">
+        <p style="color:#ef4444; margin-bottom:16px; font-size:14px;">로그인에 실패했습니다.</p>
+        <button style="padding:8px 24px; background:#f3f4f6; border:none; border-radius:8px; color:#374151; font-size:14px; cursor:pointer;">다시 시도하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SECTION 2: 온보딩 ========== -->
+<div class="section-wrap"><span class="section-title">2. 온보딩 (4 스텝)</span></div>
+
+<!-- Screen 3: 온보딩 Step 1 - 사업자번호 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 3</div>
+  <div class="screen-sublabel">온보딩 Step 1: 사업자번호<br><code>app/onboarding/page.tsx</code> (step="business_number")</div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#fff;">
+      <div class="status-bar"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+      <div style="padding:60px 24px;">
+        <div style="text-align:center; margin-bottom:32px;">
+          <h1 style="font-size:24px; font-weight:700; color:#111827; margin-bottom:8px;">사업장 등록</h1>
+          <p style="font-size:13px; color:#6b7280;">15초면 끝나요</p>
+        </div>
+
+        <div style="max-width:350px; margin:0 auto;">
+          <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:8px;">사업자등록번호</label>
+          <input class="input-f" placeholder="10자리 숫자 입력" value="1234567890" style="font-size:18px; margin-bottom:4px;">
+          <p style="font-size:13px; color:#ef4444; margin:8px 0;"><!-- error placeholder --></p>
+          <button class="btn btn-yellow" style="margin-top:12px;">확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 4: 온보딩 Step 2 - 상호명 검색 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 4</div>
+  <div class="screen-sublabel">온보딩 Step 2: 상호명 검색<br><code>app/onboarding/page.tsx</code> (step="business_search")</div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#fff;">
+      <div class="status-bar"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+      <div style="padding:60px 24px;">
+        <div style="text-align:center; margin-bottom:32px;">
+          <h1 style="font-size:24px; font-weight:700; color:#111827; margin-bottom:8px;">사업장 등록</h1>
+          <p style="font-size:13px; color:#6b7280;">15초면 끝나요</p>
+        </div>
+
+        <div style="max-width:350px; margin:0 auto;">
+          <p style="font-size:13px; color:#16a34a; margin-bottom:16px;">계속사업자 확인 완료</p>
+          <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:8px;">상호명 검색</label>
+          <input class="input-f" placeholder="가게 이름을 검색하세요" value="스타벅스 혜화">
+
+          <!-- Search Results -->
+          <div style="margin-top:12px;">
+            <button style="width:100%; text-align:left; padding:12px; background:#f9fafb; border:1px solid #f3f4f6; border-radius:12px; margin-bottom:8px; cursor:pointer; border:none;">
+              <p style="font-weight:500; color:#111827;">스타벅스 혜화역점</p>
+              <p style="font-size:11px; color:#6b7280; margin-top:2px;">서울 종로구 대학로 116</p>
+              <p style="font-size:11px; color:#9ca3af; margin-top:2px;">음식점 > 카페 > 커피전문점</p>
+            </button>
+            <button style="width:100%; text-align:left; padding:12px; background:#f9fafb; border:1px solid #f3f4f6; border-radius:12px; margin-bottom:8px; cursor:pointer; border:none;">
+              <p style="font-weight:500; color:#111827;">스타벅스 혜화로터리점</p>
+              <p style="font-size:11px; color:#6b7280; margin-top:2px;">서울 종로구 혜화로 12</p>
+              <p style="font-size:11px; color:#9ca3af; margin-top:2px;">음식점 > 카페 > 커피전문점</p>
+            </button>
+            <button style="width:100%; text-align:left; padding:12px; background:#f9fafb; border:1px solid #f3f4f6; border-radius:12px; cursor:pointer; border:none;">
+              <p style="font-weight:500; color:#111827;">스타벅스R 대학로점</p>
+              <p style="font-size:11px; color:#6b7280; margin-top:2px;">서울 종로구 대학로 101</p>
+              <p style="font-size:11px; color:#9ca3af; margin-top:2px;">음식점 > 카페 > 커피전문점</p>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 5: 온보딩 Step 3 - 확인 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 5</div>
+  <div class="screen-sublabel">온보딩 Step 3: 확인<br><code>app/onboarding/page.tsx</code> (step="confirm")</div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#fff;">
+      <div class="status-bar"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+      <div style="padding:60px 24px;">
+        <div style="text-align:center; margin-bottom:32px;">
+          <h1 style="font-size:24px; font-weight:700; color:#111827; margin-bottom:8px;">사업장 등록</h1>
+          <p style="font-size:13px; color:#6b7280;">15초면 끝나요</p>
+        </div>
+
+        <div style="max-width:350px; margin:0 auto;">
+          <!-- Selected business card -->
+          <div style="background:#fefce8; padding:16px; border-radius:12px; margin-bottom:16px;">
+            <p style="font-weight:600; color:#111827;">스타벅스 혜화역점</p>
+            <p style="font-size:13px; color:#4b5563; margin-top:4px;">서울 종로구 대학로 116</p>
+            <p style="font-size:13px; color:#6b7280; margin-top:2px;">음식점 > 카페 > 커피전문점</p>
+          </div>
+
+          <button class="btn btn-yellow" style="margin-bottom:8px;">이 가게가 맞아요</button>
+          <button style="display:block; width:100%; padding:12px; background:none; border:none; color:#6b7280; font-size:14px; cursor:pointer;">다시 검색</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 6: 온보딩 Step 4 - 완료 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 6</div>
+  <div class="screen-sublabel">온보딩 Step 4: 완료<br><code>app/onboarding/page.tsx</code> (step="done")</div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#fff;">
+      <div class="status-bar"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+      <div style="padding:60px 24px; text-align:center;">
+        <div style="text-align:center; margin-bottom:32px;">
+          <h1 style="font-size:24px; font-weight:700; color:#111827; margin-bottom:8px;">사업장 등록</h1>
+          <p style="font-size:13px; color:#6b7280;">15초면 끝나요</p>
+        </div>
+
+        <div style="max-width:350px; margin:0 auto; text-align:center;">
+          <div style="font-size:48px; margin-bottom:16px;">!</div>
+          <h2 style="font-size:20px; font-weight:700; color:#111827; margin-bottom:8px;">
+            지원사업 2건을 찾았어요!
+          </h2>
+          <p style="color:#ef4444; font-weight:500; margin-bottom:24px;">
+            지금 확인하지 않으면 놓칠 수 있어요
+          </p>
+          <button class="btn btn-yellow">대시보드로 이동</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SECTION 3: 메인 화면 ========== -->
+<div class="section-wrap"><span class="section-title">3. 대시보드 (메인)</span></div>
+
+<!-- Screen 7: Dashboard -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 7</div>
+  <div class="screen-sublabel">대시보드 / 홈<br><code>app/dashboard/page.tsx</code></div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#f9fafb;">
+      <div class="status-bar" style="background:#fff;"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+
+      <!-- Header (white bar) -->
+      <div style="background:#fff; padding:12px 24px 14px; border-bottom:1px solid #f3f4f6;">
+        <p style="font-size:13px; color:#6b7280;">안녕하세요, 이준수님</p>
+        <h1 style="font-size:17px; font-weight:700; color:#111827;">스타벅스 혜화역점</h1>
+      </div>
+
+      <div style="padding:16px 24px 100px;">
+        <!-- 손실 프레이밍 메시지 -->
+        <div style="background:#fef2f2; border:1px solid #fee2e2; border-radius:12px; padding:16px; margin-bottom:12px;">
+          <p style="color:#dc2626; font-weight:600; font-size:13px;">
+            사장님, 디지털전환 지원금 400만원 마감이 7일 남았습니다
+          </p>
+          <p style="color:#f87171; font-size:11px; margin-top:4px;">
+            혜화동 카페 3곳이 이번 주 신청했어요
+          </p>
+        </div>
+
+        <!-- 위험 점수 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:#6b7280;">경영 위험도</span>
+            <span style="font-size:17px; font-weight:700; color:#ef4444;">65점</span>
+          </div>
+          <div style="margin-top:8px; height:8px; background:#f3f4f6; border-radius:4px; overflow:hidden;">
+            <div style="height:100%; width:65%; background:#ef4444; border-radius:4px;"></div>
+          </div>
+        </div>
+
+        <!-- 오늘의 액션 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span class="tag tag-yellow">오늘의 액션</span>
+            <span style="font-size:11px; color:#9ca3af;">subsidy</span>
+          </div>
+          <h3 style="font-weight:600; color:#111827; margin-bottom:4px;">디지털전환 400만원 마감 D-7</h3>
+          <p style="font-size:13px; color:#4b5563; margin-bottom:12px;">사업계획서 초안을 만들어 신청하세요. 같은 동네 카페 3곳이 이미 신청했어요.</p>
+          <button class="btn btn-yellow" style="padding:10px;">실행하기</button>
+        </div>
+
+        <!-- 지원사업 매칭 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <h3 style="font-weight:600; color:#111827; margin-bottom:12px;">매칭 지원사업 (3건)</h3>
+          <div style="padding:12px; background:#f9fafb; border-radius:8px; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <p style="font-weight:500; font-size:13px; color:#111827;">소상공인 디지털전환 지원</p>
+              <span style="font-size:13px; font-weight:700; color:#ef4444; white-space:nowrap; margin-left:8px;">400만원</span>
+            </div>
+            <p style="font-size:11px; color:#6b7280; margin-top:4px;">소상공인시장진흥공단</p>
+            <p style="font-size:11px; color:#ef4444; font-weight:500; margin-top:4px;">마감 D-7</p>
+          </div>
+          <div style="padding:12px; background:#f9fafb; border-radius:8px; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <p style="font-weight:500; font-size:13px; color:#111827;">고용보험료 지원사업</p>
+              <span style="font-size:13px; font-weight:700; color:#ef4444; margin-left:8px;">110만원</span>
+            </div>
+            <p style="font-size:11px; color:#6b7280; margin-top:4px;">고용노동부</p>
+            <p style="font-size:11px; color:#ef4444; font-weight:500; margin-top:4px;">마감 D-14</p>
+          </div>
+          <div style="padding:12px; background:#f9fafb; border-radius:8px;">
+            <p style="font-weight:500; font-size:13px; color:#111827;">소공인특화지원사업</p>
+            <p style="font-size:11px; color:#6b7280; margin-top:4px;">중소벤처기업부</p>
+          </div>
+          <button style="display:block; width:100%; margin-top:12px; padding:8px; background:none; border:none; font-size:13px; color:#ca8a04; font-weight:500; cursor:pointer;">전체 지원사업 보기</button>
+        </div>
+
+        <!-- 유동인구 트렌드 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <h3 style="font-weight:600; color:#111827; margin-bottom:8px;">유동인구 트렌드</h3>
+          <div style="display:flex; align-items:baseline; gap:8px;">
+            <span style="font-size:24px; font-weight:700; color:#16a34a;">+7.6%</span>
+            <span style="font-size:13px; color:#6b7280;">전일 대비</span>
+          </div>
+        </div>
+
+        <!-- 쿠폰 성과 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <h3 style="font-weight:600; color:#111827; margin-bottom:8px;">쿠폰 성과</h3>
+          <div style="display:flex; gap:16px;">
+            <div>
+              <p style="font-size:24px; font-weight:700; color:#111827;">5</p>
+              <p style="font-size:11px; color:#6b7280;">발행</p>
+            </div>
+            <div>
+              <p style="font-size:24px; font-weight:700; color:#ca8a04;">23</p>
+              <p style="font-size:11px; color:#6b7280;">스캔</p>
+            </div>
+            <div>
+              <p style="font-size:24px; font-weight:700; color:#2563eb;">80%</p>
+              <p style="font-size:11px; color:#6b7280;">액션 완료율</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STT 플로팅 버튼 -->
+      <div style="position:absolute; bottom:90px; right:24px; width:56px; height:56px; background:#facc15; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:15;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </div>
+
+      <!-- Bottom Nav -->
+      <div class="bottom-nav">
+        <div class="nav-item active">홈</div>
+        <div class="nav-item">지원사업</div>
+        <div class="nav-item">쿠폰</div>
+        <div class="nav-item">설정</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 7-b: Dashboard + STT 음성 질의 패널 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 7-b</div>
+  <div class="screen-sublabel">대시보드 + 음성 질의 패널<br><code>components/common/STTButton.tsx</code></div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#f9fafb;">
+      <div class="status-bar" style="background:#fff;"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+
+      <!-- Header dimmed -->
+      <div style="background:#fff; padding:12px 24px 14px; border-bottom:1px solid #f3f4f6; opacity:0.4;">
+        <p style="font-size:13px; color:#6b7280;">안녕하세요, 이준수님</p>
+        <h1 style="font-size:17px; font-weight:700; color:#111827;">스타벅스 혜화역점</h1>
+      </div>
+
+      <div style="padding:16px 24px; opacity:0.3;">
+        <div style="background:#fef2f2; border:1px solid #fee2e2; border-radius:12px; padding:16px;">
+          <p style="color:#dc2626; font-weight:600; font-size:13px;">사장님, 디지털전환 지원금 400만원 마감이 7일 남았습니다</p>
+        </div>
+      </div>
+
+      <!-- Voice Response Panel -->
+      <div style="position:absolute; bottom:140px; left:24px; right:24px; background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,0.12); border:1px solid #f3f4f6; padding:16px; z-index:15;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+          <span style="font-size:11px; color:#9ca3af;">AI 경영코치</span>
+          <span style="color:#9ca3af; cursor:pointer; font-size:16px;">x</span>
+        </div>
+        <!-- Transcript -->
+        <p style="font-size:13px; color:#374151; background:#f9fafb; border-radius:8px; padding:8px 12px; margin-bottom:12px;">
+          "우리 가게 지원금 뭐 받을 수 있어?"
+        </p>
+        <!-- AI Answer -->
+        <p style="font-size:13px; color:#111827; margin-bottom:12px; line-height:1.6;">
+          사장님 가게는 현재 2건의 지원사업에 자격이 됩니다. 소상공인 디지털전환 지원(최대 400만원, D-7)과 고용보험료 지원(최대 110만원)이 있어요.
+        </p>
+        <!-- Suggestion chips -->
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <span style="background:#fefce8; color:#a16207; padding:6px 12px; border-radius:20px; font-size:11px;">사업계획서 만들어줘</span>
+          <span style="background:#fefce8; color:#a16207; padding:6px 12px; border-radius:20px; font-size:11px;">신청 조건 알려줘</span>
+          <span style="background:#fefce8; color:#a16207; padding:6px 12px; border-radius:20px; font-size:11px;">쿠폰 만들어줘</span>
+        </div>
+      </div>
+
+      <!-- STT Button (recording state) -->
+      <div style="position:absolute; bottom:90px; right:24px; width:56px; height:56px; background:#ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(239,68,68,0.4); z-index:15; animation: pulse-ring 1.5s infinite;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </div>
+
+      <div class="bottom-nav">
+        <div class="nav-item active">홈</div>
+        <div class="nav-item">지원사업</div>
+        <div class="nav-item">쿠폰</div>
+        <div class="nav-item">설정</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SECTION 4: 탭 화면들 ========== -->
+<div class="section-wrap"><span class="section-title">4. 하단 탭 화면</span></div>
+
+<!-- Screen 8: 지원사업 페이지 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 8</div>
+  <div class="screen-sublabel">지원사업 매칭<br><code>app/subsidies/page.tsx</code></div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#f9fafb;">
+      <div class="status-bar" style="background:#fff;"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+
+      <!-- Header -->
+      <div style="background:#fff; padding:12px 24px 14px; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; gap:12px;">
+        <span style="color:#6b7280; font-size:18px; cursor:pointer;">&larr;</span>
+        <h1 style="font-size:17px; font-weight:700; color:#111827;">지원사업 매칭</h1>
+      </div>
+
+      <div style="padding:16px 24px 100px;">
+        <!-- Loss message -->
+        <div style="background:#fef2f2; border:1px solid #fee2e2; border-radius:12px; padding:16px; margin-bottom:16px;">
+          <p style="color:#dc2626; font-weight:600; font-size:13px;">놓치고 있는 지원금이 최대 710만원입니다</p>
+        </div>
+
+        <!-- Subsidy card 1 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <h3 style="font-weight:600; font-size:13px; color:#111827; flex:1;">소상공인 디지털전환 지원</h3>
+            <span style="font-size:13px; font-weight:700; color:#ef4444; margin-left:8px;">400만원</span>
+          </div>
+          <p style="font-size:11px; color:#6b7280; margin-bottom:4px;">소상공인시장진흥공단</p>
+          <p style="font-size:11px; color:#4b5563; margin-bottom:8px;">매출액 10억원 이하 소상공인 대상 디지털 전환 비용 지원</p>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <span class="tag tag-red">마감 D-7</span>
+            <span style="font-size:11px; color:#9ca3af;">혜화동 카페 47% 수혜</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-yellow" style="flex:1; padding:8px; font-size:13px;">신청 페이지</button>
+            <button class="btn btn-gray" style="flex:1; padding:8px; font-size:13px;">사업계획서 초안</button>
+          </div>
+        </div>
+
+        <!-- Subsidy card 2 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <h3 style="font-weight:600; font-size:13px; color:#111827; flex:1;">고용보험료 지원사업</h3>
+            <span style="font-size:13px; font-weight:700; color:#ef4444; margin-left:8px;">110만원</span>
+          </div>
+          <p style="font-size:11px; color:#6b7280; margin-bottom:4px;">고용노동부</p>
+          <p style="font-size:11px; color:#4b5563; margin-bottom:8px;">10인 미만 사업장 고용보험료 80% 지원</p>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <span class="tag tag-red">마감 D-14</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-yellow" style="flex:1; padding:8px; font-size:13px;">신청 페이지</button>
+            <button class="btn btn-gray" style="flex:1; padding:8px; font-size:13px;">사업계획서 초안</button>
+          </div>
+        </div>
+
+        <!-- Subsidy card 3 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <h3 style="font-weight:600; font-size:13px; color:#111827; flex:1;">소공인특화지원사업</h3>
+            <span style="font-size:13px; font-weight:700; color:#ef4444; margin-left:8px;">200만원</span>
+          </div>
+          <p style="font-size:11px; color:#6b7280; margin-bottom:8px;">중소벤처기업부</p>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-yellow" style="flex:1; padding:8px; font-size:13px;">신청 페이지</button>
+            <button class="btn btn-gray" style="flex:1; padding:8px; font-size:13px;">사업계획서 초안</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 8-b: 지원사업 - 사업계획서 초안 모달 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 8-b</div>
+  <div class="screen-sublabel">사업계획서 초안 모달<br><code>app/subsidies/page.tsx</code> (draft modal)</div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#f9fafb;">
+      <div class="status-bar" style="background:#fff;"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+
+      <!-- Dimmed background -->
+      <div style="padding:16px 24px; opacity:0.3;">
+        <div style="background:#fff; padding:12px 24px 14px; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; gap:12px;">
+          <span>&larr;</span><span>지원사업 매칭</span>
+        </div>
+      </div>
+
+      <!-- Bottom sheet modal -->
+      <div style="position:absolute; bottom:0; left:0; right:0; background:#fff; border-radius:16px 16px 0 0; padding:24px; max-height:70vh; overflow-y:auto; box-shadow:0 -4px 20px rgba(0,0,0,0.1);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h2 style="font-weight:700; font-size:17px; color:#111827;">소상공인 디지털전환 지원</h2>
+          <span style="color:#9ca3af; cursor:pointer; font-size:20px;">&times;</span>
+        </div>
+        <p style="font-size:11px; color:#16a34a; margin-bottom:12px;">절약 시간: 약 2시간</p>
+        <div style="font-size:13px; color:#374151; line-height:1.8; white-space:pre-wrap;">
+<b>1. 사업 개요</b>
+상호: 스타벅스 혜화역점
+업종: 카페 (커피전문점)
+소재지: 서울 종로구 대학로 116
+
+<b>2. 디지털전환 필요성</b>
+혜화동 상권은 연극제, 대학가 등 유동인구 변동이 큰 지역으로, 실시간 고객 분석 및 디지털 마케팅 도구 도입이 필수적입니다.
+
+<b>3. 추진 계획</b>
+- POS 시스템 도입 (예상 비용: 200만원)
+- 온라인 주문 시스템 구축 (예상 비용: 150만원)
+- SNS 마케팅 자동화 도구 (예상 비용: 50만원)
+
+<b>4. 기대 효과</b>
+- 주문 처리 시간 30% 단축
+- 온라인 채널 매출 신규 창출
+- 고객 데이터 기반 맞춤 프로모션
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 9: 쿠폰 페이지 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 9</div>
+  <div class="screen-sublabel">QR 쿠폰 목록<br><code>app/coupons/page.tsx</code></div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#f9fafb;">
+      <div class="status-bar" style="background:#fff;"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+
+      <!-- Header -->
+      <div style="background:#fff; padding:12px 24px 14px; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="color:#6b7280; font-size:18px; cursor:pointer;">&larr;</span>
+          <h1 style="font-size:17px; font-weight:700; color:#111827;">QR 쿠폰</h1>
+        </div>
+        <button style="padding:6px 16px; background:#facc15; border:none; border-radius:8px; font-size:13px; font-weight:600; color:#111827; cursor:pointer;">+ 새 쿠폰</button>
+      </div>
+
+      <div style="padding:16px 24px 100px;">
+        <!-- Coupon 1 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <div style="display:flex; gap:16px;">
+            <!-- QR placeholder -->
+            <div style="width:80px; height:80px; background:#f3f4f6; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <div style="width:60px; height:60px; background:#e5e7eb; border-radius:4px; display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(5,1fr); gap:1px; padding:3px;">
+                <div style="background:#333;border-radius:1px;"></div><div style="background:#333;"></div><div></div><div style="background:#333;"></div><div style="background:#333;"></div>
+                <div></div><div style="background:#333;"></div><div style="background:#333;"></div><div></div><div style="background:#333;"></div>
+                <div style="background:#333;"></div><div></div><div style="background:#333;"></div><div style="background:#333;"></div><div></div>
+                <div style="background:#333;"></div><div style="background:#333;"></div><div></div><div></div><div style="background:#333;"></div>
+                <div></div><div style="background:#333;"></div><div style="background:#333;"></div><div style="background:#333;"></div><div></div>
+              </div>
+            </div>
+            <div style="flex:1;">
+              <h3 style="font-weight:600; color:#111827;">봄맞이 아메리카노 20% 할인</h3>
+              <p style="font-size:11px; color:#6b7280; margin-top:4px;">20% 할인</p>
+              <p style="font-size:11px; color:#9ca3af; margin-top:4px;">2026-04-01 ~ 2026-04-14</p>
+              <div style="display:flex; gap:12px; margin-top:8px; font-size:11px;">
+                <span style="color:#6b7280;">다운 45</span>
+                <span style="color:#ca8a04; font-weight:500;">스캔 23</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coupon 2 -->
+        <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #f3f4f6; margin-bottom:12px;">
+          <div style="display:flex; gap:16px;">
+            <div style="width:80px; height:80px; background:#f3f4f6; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <div style="width:60px; height:60px; background:#e5e7eb; border-radius:4px; display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(5,1fr); gap:1px; padding:3px;">
+                <div style="background:#333;"></div><div></div><div style="background:#333;"></div><div style="background:#333;"></div><div></div>
+                <div style="background:#333;"></div><div style="background:#333;"></div><div></div><div style="background:#333;"></div><div style="background:#333;"></div>
+                <div></div><div style="background:#333;"></div><div style="background:#333;"></div><div></div><div style="background:#333;"></div>
+                <div style="background:#333;"></div><div></div><div></div><div style="background:#333;"></div><div></div>
+                <div></div><div style="background:#333;"></div><div style="background:#333;"></div><div></div><div style="background:#333;"></div>
+              </div>
+            </div>
+            <div style="flex:1;">
+              <h3 style="font-weight:600; color:#111827;">연극제 기념 라떼 1+1</h3>
+              <p style="font-size:11px; color:#6b7280; margin-top:4px;">1+1</p>
+              <p style="font-size:11px; color:#9ca3af; margin-top:4px;">2026-04-10 ~ 2026-04-17</p>
+              <div style="display:flex; gap:12px; margin-top:8px; font-size:11px;">
+                <span style="color:#6b7280;">다운 12</span>
+                <span style="color:#ca8a04; font-weight:500;">스캔 5</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 9-b: 쿠폰 생성 모달 -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 9-b</div>
+  <div class="screen-sublabel">쿠폰 만들기 모달<br><code>app/coupons/page.tsx</code> (create modal)</div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:rgba(0,0,0,0.5);">
+      <div class="status-bar" style="background:transparent; color:#fff;"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+
+      <!-- Bottom sheet -->
+      <div style="position:absolute; bottom:0; left:0; right:0; background:#fff; border-radius:16px 16px 0 0; padding:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h2 style="font-weight:700; font-size:17px; color:#111827;">쿠폰 만들기</h2>
+          <span style="color:#9ca3af; cursor:pointer; font-size:20px;">&times;</span>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:4px;">쿠폰명</label>
+          <input class="input-f" placeholder="예: 아메리카노 1+1" value="봄맞이 20% 할인">
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:4px;">할인 유형</label>
+          <select class="input-f" style="appearance:auto;">
+            <option selected>% 할인</option>
+            <option>원 할인</option>
+            <option>1+1</option>
+            <option>무료 증정</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:4px;">할인율 (%)</label>
+          <input class="input-f" type="number" value="20">
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:4px;">유효기간 (일)</label>
+          <input class="input-f" type="number" value="7">
+        </div>
+
+        <button class="btn btn-yellow">QR 쿠폰 만들기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SECTION 5: 에러 ========== -->
+<div class="section-wrap"><span class="section-title">5. 에러 화면</span></div>
+
+<!-- Screen 10: Error -->
+<div class="screen-wrapper">
+  <div class="screen-label">Screen 10</div>
+  <div class="screen-sublabel">글로벌 에러<br><code>app/error.tsx</code></div>
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen" style="background:#fff;">
+      <div class="status-bar"><span>9:41</span><span style="font-size:11px;">LTE ▊▊▊</span></div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:700px; padding:0 24px;">
+        <h2 style="font-size:20px; font-weight:700; color:#111827; margin-bottom:8px;">문제가 발생했습니다</h2>
+        <p style="font-size:13px; color:#6b7280; margin-bottom:24px; text-align:center;">일시적인 오류가 발생했습니다. 다시 시도해주세요.</p>
+        <button class="btn btn-yellow" style="width:auto; padding:12px 24px;">다시 시도</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="page-footer">
+  <p style="color:#facc15; font-weight:600;">AI 경영코치 와이어프레임 v1.0</p>
+  <p>SSGI_AI_Coach/frontend 실제 코드 기반 | 총 10개 화면 + 2개 모달</p>
+  <p style="margin-top:12px;">플로우: 랜딩 → 카카오 인증 → 온보딩(4스텝) → 대시보드 ↔ 지원사업 / 쿠폰</p>
+</div>
+
+</div><!-- wireframe-grid -->
+
+</body>
+</html>

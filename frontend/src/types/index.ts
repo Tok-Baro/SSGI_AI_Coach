@@ -29,6 +29,7 @@ export interface VerifyBusinessResponse {
   business_status: string;
   business_name: string | null;
   tax_type: string | null;
+  verification_token: string | null;
 }
 
 export interface KakaoLocalSearchResult {
@@ -114,6 +115,21 @@ export interface CreateCouponRequest {
   valid_days?: number;
 }
 
+// ===== 위험도 분석 =====
+export interface RiskFactor {
+  name: string;
+  label: string;
+  score: number;
+  weight: number;
+  description: string;
+  data_available: boolean;
+}
+
+export interface RiskTrendPoint {
+  date: string;
+  score: number;
+}
+
 // ===== 대시보드 =====
 export interface DashboardData {
   user: {
@@ -122,6 +138,9 @@ export interface DashboardData {
     plan_tier: string;
   };
   risk_score: number;
+  risk_factors: RiskFactor[];
+  risk_trend: RiskTrendPoint[];
+  trend_direction: "improving" | "stable" | "worsening";
   today_action: DailyAction | null;
   subsidy_matches: Subsidy[];
   total_potential_amount: number;

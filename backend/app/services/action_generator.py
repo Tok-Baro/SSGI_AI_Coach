@@ -26,10 +26,10 @@ SYSTEM_PROMPT = """당신은 소상공인 전문 AI 경영코치입니다.
   "action_type": "subsidy|event|coupon|competitor|population",
   "title": "손실 프레이밍 제목 (30자 이내)",
   "description": "구체적 행동 설명 (100자 이내)",
-  "risk_score": 0.0~1.0,
   "cta_type": "create_coupon|apply_subsidy|view_detail",
   "data_source": "데이터 출처"
-}"""
+}
+주의: risk_score는 별도 알고리즘이 산출합니다. 생성하지 마세요."""
 
 WEEKDAY_KR = ["월", "화", "수", "목", "금", "토", "일"]
 
@@ -45,18 +45,22 @@ class ActionGenerator:
         population_data: Optional[dict] = None,
         events_data: Optional[list] = None,
         subsidy_data: Optional[list] = None,
+        competition_data: Optional[dict] = None,
+        risk_result: Optional[dict] = None,
+        recent_actions: Optional[list] = None,
+        audit_weakness: Optional[str] = None,
     ) -> dict:
         """GPT-4o로 오늘의 액션 생성. 실패 시 폴백 템플릿 사용."""
         today = date.today()
         weekday = WEEKDAY_KR[today.weekday()]
 
         # 데이터 요약
-        sales_summary = "데이터 없음"
+        sales_summary = "데이터 없음 (서울 외 지역)"
         if sales_data:
             change = sales_data.get("quarterly_change_percent", 0)
             sales_summary = f"전분기 대비 {change:+.1f}% ({sales_data.get('area_name', '')})"
 
-        pop_summary = "데이터 없음"
+        pop_summary = "데이터 없음 (서울 외 지역)"
         if population_data:
             change = population_data.get("change_percent", 0)
             pop_summary = f"전일 대비 {change:+.1f}%"
@@ -72,6 +76,41 @@ class ActionGenerator:
             amounts = sum(s.get("max_amount", 0) for s in subsidy_data if s.get("max_amount"))
             subsidy_summary = f"{len(subsidy_data)}건 매칭 (최대 {amounts}만원): {', '.join(titles)}"
 
+        competition_summary = "데이터 없음"
+        if competition_data:
+            total = competition_data.get("total_stores", 0)
+            opening = competition_data.get("opening_rate", 0)
+            closing = competition_data.get("closing_rate", 0)
+            competition_summary = f"같은 업종 점포 {total}개, 개업률 {opening}% / 폐업률 {closing}%"
+
+        # 위험도 분석 컨텍스트
+        risk_context = ""
+        if risk_result:
+            factors = risk_result.get("factors", [])
+            score = risk_result.get("composite_score", 0)
+            trend = risk_result.get("trend_direction", "stable")
+            trend_kr = {"improving": "개선 추세", "stable": "유지", "worsening": "악화 추세"}.get(trend, "유지")
+            risk_lines = [f"종합: {score:.0%} ({trend_kr})"]
+            for f in factors:
+                if f.get("data_available"):
+                    risk_lines.append(f"- {f['label']}: {f['score']:.0%} ({f['description']})")
+            risk_context = f"\n## 경영 위험도 분석 (알고리즘 산출)\n" + "\n".join(risk_lines)
+
+        # 5-차원 진단 약점 (지정 시 손실 프레이밍을 해당 차원으로 집중)
+        audit_context = ""
+        if audit_weakness:
+            audit_context = f"\n## 5-차원 진단 약점 (이 영역을 우선 다루세요)\n{audit_weakness}"
+
+        # 최근 액션 히스토리 (반복 방지)
+        history_context = ""
+        if recent_actions:
+            history_lines = []
+            for a in recent_actions[-7:]:
+                status = "완료" if a.get("is_completed") else "미완료"
+                history_lines.append(f"- {a.get('action_type', '?')}: {a.get('title', '')} ({status})")
+            history_context = f"\n## 최근 7일 액션\n" + "\n".join(history_lines)
+            history_context += "\n주의: 같은 유형의 액션을 연속 반복하지 마세요."
+
         user_prompt = f"""## 사장님 정보
 상호: {user.business_name or '미등록'}
 업종: {user.business_type or '미등록'}
@@ -81,11 +120,17 @@ class ActionGenerator:
 날짜: {today} ({weekday}요일)
 매출 트렌드: {sales_summary}
 유동인구: {pop_summary}
+경쟁 현황: {competition_summary}
 문화행사: {events_summary}
 매칭 지원사업: {subsidy_summary}
+{risk_context}
+{audit_context}
+{history_context}
 
 ## 지시사항
-위 데이터로 놓치면 안 될 행동 1가지를 JSON으로 생성하세요. 데이터 없는 항목은 무시하세요."""
+위 데이터에서 가장 위험한 요인에 초점을 맞춰, 놓치면 안 될 행동 1가지를 JSON으로 생성하세요.
+5-차원 진단 약점이 제공된 경우 그 영역을 우선 다루세요.
+데이터 없는 항목은 무시하세요."""
 
         try:
             response = await self._openai.chat.completions.create(
@@ -153,12 +198,23 @@ class ActionGenerator:
         events_data: Optional[list],
     ) -> DailyAction:
         """온보딩 완료 후 첫 daily_action 생성."""
+        from app.services.risk_score_engine import RiskScoreEngine
+
         action_data = await self.generate_daily_action(
             user=user,
             sales_data=sales_data,
             population_data=population_data,
             events_data=events_data,
             subsidy_data=matched_subsidies,
+        )
+
+        # 복합 위험도 엔진으로 risk_score 산출 (GPT 대신)
+        engine = RiskScoreEngine()
+        risk_result = engine.compute(
+            sales_data=sales_data,
+            population_data=population_data,
+            subsidy_matches=matched_subsidies,
+            user_created_at=user.created_at.date() if user.created_at else None,
         )
 
         # ON CONFLICT DO NOTHING으로 race condition 방지
@@ -168,7 +224,8 @@ class ActionGenerator:
             action_type=action_data.get("action_type", "coupon"),
             title=action_data.get("title", "오늘의 액션을 확인하세요"),
             description=action_data.get("description", ""),
-            risk_score=action_data.get("risk_score", 0.3),
+            risk_score=risk_result.composite_score,
+            risk_factors=risk_result.to_dict(),
             data_source=action_data.get("data_source"),
             cta_type=action_data.get("cta_type"),
             cta_payload=action_data.get("cta_payload"),
@@ -196,31 +253,50 @@ class ActionGenerator:
         subsidy,
         additional_info: Optional[str] = None,
     ) -> str:
-        """지원사업 사업계획서 초안 생성."""
+        """지원사업 사업계획서 초안 생성 — 전문 컨설턴트 수준."""
         system_prompt = """당신은 소상공인 지원사업 사업계획서 전문 작성가입니다.
-작성 원칙:
-1. 지원사업 심사 기준에 맞춤
-2. 실제 정보만 사용 (없는 정보는 [사장님 작성 필요]로 표기)
-3. 마크다운 형식"""
+사장님의 사업 정보와 지원사업 요건을 바탕으로 사업계획서 초안을 작성합니다.
+
+## 작성 원칙
+1. 지원사업의 **심사 기준에 맞춰** 작성합니다 (정량 지표, 구체적 수치 포함).
+2. 사장님의 **실제 사업 정보만** 사용합니다. 없는 정보를 만들어내지 마세요.
+3. 비워야 할 칸은 **[사장님 작성 필요]** 로 표시합니다.
+4. **마크다운** 형식으로 작성합니다.
+5. 한국어, 존댓말로 작성합니다.
+6. 지원금 활용 계획은 **구체적 항목과 예상 금액**을 포함합니다.
+7. 기대 효과는 **정량적 수치**(매출 증가율, 고객 수 등)를 포함합니다.
+
+## 필수 구조
+1. **사업 개요** — 상호, 업종, 위치, 대표자, 사업 연혁
+2. **현재 경영 현황** — 매출 동향, 고객 특성, 경쟁 환경 (제공된 데이터 활용)
+3. **지원사업 활용 계획** — 지원금 사용처, 세부 항목별 예산, 추진 일정
+4. **기대 효과** — 매출 개선 목표, 고용 효과, 지역 경제 기여
+5. **사업 추진 일정** — 월별 마일스톤 (3~6개월)
+6. **자부담 계획** — 자부담 비율 및 조달 방법"""
 
         # 사업자번호 PII 마스킹 (외부 LLM에 전송 시)
-        masked_biz_num = f"{user.business_number[:3]}-**-*****" if user.business_number else "미등록"
+        masked_biz_num = f"{user.business_number[:3]}-**-*****" if user.business_number else "[사장님 작성 필요]"
 
         user_prompt = f"""## 사장님 정보
-상호: {user.business_name}
-업종: {user.business_type}
-사업자번호: {masked_biz_num}
-주소: {user.address}
+- 상호: {user.business_name or '[사장님 작성 필요]'}
+- 업종: {user.business_type or '[사장님 작성 필요]'}
+- 위치: {user.address or '[사장님 작성 필요]'}
+- 사업자번호: {masked_biz_num}
+- 지역: {user.gu_name or ''} {user.dong_name or ''}
 
-## 지원사업
-사업명: {subsidy.title}
-지원기관: {subsidy.organization}
-최대 지원금: {subsidy.max_amount}만원
-자격 요건: {subsidy.eligibility_summary or '미상'}
-설명: {subsidy.description}
+## 지원사업 정보
+- 사업명: {subsidy.title}
+- 지원기관: {subsidy.organization}
+- 최대 지원금: {subsidy.max_amount or '미정'}만원
+- 자격 요건: {subsidy.eligibility_summary or '상세 내용 확인 필요'}
+- 사업 설명: {subsidy.description[:800]}
 
 ## 추가 정보
-{additional_info or '없음'}"""
+{additional_info or '없음'}
+
+위 정보를 바탕으로 사업계획서 초안을 마크다운으로 작성하세요.
+사장님이 직접 수정해야 할 부분은 [사장님 작성 필요]로 표시하세요.
+지원금 활용 계획에는 구체적인 항목과 예상 금액을 반드시 포함하세요."""
 
         try:
             response = await self._openai.chat.completions.create(
@@ -229,7 +305,7 @@ class ActionGenerator:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                max_tokens=2048,
+                max_tokens=3000,
                 temperature=0.5,
             )
             return response.choices[0].message.content
@@ -238,15 +314,26 @@ class ActionGenerator:
             return f"""# {subsidy.title} 사업계획서 초안
 
 ## 1. 사업 개요
-- 상호: {user.business_name}
-- 업종: {user.business_type}
-- 소재지: {user.address}
+- 상호명: {user.business_name or '[작성 필요]'}
+- 업종: {user.business_type or '[작성 필요]'}
+- 소재지: {user.address or '[작성 필요]'}
+- 사업자등록번호: {masked_biz_num}
 
-## 2. 지원사업 활용 계획
-[사장님 작성 필요]
+## 2. 현재 경영 현황
+[사장님 작성 필요 — 최근 매출 동향, 주요 고객층, 경쟁 환경]
 
-## 3. 기대 효과
-[사장님 작성 필요]
+## 3. 지원사업 활용 계획
+- 지원금 사용처: [사장님 작성 필요]
+- 세부 예산: [사장님 작성 필요]
+
+## 4. 기대 효과
+- 매출 목표: [사장님 작성 필요]
+- 고용 효과: [사장님 작성 필요]
+
+## 5. 사업 추진 일정
+- 1개월차: [사장님 작성 필요]
+- 2개월차: [사장님 작성 필요]
+- 3개월차: [사장님 작성 필요]
 
 *AI가 초안 생성에 실패하여 기본 템플릿을 제공합니다.*"""
 

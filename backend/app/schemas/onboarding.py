@@ -14,6 +14,7 @@ class VerifyBusinessResponse(BaseModel):
     business_status: str  # "계속사업자" | "휴업자" | "폐업자" | "확인불가"
     business_name: Optional[str] = None
     tax_type: Optional[str] = None
+    verification_token: Optional[str] = None  # 검증 성공 시 발급되는 토큰
 
 
 class KakaoLocalSearchResult(BaseModel):
@@ -27,14 +28,15 @@ class KakaoLocalSearchResult(BaseModel):
 
 
 class CompleteOnboardingRequest(BaseModel):
-    business_number: str = Field(..., min_length=10, max_length=10)
-    business_name: str
-    business_type: str
-    address: str
-    dong_name: str
-    gu_name: str
-    lat: float
-    lng: float
+    business_number: str = Field(..., min_length=10, max_length=10, pattern=r"^\d{10}$")
+    verification_token: str = Field(..., description="사업자 검증 시 발급받은 토큰")
+    business_name: str = Field(..., min_length=1, max_length=200)
+    business_type: str = Field(..., min_length=1, max_length=100)
+    address: str = Field(..., min_length=1, max_length=500)
+    dong_name: str = Field("", max_length=50)
+    gu_name: str = Field("", max_length=50)
+    lat: float = Field(..., ge=33.0, le=39.0)  # 한국 위도 범위
+    lng: float = Field(..., ge=124.0, le=132.0)  # 한국 경도 범위
 
 
 class CompleteOnboardingResponse(BaseModel):

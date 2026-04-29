@@ -84,6 +84,57 @@
 - [x] progress.md (이 파일)
 - [x] architecture.md (시스템 구조)
 
+### Phase 10-A: 주간 마케팅 PDF 리포트 (2026-04-28)
+> zubair-trabzada/ai-marketing-claude의 6-카테고리 가중 점수 + 3-tier 액션 패턴 이식
+- [x] requirements.txt: reportlab>=4.2.0 추가
+- [x] backend/app/services/report_generator.py 신규 (320줄)
+  - 6 카테고리 가중치: 매출 트렌드(25%) + 보조금 활용(20%) + 유동인구 활용(20%) + 경쟁 포지셔닝(15%) + 액션 실행률(10%) + 위험도 추세(10%)
+  - severity 4단계: Critical/High/Medium/Low (zubair 색상 팔레트)
+  - 3-tier 액션 플랜: Quick Wins / Medium-Term / Strategic
+  - 한글 폰트 자동 등록 (TTF 우선, HYSMyeongJo CID 폴백)
+- [x] backend/app/routers/reports.py 신규 — GET /reports/weekly (PDF 스트리밍)
+- [x] backend/app/main.py — reports 라우터 등록
+- [x] frontend/src/lib/api.ts — downloadWeeklyReport() Blob 다운로드
+- [x] frontend/src/app/dashboard/page.tsx — PDF 다운로드 카드 + 로딩/에러 상태
+- [x] QA: PDF 정상 생성 (85KB 4-page, AppleGothic 임베드, 데이터 풀/0건 두 케이스 통과)
+- [x] QA: Next.js 빌드 PASS (11페이지)
+
+### Phase 10-B: 5-차원 마케팅 진단 (2026-04-28)
+> coreyhaines31/marketingskills의 page-cro 7단계 → 소상공인 도메인 5-차원 압축 + zubair 5-병렬 패턴
+- [x] backend/app/services/marketing_audit.py 신규 (300줄)
+  - 5-차원: positioning · message_fit · timing · social_proof · friction
+  - asyncio.gather 병렬 평가, 결정론적 점수 (GPT 0회)
+  - 각 차원별 손실 프레이밍 headline + insight + 1-액션 + cta_type
+  - severity 4단계 (critical/high/medium/low)
+- [x] backend/app/routers/insights.py — `/insights/marketing-audit` 신규 (주간 캐시)
+- [x] backend/app/services/action_generator.py — `audit_weakness` 옵셔널 파라미터로 GPT 프롬프트에 약점 차원 주입
+- [x] frontend/src/lib/api.ts — `getMarketingAudit()` 메서드
+- [x] frontend/src/app/insights/page.tsx — "진단" 탭 + DimensionCard 컴포넌트
+- [x] QA: backend 평가 함수 end-to-end 테스트 (5-차원 점수 산출 정확)
+- [x] QA: Next.js 빌드 PASS (insights 8.34→9.21KB)
+
+### Phase 10-C: ICP Learner 매칭 자동 학습 (2026-04-28)
+> ericosiu/ai-marketing-skills의 sales-pipeline/icp_learning_analyzer.py 패턴 → 보조금 도메인 적용
+- [x] backend/app/models/subsidy_interaction.py 신규 (학습 신호 테이블)
+  - signal_type: view(0.2) / click(1.0) / draft(3.0) / apply(5.0)
+- [x] backend/alembic/versions/005_add_subsidy_interactions.py 마이그레이션
+- [x] backend/app/services/icp_learner.py 신규 (200줄)
+  - learn_user_profile(): 90일 윈도우, 30일 반감기 시간 가중치, 가중 중앙값/min/max
+  - score_subsidy(): 0~1 boost (organization 0.4 + amount range 0.3 + keyword 0.3)
+  - rerank_with_icp(): 기존 점수 + ICP boost - 마감 페널티
+  - log_signal(): 신호 기록 헬퍼
+- [x] backend/app/services/rag_service.py — `user_id` 옵셔널 파라미터 + 후보 풀 3배 확장 + ICP 재순위
+- [x] backend/app/routers/subsidies.py
+  - apply-draft 호출 시 'draft' 신호 자동 로깅
+  - POST /subsidies/{id}/signal?signal_type=... 신규
+  - GET /subsidies/icp-profile 신규 (학습된 프로필 조회)
+- [x] dashboard/insights/reports/onboarding 라우터 — search_subsidies_filtered 호출에 user_id 전달
+- [x] frontend/src/lib/api.ts — logSubsidySignal() + getIcpProfile() 메서드
+- [x] frontend/src/app/dashboard/page.tsx — 보조금 카드 클릭 시 'click' 신호 자동 로깅
+- [x] frontend/src/app/subsidies/page.tsx — 신청 페이지 링크 클릭 시 'apply' 신호 자동 로깅
+- [x] QA: ICP 점수 산출 정확 (시간 감쇠/가중 중앙값/재순위 단위 테스트 통과)
+- [x] QA: Next.js 빌드 PASS (dashboard 6.35KB)
+
 ---
 
 ## 다음 할 일 (Todo)

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, BigInteger, Float, Boolean, DateTime, Text
+from sqlalchemy import Column, String, BigInteger, Float, Boolean, DateTime, Text, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -16,7 +16,7 @@ class User(Base):
     email = Column(String(255), nullable=True)
     nickname = Column(String(100), nullable=False)
     profile_image_url = Column(String(500), nullable=True)
-    business_number = Column(String(10), nullable=True)
+    business_number = Column(String(10), nullable=True, unique=True, index=True)
     business_name = Column(String(200), nullable=True)
     business_type = Column(String(100), nullable=True)
     business_category = Column(String(100), nullable=True)
@@ -27,6 +27,8 @@ class User(Base):
     lng = Column(Float, nullable=True)
     plan_tier = Column(String(10), default="free", nullable=False)
     onboarding_completed = Column(Boolean, default=False)
+    onboarding_attempts = Column(Integer, default=0, nullable=False)
+    business_verified_at = Column(DateTime(timezone=True), nullable=True)
     fcm_token = Column(String(500), nullable=True)
     kakao_access_token = Column(String(500), nullable=True)
     kakao_refresh_token = Column(String(500), nullable=True)

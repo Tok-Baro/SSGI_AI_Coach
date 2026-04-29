@@ -1,12 +1,15 @@
 """
-온보딩 라우터
-- POST /onboarding/verify-business: 사업자등록번호 유효성 검증
+온보딩 라우터 (보안 강화)
+- POST /onboarding/verify-business: 사업자등록번호 유효성 검증 + 검증 토큰 발급
 - GET  /onboarding/search-business: 카카오 로컬 상호명 검색
-- POST /onboarding/complete: 온보딩 완료
+- POST /onboarding/complete: 온보딩 완료 (검증 토큰 필수)
 """
 import asyncio
+import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -21,27 +24,90 @@ from app.services.seoul_api_service import SeoulAPIService
 from app.services.rag_service import RAGService
 from app.services.action_generator import ActionGenerator
 from app.utils.auth import get_current_user
+from app.utils.verification import create_verification_token, verify_verification_token
 from app.models.user import User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+# 온보딩 시도 최대 횟수 (브루트포스 방지)
+MAX_ONBOARDING_ATTEMPTS = 10
 
 
 @router.post("/verify-business", response_model=VerifyBusinessResponse)
 async def verify_business(
     req: VerifyBusinessRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """사업자등록번호 유효성 검증 (국세청 API)."""
+    """사업자등록번호 유효성 검증 (국세청 API).
+
+    보안:
+    - 이미 온보딩 완료된 사용자는 재검증 차단
+    - 다른 사용자가 이미 등록한 사업자번호 차단
+    - 시도 횟수 제한
+    """
+    # 1. 이미 온보딩 완료된 사용자 차단
+    if current_user.onboarding_completed:
+        raise HTTPException(
+            status_code=409,
+            detail="이미 사업자 등록이 완료되었습니다. 변경이 필요하면 고객센터에 문의하세요.",
+        )
+
+    # 2. 시도 횟수 제한
+    if current_user.onboarding_attempts >= MAX_ONBOARDING_ATTEMPTS:
+        logger.warning(
+            "온보딩 시도 초과: user_id=%s, attempts=%d",
+            current_user.id, current_user.onboarding_attempts,
+        )
+        raise HTTPException(
+            status_code=429,
+            detail="사업자 검증 시도 횟수를 초과했습니다. 고객센터에 문의하세요.",
+        )
+
+    # 3. 시도 횟수 증가
+    current_user.onboarding_attempts += 1
+
+    # 4. 다른 사용자가 이미 등록한 사업자번호 차단
+    stmt = select(User).where(
+        User.business_number == req.business_number,
+        User.onboarding_completed == True,
+        User.id != current_user.id,
+    )
+    result = await db.execute(stmt)
+    existing = result.scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="이미 등록된 사업자번호입니다.",
+        )
+
+    # 5. 국세청 API 검증
     nts = NTSService()
-    result = await nts.verify_business_number(req.business_number)
-    if result is None:
-        raise HTTPException(status_code=502, detail="국세청 API 연결에 실패했습니다. 잠시 후 다시 시도해주세요.")
-    return result
+    nts_result = await nts.verify_business_number(req.business_number)
+    if nts_result is None:
+        raise HTTPException(
+            status_code=502,
+            detail="국세청 API 연결에 실패했습니다. 잠시 후 다시 시도해주세요.",
+        )
+
+    # 6. 검증 성공 시 토큰 발급 (계속사업자만)
+    verification_token = None
+    if nts_result["is_valid"]:
+        verification_token = create_verification_token(
+            user_id=str(current_user.id),
+            business_number=req.business_number,
+        )
+        current_user.business_verified_at = datetime.now(timezone.utc)
+
+    nts_result["verification_token"] = verification_token
+    return nts_result
 
 
 @router.get("/search-business", response_model=List[KakaoLocalSearchResult])
 async def search_business(
-    query: str = Query(..., min_length=1, description="상호명 검색어"),
+    query: str = Query(..., min_length=1, max_length=100, description="상호명 검색어"),
     current_user: User = Depends(get_current_user),
 ):
     """카카오 로컬 검색으로 상호명 자동완성."""
@@ -58,10 +124,46 @@ async def complete_onboarding(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """온보딩 완료: 검증 토큰 확인 → 사업 정보 저장 → 서울시 API → RAG 매칭.
+
+    보안:
+    - 이미 온보딩 완료된 사용자 차단
+    - verification_token으로 사업자 검증 여부 확인
+    - 토큰의 user_id + business_number 바인딩 검증
+    - 사업자번호 중복 재확인 (race condition 방지)
     """
-    온보딩 완료: 사업 정보 저장 + 서울시 API 병렬 호출 + RAG 지원사업 매칭.
-    """
-    # 1. 사업 정보 저장
+    # 1. 이미 완료된 사용자 차단
+    if current_user.onboarding_completed:
+        raise HTTPException(
+            status_code=409,
+            detail="이미 사업자 등록이 완료되었습니다.",
+        )
+
+    # 2. 검증 토큰 확인 (verify-business를 거쳤는지)
+    if not verify_verification_token(
+        token=req.verification_token,
+        user_id=str(current_user.id),
+        business_number=req.business_number,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="사업자 검증이 완료되지 않았거나 검증 유효시간(10분)이 초과되었습니다. 다시 검증해주세요.",
+        )
+
+    # 3. 사업자번호 중복 재확인 (동시 요청 race condition 방지)
+    stmt = select(User).where(
+        User.business_number == req.business_number,
+        User.onboarding_completed == True,
+        User.id != current_user.id,
+    )
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=409,
+            detail="이미 등록된 사업자번호입니다.",
+        )
+
+    # 4. 사업 정보 저장
     current_user.business_number = req.business_number
     current_user.business_name = req.business_name
     current_user.business_type = req.business_type
@@ -72,7 +174,7 @@ async def complete_onboarding(
     current_user.lng = req.lng
     current_user.onboarding_completed = True
 
-    # 2. 서울시 API 3종 병렬 호출
+    # 5. 서울시 API 3종 병렬 호출
     seoul = SeoulAPIService()
     sales_task = seoul.get_commercial_sales(req.gu_name, req.dong_name, req.business_type)
     population_task = seoul.get_living_population(req.dong_name, req.gu_name)
@@ -83,26 +185,27 @@ async def complete_onboarding(
         return_exceptions=True,
     )
 
-    # 3. RAG 지원사업 매칭
+    # 6. RAG 지원사업 매칭 (온보딩 시점에는 ICP 신호 없음 — user_id 생략)
     rag = RAGService()
-    query_text = f"{req.gu_name} {req.dong_name} {req.business_type} 소상공인 지원사업"
-    matched_subsidies = await rag.search_subsidies(query_text, top_k=5)
+    matched_subsidies = await rag.search_subsidies_filtered(
+        db=db,
+        gu_name=req.gu_name or "",
+        business_type=req.business_type or "",
+        top_k=5,
+    )
     subsidy_count = len(matched_subsidies)
 
-    # 4. 초기 위험 점수
-    risk_score = 0.3
-    if isinstance(sales_data, dict) and sales_data.get("quarterly_change_percent"):
-        change = sales_data["quarterly_change_percent"]
-        if change < -10:
-            risk_score = 0.7
-        elif change < -5:
-            risk_score = 0.5
-        elif change < 0:
-            risk_score = 0.3
-        else:
-            risk_score = 0.1
+    # 7. 복합 위험도 엔진으로 초기 위험 점수 산출
+    from app.services.risk_score_engine import RiskScoreEngine
+    engine = RiskScoreEngine()
+    risk_result = engine.compute(
+        sales_data=sales_data if not isinstance(sales_data, Exception) else None,
+        population_data=population_data if not isinstance(population_data, Exception) else None,
+        subsidy_matches=matched_subsidies,
+    )
+    risk_score = risk_result.composite_score
 
-    # 5. 첫 daily_action 생성
+    # 8. 첫 daily_action 생성
     generator = ActionGenerator()
     await generator.create_initial_action(
         db=db,
@@ -111,6 +214,11 @@ async def complete_onboarding(
         sales_data=sales_data if not isinstance(sales_data, Exception) else None,
         population_data=population_data if not isinstance(population_data, Exception) else None,
         events_data=events_data if not isinstance(events_data, Exception) else None,
+    )
+
+    logger.info(
+        "온보딩 완료: user_id=%s, business_number=%s",
+        current_user.id, req.business_number,
     )
 
     return CompleteOnboardingResponse(

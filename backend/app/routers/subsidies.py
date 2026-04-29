@@ -1,8 +1,12 @@
 """
 지원사업 라우터
-- GET  /subsidies/matches: 사용자 맞춤 지원사업 목록
-- POST /subsidies/apply-draft: 사업계획서 초안 생성 (GPT-4o)
+- GET  /subsidies/matches:        사용자 맞춤 지원사업 목록 (ICP 재순위)
+- POST /subsidies/apply-draft:    사업계획서 초안 생성 (GPT-4o) + draft 신호 로깅
+- POST /subsidies/{id}/click:     클릭 신호 로깅 (ICP 학습용)
+- GET  /subsidies/icp-profile:    학습된 사용자 선호 프로필 조회
 """
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -15,6 +19,7 @@ from app.schemas.subsidy import (
 from app.services.rag_service import RAGService
 from app.services.action_generator import ActionGenerator
 from app.services.social_proof_service import SocialProofService
+from app.services import icp_learner
 from app.utils.auth import get_current_user
 from app.models import User, Subsidy
 
@@ -28,8 +33,13 @@ async def get_subsidy_matches(
 ):
     """사용자 업종/지역 기반 지원사업 RAG 매칭."""
     rag = RAGService()
-    query = f"{current_user.gu_name} {current_user.dong_name} {current_user.business_type} 소상공인 지원금 보조금"
-    results = await rag.search_subsidies(query, top_k=10)
+    results = await rag.search_subsidies_filtered(
+        db=db,
+        gu_name=current_user.gu_name or "",
+        business_type=current_user.business_type or "",
+        top_k=10,
+        user_id=current_user.id,
+    )
 
     social = SocialProofService(db)
     enriched = []
@@ -86,8 +96,44 @@ async def generate_apply_draft(
         additional_info=req.additional_info,
     )
 
+    # ICP 학습 신호 (강한 신호 — 초안까지 생성한 보조금)
+    await icp_learner.log_signal(db, current_user.id, subsidy.id, "draft")
+
     return ApplyDraftResponse(
         draft_text=draft,
         subsidy_title=subsidy.title,
         estimated_time_saved="약 2시간",
     )
+
+
+@router.post("/{subsidy_id}/signal")
+async def log_subsidy_signal(
+    subsidy_id: UUID,
+    signal_type: str = "click",
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """ICP 학습 신호 로깅. signal_type: view | click | draft | apply.
+
+    UI에서 카드 탭 → 'click', 외부 신청 페이지 이동 → 'apply'.
+    """
+    if signal_type not in {"view", "click", "draft", "apply"}:
+        raise HTTPException(status_code=400, detail="올바르지 않은 signal_type입니다.")
+
+    stmt = select(Subsidy.id).where(Subsidy.id == subsidy_id)
+    result = await db.execute(stmt)
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="해당 지원사업을 찾을 수 없습니다.")
+
+    await icp_learner.log_signal(db, current_user.id, subsidy_id, signal_type)
+    return {"ok": True, "signal_type": signal_type}
+
+
+@router.get("/icp-profile")
+async def get_icp_profile(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """학습된 사용자 선호 프로필 조회 (UI에 노출용)."""
+    profile = await icp_learner.learn_user_profile(db, current_user.id)
+    return profile.to_dict()

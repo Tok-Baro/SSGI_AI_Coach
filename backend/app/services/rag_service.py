@@ -7,6 +7,8 @@ from uuid import UUID
 
 import chromadb
 from openai import AsyncOpenAI
+from sqlalchemy import select, or_, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 
@@ -88,29 +90,106 @@ class RAGService:
         )
         logger.info(f"Indexed subsidy {subsidy_id}: {len(chunks)} chunks")
 
-    async def search_subsidies(
-        self, query: str, top_k: int = 5
+    async def search_subsidies_filtered(
+        self,
+        db: AsyncSession,
+        gu_name: str,
+        business_type: str,
+        top_k: int = 5,
+        user_id: Optional[UUID] = None,
     ) -> list[dict]:
-        """벡터 유사도 검색으로 지원사업 매칭."""
+        """DB 기반 정확한 지역+업종 필터링 후 지원사업 반환.
+
+        매칭 로직:
+        - target_regions에 사용자 지역(gu_name), "전국", "서울시 전체" 포함
+        - target_business_types에 사용자 업종 또는 "전 업종" 포함
+        - 마감일이 지나지 않은 활성 지원사업만
+
+        user_id 제공 시 ICP Learner로 학습된 선호 프로필 기반 재순위 적용.
+        """
+        from app.models.subsidy import Subsidy
+
+        today = date.today()
+
+        # ICP 재순위가 가능하도록 후보 풀을 top_k의 3배로 확장 후 자르기
+        candidate_limit = top_k * 3 if user_id else top_k
+
+        stmt = select(Subsidy).where(
+            Subsidy.is_active == True,
+            or_(Subsidy.deadline.is_(None), Subsidy.deadline >= today),
+            or_(
+                Subsidy.target_regions.any("전국"),
+                Subsidy.target_regions.any("서울시 전체"),
+                Subsidy.target_regions.any(gu_name) if gu_name else False,
+            ),
+            or_(
+                Subsidy.target_business_types.any("전 업종"),
+                Subsidy.target_business_types.any(business_type) if business_type else False,
+            ),
+        ).order_by(
+            Subsidy.deadline.asc().nulls_last()
+        ).limit(candidate_limit)
+
+        result = await db.execute(stmt)
+        subsidies = result.scalars().all()
+
+        matches = []
+        for s in subsidies:
+            days_left = None
+            if s.deadline:
+                days_left = (s.deadline - today).days
+
+            matches.append({
+                "id": str(s.id),
+                "title": s.title,
+                "organization": s.organization,
+                "deadline": s.deadline.isoformat() if s.deadline else None,
+                "max_amount": s.max_amount,
+                "eligibility_summary": s.eligibility_summary,
+                "description": s.description,
+                "application_url": s.application_url,
+                "relevance_score": 1.0,
+                "days_until_deadline": days_left,
+            })
+
+        # ICP 재순위 (user_id 제공 시)
+        if user_id and matches:
+            try:
+                from app.services.icp_learner import learn_user_profile, rerank_with_icp
+                profile = await learn_user_profile(db, user_id)
+                if profile.has_signals:
+                    matches = rerank_with_icp(matches, profile)
+                    logger.info(
+                        f"ICP rerank applied for user={user_id}: "
+                        f"{profile.signal_count} signals, top boost={matches[0].get('icp_boost', 0)}"
+                    )
+            except Exception as e:
+                logger.warning(f"ICP rerank failed (using base order): {e}")
+
+        return matches[:top_k]
+
+    async def search_subsidies(
+        self, query: str, top_k: int = 5, user_region: str = ""
+    ) -> list[dict]:
+        """벡터 유사도 검색으로 지원사업 매칭 (레거시, ChromaDB only)."""
         self._init_clients()
 
         query_embedding = await self._get_embedding(query)
         results = self._collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k * 2,  # 중복 제거 여유분
+            n_results=top_k * 4,
         )
 
         if not results or not results["ids"][0]:
             return []
 
-        # 중복 subsidy_id 제거 + 관련도 필터링
         seen_ids = set()
         matches = []
 
         for i, doc_id in enumerate(results["ids"][0]):
             meta = results["metadatas"][0][i]
             distance = results["distances"][0][i] if results.get("distances") else 0
-            relevance = 1 - distance  # cosine distance → similarity
+            relevance = 1 - distance
 
             if relevance < 0.3:
                 continue
@@ -120,7 +199,6 @@ class RAGService:
                 continue
             seen_ids.add(sid)
 
-            # 마감일까지 남은 일수 계산
             days_left = None
             deadline_str = meta.get("deadline")
             if deadline_str:
@@ -146,7 +224,6 @@ class RAGService:
             if len(matches) >= top_k:
                 break
 
-        # 마감 임박순 정렬
         return sorted(
             matches,
             key=lambda m: m.get("days_until_deadline") or 9999,

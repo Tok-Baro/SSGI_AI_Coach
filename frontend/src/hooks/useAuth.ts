@@ -12,6 +12,7 @@ interface AuthState {
   _hasChecked: boolean;
   login: (code: string) => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
 }
 
@@ -55,6 +56,15 @@ export const useAuth = create<AuthState>()(persist((set, get) => ({
     } catch {
       api.clearToken();
       set({ user: null, isAuthenticated: false, isLoading: false, _hasChecked: true });
+    }
+  },
+
+  refreshUser: async () => {
+    try {
+      const user = await api.getMe();
+      set({ user, isAuthenticated: true });
+    } catch {
+      // ignore
     }
   },
 

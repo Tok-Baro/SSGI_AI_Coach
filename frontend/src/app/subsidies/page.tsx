@@ -113,6 +113,7 @@ export default function SubsidiesPage() {
                     href={s.application_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => api.logSubsidySignal(s.id, "apply").catch(() => {})}
                     className="flex-1 py-2 text-center text-sm bg-yellow-400 text-gray-900 font-semibold rounded-lg hover:bg-yellow-500"
                   >
                     신청 페이지
