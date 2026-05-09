@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { requestFCMToken } from "@/lib/firebase";
+import { normalizeBusinessType } from "@/lib/businessType";
 import type { KakaoLocalSearchResult } from "@/types";
 
 type Step = "business_number" | "business_search" | "confirm" | "loading" | "done";
@@ -19,6 +20,7 @@ export default function OnboardingPage() {
   const [searchResults, setSearchResults] = useState<KakaoLocalSearchResult[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<KakaoLocalSearchResult | null>(null);
   const [verificationToken, setVerificationToken] = useState("");
+  const [businessStartDate, setBusinessStartDate] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ subsidy_count: number; message: string } | null>(null);
 
@@ -83,9 +85,11 @@ export default function OnboardingPage() {
     setStep("loading");
     setError("");
 
-    // 카테고리에서 업종 추출 (예: "음식점 > 카페 > 커피전문점" → "카페")
+    // 카테고리에서 업종 추출 + canonical taxonomy 정규화
+    // 예: "음식점 > 한식 > 백반" → "한식" → normalize → "음식점"
     const categories = selectedBusiness.category_name.split(" > ");
-    const businessType = categories.length >= 2 ? categories[1] : categories[0];
+    const rawType = categories.length >= 2 ? categories[1] : categories[0];
+    const businessType = normalizeBusinessType(rawType);
 
     // 주소에서 동명, 구명 추출 (지번주소 + 도로명주소 모두 탐색)
     const allAddressParts = [
@@ -109,6 +113,7 @@ export default function OnboardingPage() {
         gu_name: guName,
         lat: parseFloat(selectedBusiness.y),
         lng: parseFloat(selectedBusiness.x),
+        business_start_date: businessStartDate || undefined,
       });
       setResult({ subsidy_count: res.subsidy_count, message: res.message });
       setStep("done");
@@ -134,10 +139,39 @@ export default function OnboardingPage() {
     );
   }
 
+  // 단계 진행률 (P1-6: stepper 표시)
+  const stepIdx =
+    step === "business_number" ? 1
+    : step === "business_search" ? 2
+    : 3;
+  const stepLabel =
+    step === "business_number" ? "사업자등록번호 확인"
+    : step === "business_search" ? "가게 검색"
+    : "사업장 정보 확인";
+
   return (
     <main className="flex flex-col items-center min-h-screen px-6 py-12">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">사업장 등록</h1>
-      <p className="text-sm text-gray-500 mb-8">15초면 끝나요</p>
+      <p className="text-sm text-gray-500 mb-4">15초면 끝나요</p>
+      {/* Stepper */}
+      <div className="w-full max-w-sm mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-yellow-600 tabular-nums">
+            {stepIdx} / 3
+          </span>
+          <span className="text-xs text-gray-600">{stepLabel}</span>
+        </div>
+        <div className="flex gap-1.5">
+          {[1, 2, 3].map((n) => (
+            <div
+              key={n}
+              className={`flex-1 h-1.5 rounded-full transition-colors ${
+                n <= stepIdx ? "bg-yellow-400" : "bg-gray-200"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* Step 1: 사업자번호 */}
       {step === "business_number" && (
@@ -204,6 +238,24 @@ export default function OnboardingPage() {
             <p className="text-sm text-gray-600">{selectedBusiness.road_address_name || selectedBusiness.address_name}</p>
             <p className="text-sm text-gray-500">{selectedBusiness.category_name}</p>
           </div>
+
+          {/* 개점일 입력 (선택) */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+            <label className="block">
+              <span className="text-sm font-semibold text-gray-900">가게 개점일 (선택)</span>
+              <p className="text-[11px] text-gray-500 mb-2 mt-0.5">
+                생존 매트릭스 · 영업기간 분석 정확도 향상 (입력 안 해도 가입일로 추정)
+              </p>
+              <input
+                type="date"
+                value={businessStartDate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setBusinessStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-yellow-400"
+              />
+            </label>
+          </div>
+
           {error && <p className="mb-2 text-sm text-red-500">{error}</p>}
           <button
             onClick={handleComplete}

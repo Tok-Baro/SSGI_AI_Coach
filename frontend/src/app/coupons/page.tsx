@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import type { Coupon, CreateCouponRequest } from "@/types";
 
 export default function CouponsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -205,6 +206,25 @@ export default function CouponsPage() {
           </div>
         </div>
       )}
+
+      {/* 하단 네비게이션 */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3">
+        <div className="flex justify-around max-w-sm mx-auto">
+          <NavItem label="홈" active={pathname === "/dashboard"} onClick={() => router.push("/dashboard")} />
+          <NavItem label="지원사업" active={pathname === "/subsidies"} onClick={() => router.push("/subsidies")} />
+          <NavItem label="인사이트" active={pathname === "/insights"} onClick={() => router.push("/insights")} />
+          <NavItem label="쿠폰" active={pathname === "/coupons"} onClick={() => router.push("/coupons")} />
+        </div>
+      </nav>
     </main>
+  );
+}
+
+function NavItem({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+      className={`text-xs font-medium py-1 ${active ? "text-yellow-600" : "text-gray-400"}`}>
+      {label}
+    </button>
   );
 }

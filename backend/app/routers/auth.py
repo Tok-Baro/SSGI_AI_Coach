@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.user import TokenResponse, UserResponse
 from app.services.kakao_service import KakaoService
-from app.utils.auth import create_jwt_token, decode_jwt_token, get_current_user
+from app.utils.auth import create_jwt_token, decode_jwt_token, decode_jwt_token_full, get_current_user
 from app.utils.crypto import encrypt_token
 from app.models.user import User
 
@@ -58,24 +58,24 @@ async def kakao_callback(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    카카오 OAuth 콜백.
-    1. code로 카카오 액세스 토큰 교환
-    2. 액세스 토큰으로 사용자 정보 조회
-    3. DB에서 kakao_id로 사용자 검색. 없으면 생성.
-    4. JWT 토큰 발급하여 반환
-    """
+    """카카오 OAuth 콜백."""
+    import logging as _l
+    _log = _l.getLogger(__name__)
+    _log.info(f"[kakao_callback] ENTER code_len={len(code)}")
     _auth_rate.check(request.client.host if request.client else "unknown")
+    _log.info("[kakao_callback] rate check OK, calling kakao API...")
 
+    import time as _t
+    _t0 = _t.perf_counter()
     kakao_service = KakaoService()
-
-    # 1. 인가 코드 → 액세스 토큰
     kakao_tokens = await kakao_service.get_token(code)
+    _log.info(f"[kakao_callback] T+{_t.perf_counter()-_t0:.2f}s kakao token received: {bool(kakao_tokens)}")
     if not kakao_tokens:
         raise HTTPException(status_code=400, detail="카카오 인증에 실패했습니다.")
 
     # 2. 사용자 정보 조회
     kakao_user = await kakao_service.get_user_info(kakao_tokens["access_token"])
+    _log.info(f"[kakao_callback] T+{_t.perf_counter()-_t0:.2f}s kakao user info: {bool(kakao_user)}")
     if not kakao_user:
         raise HTTPException(status_code=400, detail="카카오 사용자 정보를 가져올 수 없습니다.")
 
@@ -83,6 +83,7 @@ async def kakao_callback(
     stmt = select(User).where(User.kakao_id == kakao_user["id"])
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
+    _log.info(f"[kakao_callback] T+{_t.perf_counter()-_t0:.2f}s db select done, exists={user is not None}")
 
     if user is None:
         user = User(
@@ -99,10 +100,13 @@ async def kakao_callback(
         user.kakao_access_token = encrypt_token(kakao_tokens["access_token"])
         if kakao_tokens.get("refresh_token"):
             user.kakao_refresh_token = encrypt_token(kakao_tokens["refresh_token"])
+    _log.info(f"[kakao_callback] T+{_t.perf_counter()-_t0:.2f}s user obj prepared")
 
-    # 4. JWT 발급 (access + refresh)
-    access_token = create_jwt_token(str(user.id), token_type="access")
-    refresh_token = create_jwt_token(str(user.id), token_type="refresh")
+    # 4. JWT 발급 (access + refresh) — token_version 포함 (회전 카운터)
+    ver = user.token_version or 0
+    access_token = create_jwt_token(str(user.id), token_type="access", token_version=ver)
+    refresh_token = create_jwt_token(str(user.id), token_type="refresh", token_version=ver)
+    _log.info(f"[kakao_callback] T+{_t.perf_counter()-_t0:.2f}s jwt issued, returning response")
 
     return TokenResponse(
         access_token=access_token,
@@ -117,18 +121,24 @@ async def refresh_access_token(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    """리프레시 토큰으로 새 액세스 토큰 발급."""
+    """리프레시 토큰으로 새 액세스 토큰 발급. 회전 시 구 토큰 무효화 (token_version +=1)."""
     _auth_rate.check(request.client.host if request.client else "unknown")
 
     from uuid import UUID as _UUID
-    user_id = decode_jwt_token(refresh_token, expected_type="refresh")
+    user_id, token_ver = decode_jwt_token_full(refresh_token, expected_type="refresh")
     stmt = select(User).where(User.id == _UUID(user_id))
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=401, detail="사용자를 찾을 수 없습니다.")
-    new_access = create_jwt_token(str(user.id), token_type="access")
-    new_refresh = create_jwt_token(str(user.id), token_type="refresh")
+    # 구 refresh 토큰의 ver 가 현재 DB 값과 불일치 → 이미 회전된 토큰. 재사용 거부.
+    if (user.token_version or 0) != token_ver:
+        raise HTTPException(status_code=401, detail="이미 갱신된 세션입니다. 다시 로그인해주세요.")
+    # 회전: token_version += 1 → 이번에 발급되는 새 access/refresh만 유효
+    new_ver = (user.token_version or 0) + 1
+    user.token_version = new_ver
+    new_access = create_jwt_token(str(user.id), token_type="access", token_version=new_ver)
+    new_refresh = create_jwt_token(str(user.id), token_type="refresh", token_version=new_ver)
     return {"access_token": new_access, "refresh_token": new_refresh}
 
 
@@ -152,5 +162,6 @@ async def register_fcm_token(
     """FCM 토큰 등록/갱신."""
     if not FCM_TOKEN_PATTERN.match(fcm_token):
         raise HTTPException(status_code=400, detail="유효하지 않은 FCM 토큰 형식입니다.")
+    db.add(current_user)  # get_current_user가 다른 세션에서 fetch했으므로 재부착
     current_user.fcm_token = fcm_token
     return {"success": True}

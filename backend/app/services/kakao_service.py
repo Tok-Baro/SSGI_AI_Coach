@@ -1,4 +1,5 @@
 """카카오 API 서비스: OAuth, 로컬 검색, 카카오톡 나에게 보내기."""
+import asyncio
 import logging
 from typing import Optional
 
@@ -33,23 +34,40 @@ class KakaoService:
             response.raise_for_status()
             return response.json()
 
-    @retry_async(max_retries=2, delay=1.0)
     async def get_token(self, code: str) -> Optional[dict]:
-        """카카오 인가 코드 → 액세스 토큰 교환."""
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
-                self.TOKEN_URL,
-                data={
-                    "grant_type": "authorization_code",
-                    "client_id": settings.kakao_rest_api_key,
-                    "client_secret": settings.kakao_client_secret,
-                    "redirect_uri": settings.kakao_redirect_uri,
-                    "code": code,
-                },
-                headers={"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"},
-            )
-            response.raise_for_status()
-            return response.json()
+        """카카오 인가 코드 → 액세스 토큰 교환.
+        주의: 카카오 코드는 일회용. retry 금지 (invalid_grant 시 33초 hang됨).
+        httpx timeout이 일부 환경에서 안 먹는 케이스가 보고되어 asyncio.wait_for로 한 번 더 감쌈.
+        """
+        timeout_cfg = httpx.Timeout(connect=5.0, read=8.0, write=5.0, pool=5.0)
+        async def _do_post():
+            async with httpx.AsyncClient(timeout=timeout_cfg, trust_env=False) as client:
+                logger.info("Kakao token exchange: POST %s", self.TOKEN_URL)
+                response = await client.post(
+                    self.TOKEN_URL,
+                    data={
+                        "grant_type": "authorization_code",
+                        "client_id": settings.kakao_rest_api_key,
+                        "client_secret": settings.kakao_client_secret,
+                        "redirect_uri": settings.kakao_redirect_uri,
+                        "code": code,
+                    },
+                    headers={"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"},
+                )
+                logger.info("Kakao token exchange: status=%s", response.status_code)
+                response.raise_for_status()
+                return response.json()
+        try:
+            return await asyncio.wait_for(_do_post(), timeout=12.0)
+        except asyncio.TimeoutError:
+            logger.warning("Kakao token exchange hard-timeout (12s) — abandoning")
+            return None
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"Kakao token exchange failed: {e.response.status_code} {e.response.text[:200]}")
+            return None
+        except Exception as e:
+            logger.warning(f"Kakao token exchange error: {type(e).__name__}: {e}")
+            return None
 
     @retry_async(max_retries=2, delay=1.0)
     async def get_user_info(self, access_token: str) -> Optional[dict]:

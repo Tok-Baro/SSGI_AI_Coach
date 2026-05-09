@@ -1,4 +1,5 @@
 """서울시 열린데이터 API 서비스: 상권분석, 생활인구, 문화행사."""
+import asyncio
 import logging
 from datetime import date, timedelta
 from typing import Optional
@@ -16,39 +17,47 @@ BASE_URL = "http://openapi.seoul.go.kr:8088"
 class SeoulAPIService:
     # 상권코드 → 행정동/자치구 매핑 캐시
     _trdar_mapping: dict | None = None
+    # 동시 호출 시 중복 로드 방지용 lock (gather 호출 시 5번 중복 fetch 방지)
+    _trdar_lock: asyncio.Lock = asyncio.Lock()
 
     @classmethod
     async def _load_trdar_mapping(cls) -> dict:
         """TbgisTrdarRelm API에서 상권-행정동 매핑 로드 (1회 캐싱)."""
+        # Fast path: 이미 캐시됨
         if cls._trdar_mapping is not None:
             return cls._trdar_mapping
 
-        mapping = {}
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            for start in range(1, 2000, 1000):
-                end = start + 999
-                url = f"{BASE_URL}/{settings.seoul_api_key}/json/TbgisTrdarRelm/{start}/{end}/"
-                try:
-                    resp = await client.get(url)
-                    resp.raise_for_status()
-                    data = resp.json()
-                    rows = data.get("TbgisTrdarRelm", {}).get("row", [])
-                    if not rows:
-                        break
-                    for r in rows:
-                        mapping[str(r.get("TRDAR_CD", ""))] = {
-                            "signgu_cd": r.get("SIGNGU_CD", ""),
-                            "signgu_nm": r.get("SIGNGU_CD_NM", ""),
-                            "adstrd_cd": r.get("ADSTRD_CD", ""),
-                            "adstrd_nm": r.get("ADSTRD_CD_NM", ""),
-                        }
-                except Exception as e:
-                    logger.warning(f"TbgisTrdarRelm 로드 실패: {e}")
-                    break
+        # Slow path: lock + double-check (한 번만 로드 보장)
+        async with cls._trdar_lock:
+            if cls._trdar_mapping is not None:
+                return cls._trdar_mapping
 
-        cls._trdar_mapping = mapping
-        logger.info(f"상권-행정동 매핑 로드: {len(mapping)}건")
-        return mapping
+            mapping = {}
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                for start in range(1, 2000, 1000):
+                    end = start + 999
+                    url = f"{BASE_URL}/{settings.seoul_api_key}/json/TbgisTrdarRelm/{start}/{end}/"
+                    try:
+                        resp = await client.get(url)
+                        resp.raise_for_status()
+                        data = resp.json()
+                        rows = data.get("TbgisTrdarRelm", {}).get("row", [])
+                        if not rows:
+                            break
+                        for r in rows:
+                            mapping[str(r.get("TRDAR_CD", ""))] = {
+                                "signgu_cd": r.get("SIGNGU_CD", ""),
+                                "signgu_nm": r.get("SIGNGU_CD_NM", ""),
+                                "adstrd_cd": r.get("ADSTRD_CD", ""),
+                                "adstrd_nm": r.get("ADSTRD_CD_NM", ""),
+                            }
+                    except Exception as e:
+                        logger.warning(f"TbgisTrdarRelm 로드 실패: {e}")
+                        break
+
+            cls._trdar_mapping = mapping
+            logger.info(f"상권-행정동 매핑 로드: {len(mapping)}건")
+            return mapping
     # 사용자 업종 → 서울시 API 업종 매핑
     BUSINESS_TYPE_MAP = {
         "치킨": "한식음식점", "한식": "한식음식점", "음식점": "한식음식점",
@@ -124,28 +133,50 @@ class SeoulAPIService:
         if not matched:
             return None
 
-        # 상권 단위 매출 → 점포당 추정 매출로 변환
-        # THSMON_SELNG_AMT는 상권 내 해당 업종 전체 합산 매출
-        # THSMON_SELNG_CO는 전체 매출 건수
-        total_sales = sum(float(r.get("THSMON_SELNG_AMT", 0)) for r in matched)
-        total_count = sum(float(r.get("THSMON_SELNG_CO", 0)) for r in matched)
-        avg_area_sales = total_sales / len(matched) if matched else 0
+        # ── 분기별 그룹핑 ──
+        # STDR_YYQU_CD 형식: "20251" = 2025년 1분기. 최신 2개 분기로 진짜 QoQ 산출.
+        from collections import defaultdict
+        by_quarter: dict[str, list] = defaultdict(list)
+        for r in matched:
+            q = str(r.get("STDR_YYQU_CD", "")).strip()
+            if q:
+                by_quarter[q].append(r)
 
-        # 점포수 데이터로 점포당 매출 추정 (점포수를 가져올 수 없으면 건수 기반 추정)
-        # 평균 객단가 = 총매출 / 총건수
+        sorted_quarters = sorted(by_quarter.keys(), reverse=True)
+        cur_q = sorted_quarters[0] if sorted_quarters else ""
+        prev_q = sorted_quarters[1] if len(sorted_quarters) >= 2 else ""
+        cur_rows = by_quarter.get(cur_q, matched)  # fallback 전체
+
+        # 현재 분기 합산
+        total_sales = sum(float(r.get("THSMON_SELNG_AMT", 0)) for r in cur_rows)
+        total_count = sum(float(r.get("THSMON_SELNG_CO", 0)) for r in cur_rows)
+        avg_area_sales = total_sales / len(cur_rows) if cur_rows else 0
         avg_ticket = (total_sales / total_count) if total_count > 0 else 0
 
-        # 상권별 매출 비교 (중앙값 vs 평균)
-        sales_list = sorted([float(r.get("THSMON_SELNG_AMT", 0)) for r in matched])
+        # 진짜 QoQ — 이전 분기 합산과 비교
+        qoq_change_pct: Optional[float] = None
+        if prev_q:
+            prev_rows = by_quarter[prev_q]
+            prev_total = sum(float(r.get("THSMON_SELNG_AMT", 0)) for r in prev_rows)
+            if prev_total > 0:
+                qoq_change_pct = round((total_sales - prev_total) / prev_total * 100, 1)
+
+        # 분기 내 분산 (평균 vs 중앙값) — 별도 필드 (시계열 아님 명시)
+        sales_list = sorted([float(r.get("THSMON_SELNG_AMT", 0)) for r in cur_rows])
         median = sales_list[len(sales_list) // 2] if sales_list else 0
-        change = ((avg_area_sales - median) / median * 100) if median > 0 else 0
+        dispersion_pct = ((avg_area_sales - median) / median * 100) if median > 0 else 0
 
         return {
             "area_total_sales": round(avg_area_sales),
-            "area_total_count": round(total_count / len(matched)) if matched else 0,
+            "area_total_count": round(total_count / len(cur_rows)) if cur_rows else 0,
             "avg_ticket_price": round(avg_ticket),
-            "quarterly_change_percent": round(change, 1),
-            "data_period": rows[0].get("STDR_YYQU_CD", ""),
+            # 진짜 분기 변화율 (이전 분기 데이터 없으면 None)
+            "quarterly_change_percent": qoq_change_pct,
+            # 분기 내 상권별 분포 비대칭 (이전 의미. 시계열 아님 — 명칭 분리)
+            "area_dispersion_percent": round(dispersion_pct, 1),
+            "current_quarter": cur_q,
+            "prev_quarter": prev_q if prev_q else None,
+            "data_period": cur_q or rows[0].get("STDR_YYQU_CD", ""),
             "area_name": area_label,
             "sample_count": len(matched),
             "note": "상권 내 동종업종 전체 합산 매출 (개별 점포 매출 아님)",
@@ -386,11 +417,22 @@ class SeoulAPIService:
                         pass
             return sum(vals) / len(vals) if vals else 0
 
+        # 폐업/생존 분포 비율 계산
+        closing_keywords = ("쇠퇴", "축소", "정체")
+        growing_keywords = ("확장", "다이나믹")
+        closing_count = sum(c for k, c in status_count.items() if any(kw in k for kw in closing_keywords))
+        growing_count = sum(c for k, c in status_count.items() if any(kw in k for kw in growing_keywords))
+
         return {
             "dominant_status": dominant,
             "status_distribution": status_count,
             "change_index_code": matched[0].get("TRDAR_CHNGE_IX", "") if matched else "",
             "avg_monthly_sales": round(_avg_numeric("OPR_SALE_MT_AVRG")),
+            # 폐업/생존 분석 추가 필드 (Phase 12 Survival Matrix)
+            "survival_avg_months": round(_avg_numeric("SU_BIZS_MT_AVRG")),  # 생존업체 평균 영업개월
+            "closed_avg_months": round(_avg_numeric("CLSBIZ_MT_AVRG")),  # 폐업업체 평균 영업개월
+            "closing_area_count": closing_count,
+            "growing_area_count": growing_count,
             "sample_count": n,
         }
 

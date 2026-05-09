@@ -1,17 +1,38 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
-const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || "http://localhost:3000/auth/kakao/callback")}&response_type=code&scope=profile_nickname,profile_image,account_email`;
+// OAuth state 파라미터 발급 (CSRF 방어, RFC 6749 §10.12)
+function buildKakaoUrl(): string {
+  if (typeof window === "undefined") return "#";
+  // crypto.randomUUID 폴리필 fallback (구형 브라우저 대응)
+  const rand =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
+  sessionStorage.setItem("oauth_state", rand);
+  const params = new URLSearchParams({
+    client_id: process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY || "",
+    redirect_uri:
+      process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI ||
+      "http://localhost:3000/auth/kakao/callback",
+    response_type: "code",
+    scope: "profile_nickname,profile_image,account_email",
+    state: rand,
+  });
+  return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
+}
 
 export default function HomePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading, user, checkAuth } = useAuth();
+  const [kakaoUrl, setKakaoUrl] = useState("#");
 
   useEffect(() => {
     checkAuth();
+    setKakaoUrl(buildKakaoUrl());
   }, [checkAuth]);
 
   useEffect(() => {
@@ -65,7 +86,7 @@ export default function HomePage() {
 
       {/* 카카오 로그인 버튼 */}
       <a
-        href={KAKAO_AUTH_URL}
+        href={kakaoUrl}
         className="w-full max-w-sm flex items-center justify-center gap-2 bg-[#FEE500] text-[#191919] font-semibold py-4 rounded-xl hover:bg-[#FDD835] transition-colors"
       >
         <KakaoIcon />

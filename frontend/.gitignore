@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# PWA build artifacts (macOS Finder 부산물 차단)
+public/sw [0-9]*.js
+public/icons/.DS_Store
+
+# next-pwa workbox 빌드 산출물 (hash가 매 빌드 변경 — Vercel이 자동 생성)
+public/workbox-*.js
+public/sw.js.map
+

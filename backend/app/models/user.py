@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, BigInteger, Float, Boolean, DateTime, Text, Integer
+from sqlalchemy import Column, String, BigInteger, Float, Boolean, DateTime, Date, Text, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -26,12 +26,15 @@ class User(Base):
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
     plan_tier = Column(String(10), default="free", nullable=False)
+    business_start_date = Column(Date, nullable=True)  # 가게 개점일 (영업기간 산정용)
     onboarding_completed = Column(Boolean, default=False)
     onboarding_attempts = Column(Integer, default=0, nullable=False)
     business_verified_at = Column(DateTime(timezone=True), nullable=True)
     fcm_token = Column(String(500), nullable=True)
     kakao_access_token = Column(String(500), nullable=True)
     kakao_refresh_token = Column(String(500), nullable=True)
+    # JWT 회전 카운터 — refresh 시 +1, 구 토큰의 jwt 클레임 token_version과 불일치 시 거부
+    token_version = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

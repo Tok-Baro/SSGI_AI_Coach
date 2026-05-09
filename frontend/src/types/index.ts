@@ -77,6 +77,7 @@ export interface Subsidy {
   relevance_score: number | null;
   days_until_deadline: number | null;
   social_proof_message: string | null;
+  match_reasons?: string[];
 }
 
 export interface SubsidyMatchesResponse {
@@ -130,6 +131,15 @@ export interface RiskTrendPoint {
   score: number;
 }
 
+export interface UpcomingEvent {
+  title: string;
+  place: string;
+  start_date: string;
+  end_date: string;
+  category: string;
+  url: string;
+}
+
 // ===== 대시보드 =====
 export interface DashboardData {
   user: {
@@ -145,7 +155,24 @@ export interface DashboardData {
   subsidy_matches: Subsidy[];
   total_potential_amount: number;
   loss_message: string;
-  upcoming_events: any[];
+  loss_counter: {
+    unclaimed_amount_won: number;
+    daily_loss_won: number;
+    accumulated_loss_won: number;
+    days_since_signup: number;
+  };
+  deltas: {
+    risk_score_delta: number | null;
+    coupon_scan_delta_pct: number | null;
+  };
+  peer_percentile: number | null;
+  peer_sample: number;
+  next_action_preview: {
+    title: string;
+    subtitle: string;
+    cta_type: string;
+  } | null;
+  upcoming_events: UpcomingEvent[];
   population_trend: {
     today: number;
     yesterday: number;

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import type { SubsidyMatchesResponse, ApplyDraftResponse } from "@/types";
 
 export default function SubsidiesPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
   const [data, setData] = useState<SubsidyMatchesResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,7 +132,20 @@ export default function SubsidiesPage() {
         </div>
 
         {data?.matches.length === 0 && (
-          <p className="text-center text-gray-400 py-12">매칭되는 지원사업이 없습니다.</p>
+          <div className="bg-white border border-gray-100 rounded-xl p-8 text-center">
+            <p className="text-4xl mb-3">🔍</p>
+            <p className="text-sm font-semibold text-gray-700 mb-1">매칭되는 지원사업이 없습니다</p>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              현재 사장님 업종/지역 조건에 맞는 활성 지원사업이 없습니다.
+              <br />새 지원사업이 등록되면 자동으로 알림을 보내드립니다.
+            </p>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="mt-4 px-4 py-2 bg-yellow-400 text-gray-900 text-sm font-semibold rounded-lg"
+            >
+              대시보드로 돌아가기
+            </button>
+          </div>
         )}
       </div>
 
@@ -166,6 +180,25 @@ export default function SubsidiesPage() {
           </div>
         </div>
       )}
+
+      {/* 하단 네비게이션 */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3">
+        <div className="flex justify-around max-w-sm mx-auto">
+          <NavItem label="홈" active={pathname === "/dashboard"} onClick={() => router.push("/dashboard")} />
+          <NavItem label="지원사업" active={pathname === "/subsidies"} onClick={() => router.push("/subsidies")} />
+          <NavItem label="인사이트" active={pathname === "/insights"} onClick={() => router.push("/insights")} />
+          <NavItem label="쿠폰" active={pathname === "/coupons"} onClick={() => router.push("/coupons")} />
+        </div>
+      </nav>
     </main>
+  );
+}
+
+function NavItem({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+      className={`text-xs font-medium py-1 ${active ? "text-yellow-600" : "text-gray-400"}`}>
+      {label}
+    </button>
   );
 }

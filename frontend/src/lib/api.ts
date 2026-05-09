@@ -21,7 +21,7 @@ import type {
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const REQUEST_TIMEOUT_MS = 15_000;
+const REQUEST_TIMEOUT_MS = 30_000;
 
 class ApiClient {
   private token: string | null = null;
@@ -186,6 +186,7 @@ class ApiClient {
     gu_name: string;
     lat: number;
     lng: number;
+    business_start_date?: string;
   }): Promise<CompleteOnboardingResponse> {
     return this.request("/onboarding/complete", {
       method: "POST",
@@ -283,6 +284,18 @@ class ApiClient {
   async getDeepReport(refresh = false): Promise<any> {
     return this.request(`/insights/deep-report${refresh ? "?refresh=true" : ""}`, {
       signal: AbortSignal.timeout(60_000),
+    });
+  }
+
+  async getMenuStrategy(refresh = false): Promise<any> {
+    return this.request(`/insights/menu-strategy${refresh ? "?refresh=true" : ""}`, {
+      signal: AbortSignal.timeout(60_000),
+    }, true);
+  }
+
+  async getSurvivalScore(refresh = false): Promise<any> {
+    return this.request(`/insights/survival-score${refresh ? "?refresh=true" : ""}`, {
+      signal: AbortSignal.timeout(45_000),
     });
   }
 

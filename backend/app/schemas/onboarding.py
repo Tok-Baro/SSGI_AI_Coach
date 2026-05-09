@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
+from datetime import date
 
 
 class VerifyBusinessRequest(BaseModel):
@@ -37,6 +38,7 @@ class CompleteOnboardingRequest(BaseModel):
     gu_name: str = Field("", max_length=50)
     lat: float = Field(..., ge=33.0, le=39.0)  # 한국 위도 범위
     lng: float = Field(..., ge=124.0, le=132.0)  # 한국 경도 범위
+    business_start_date: Optional[date] = Field(None, description="가게 개점일 (영업기간 산정)")
 
 
 class CompleteOnboardingResponse(BaseModel):

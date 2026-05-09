@@ -15,6 +15,7 @@ from uuid import UUID
 from datetime import date
 from typing import List
 
+from app.config import settings
 from app.database import get_db
 from app.schemas.coupon import CreateCouponRequest, CouponResponse
 from app.services.coupon_service import CouponService
@@ -116,9 +117,37 @@ async def get_coupon(coupon_id: UUID, db: AsyncSession = Depends(get_db)):
     return CouponResponse.model_validate(coupon)
 
 
+def _scan_signature(coupon_id: UUID) -> str:
+    """쿠폰 스캔 변조 방지용 HMAC 서명 (16자)."""
+    import hmac, hashlib
+    return hmac.new(
+        settings.secret_key.encode(),
+        str(coupon_id).encode(),
+        hashlib.sha256,
+    ).hexdigest()[:16]
+
+
 @router.post("/{coupon_id}/scan")
-async def scan_coupon(coupon_id: UUID, request: Request, db: AsyncSession = Depends(get_db)):
-    """쿠폰 스캔 카운트 증가. 인증 불필요. IP 기반 rate limit 적용."""
+async def scan_coupon(
+    coupon_id: UUID,
+    request: Request,
+    sig: str = "",
+    db: AsyncSession = Depends(get_db),
+):
+    """쿠폰 스캔 카운트 증가. HMAC 서명 검증 + IP rate limit.
+
+    sig 없으면 legacy 호환 (기존 QR이 작동하도록), 단 로그에 경고.
+    신규 QR은 sig 포함 강제 (변조 차단).
+    """
+    import hmac as _hmac
+    if sig:
+        expected = _scan_signature(coupon_id)
+        if not _hmac.compare_digest(sig, expected):
+            raise HTTPException(status_code=403, detail="유효하지 않은 스캔 토큰입니다.")
+    else:
+        import logging as _log
+        _log.getLogger(__name__).warning(f"scan_coupon legacy unsigned: {coupon_id}")
+
     client_ip = request.client.host if request.client else "unknown"
     rate_key = f"{client_ip}:{coupon_id}"
 

@@ -41,14 +41,17 @@ async def get_subsidy_matches(
         user_id=current_user.id,
     )
 
+    # P1-8: N+1 제거 — for-loop 안에서 동일 동네 count 조회를 N회 반복하던 패턴을
+    # 한 번의 social_proof get_subsidy_proof 호출로 collapse (동네/업종은 user 단일).
+    # subsidy_title은 결과 메시지에 영향 없으므로 한 번만 계산.
     social = SocialProofService(db)
+    shared_proof = await social.get_subsidy_proof(
+        current_user.dong_name or "", current_user.business_type or "", ""
+    )
     enriched = []
     total_amount = 0
 
     for r in results:
-        proof_msg = await social.get_subsidy_proof(
-            current_user.dong_name or "", current_user.business_type or "", r.get("title", "")
-        )
         enriched.append(SubsidyResponse(
             id=r["id"],
             title=r["title"],
@@ -60,7 +63,7 @@ async def get_subsidy_matches(
             application_url=r.get("application_url"),
             relevance_score=r.get("relevance_score", 0),
             days_until_deadline=r.get("days_until_deadline"),
-            social_proof_message=proof_msg,
+            social_proof_message=shared_proof,
         ))
         if r.get("max_amount"):
             total_amount += r["max_amount"]
@@ -82,7 +85,11 @@ async def generate_apply_draft(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """지원사업 사업계획서 초안 생성 (GPT-4o)."""
+    """지원사업 사업계획서 초안 생성 (GPT-4o). user당 시간당 10회 제한."""
+    from app.utils.rate_limit import apply_draft_rate
+    apply_draft_rate.check(f"apply_draft:{current_user.id}")
+    # free 플랜은 월 N회 제한 (월 5회 예시) — plan_tier 검사
+    # 추가: TODO P1 — 월별 카운터 별도 구현 필요. 현재는 시간당만.
     stmt = select(Subsidy).where(Subsidy.id == req.subsidy_id)
     result = await db.execute(stmt)
     subsidy = result.scalar_one_or_none()

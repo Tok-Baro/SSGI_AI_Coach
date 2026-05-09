@@ -75,6 +75,7 @@ interface CompetitionData {
 interface MarketingStrategy {
   title: string;
   description: string;
+  evidence?: string;
   priority: "high" | "medium" | "low";
   category: string;
   expected_effect: string;
@@ -108,6 +109,39 @@ interface ReadyCopies {
   delivery_intro: string;
 }
 
+interface BudgetScenario {
+  budget_label: string;
+  budget_won: number;
+  headline: string;
+  actions: string[];
+  expected_uplift_won: number;
+  expected_orders: number;
+}
+
+interface ChannelScore {
+  channel: string;
+  label: string;
+  fit_score: number;
+  expected_roi_pct: number;
+  rationale: string;
+  first_step: string;
+}
+
+interface CopyVariant {
+  tone_label: string;
+  tone_desc: string;
+  sms_to_regulars: string;
+  store_pop: string;
+  sns_caption: string;
+  delivery_intro: string;
+}
+
+interface CopyVariants {
+  trust?: CopyVariant;
+  friendly?: CopyVariant;
+  urgent?: CopyVariant;
+}
+
 interface MarketingData {
   strategy: {
     summary: string;
@@ -116,6 +150,9 @@ interface MarketingData {
     quick_win?: string;
     revenue_uplift_plan?: RevenueUpliftPlan;
     ready_to_use_copies?: ReadyCopies;
+    budget_scenarios?: BudgetScenario[];
+    channel_priority?: ChannelScore[];
+    copy_variants?: CopyVariants;
   };
 }
 
@@ -128,8 +165,10 @@ export default function InsightsPage() {
   const [marketing, setMarketing] = useState<MarketingData | null>(null);
   const [compLoading, setCompLoading] = useState(true);
   const [marketingLoading, setMarketingLoading] = useState(false);
+  const [marketingError, setMarketingError] = useState<string | null>(null);
   const [deepReport, setDeepReport] = useState<any>(null);
   const [deepLoading, setDeepLoading] = useState(false);
+  const [deepError, setDeepError] = useState<string | null>(null);
   const [tab, setTab] = useState<"competition" | "marketing" | "deep">("competition");
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
@@ -148,25 +187,36 @@ export default function InsightsPage() {
   const loadMarketing = async (refresh = false) => {
     if (!refresh && (marketing || marketingLoading)) return;
     setMarketingLoading(true);
+    setMarketingError(null);
     try {
       const result = await api.getMarketingStrategy(refresh);
       setMarketing(result);
-    } catch {} finally { setMarketingLoading(false); }
+    } catch (e) {
+      setMarketingError(e instanceof Error ? e.message : "마케팅 전략 로드 실패");
+    } finally {
+      setMarketingLoading(false);
+    }
   };
 
   const loadDeepReport = async (refresh = false) => {
     if (!refresh && (deepReport || deepLoading)) return;
     setDeepLoading(true);
+    setDeepError(null);
     try {
       const result = await api.getDeepReport(refresh);
       setDeepReport(result);
-    } catch {} finally { setDeepLoading(false); }
+    } catch (e) {
+      setDeepError(e instanceof Error ? e.message : "집중분석 리포트 로드 실패");
+    } finally {
+      setDeepLoading(false);
+    }
   };
 
   useEffect(() => {
-    if (tab === "marketing" && !marketing) loadMarketing();
-    if (tab === "deep" && !deepReport) loadDeepReport();
-  }, [tab]);
+    if (tab === "marketing" && !marketing && !marketingLoading) loadMarketing();
+    if (tab === "deep" && !deepReport && !deepLoading) loadDeepReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, marketing, deepReport]);
 
   if (isLoading || compLoading) {
     return (
@@ -205,23 +255,39 @@ export default function InsightsPage() {
       <div className="px-6 py-4 space-y-4">
         {tab === "competition" && comp && (
           <>
+            {/* 데이터 안내 — 페이지 최상단 한 번 */}
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+              <p className="text-xs font-semibold text-blue-900 mb-1">📊 이 페이지의 데이터 안내</p>
+              <ul className="text-xs text-blue-800 space-y-0.5 leading-relaxed">
+                <li>• <b>매출·점포 수·개폐업률</b>: <b>분기 단위</b> (서울시 상권분석, 분기 1회 갱신)</li>
+                <li>• <b>유동인구</b>: <b>일 단위</b> (서울시 생활인구, 매일 갱신)</li>
+                <li>• <b>객단가</b>: 분기 총매출 ÷ 거래건수 (1건당 평균)</li>
+                <li>• <b>매출 비중 %</b>: 분기 매출 합계를 100%로 본 비율</li>
+              </ul>
+            </div>
+
             {/* 경쟁 현황 요약 */}
             {comp.competition_data ? (
               <div className="bg-white rounded-xl p-4 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-1">경쟁 현황</h3>
-                <p className="text-xs text-gray-400 mb-3">{comp.competition_data.area_name}</p>
+                <div className="flex items-baseline justify-between mb-1">
+                  <h3 className="font-semibold text-gray-900">경쟁 현황</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">분기 단위</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">
+                  {comp.competition_data.area_name} · 출처: 서울시 VwsmTrdarStorQq
+                </p>
                 <div className="grid grid-cols-3 gap-3">
-                  <StatCard label="평균 점포 수" value={`${comp.competition_data.total_stores}개`} />
-                  <StatCard label="개업률" value={`${comp.competition_data.opening_rate}%`} color={comp.competition_data.opening_rate > 5 ? "red" : "green"} />
-                  <StatCard label="폐업률" value={`${comp.competition_data.closing_rate}%`} color={comp.competition_data.closing_rate > 5 ? "red" : "yellow"} />
+                  <StatCard label="상권 평균 점포 수" value={`${comp.competition_data.total_stores}개`} />
+                  <StatCard label="분기 개업률" value={`${comp.competition_data.opening_rate}%`} color={comp.competition_data.opening_rate > 5 ? "red" : "green"} />
+                  <StatCard label="분기 폐업률" value={`${comp.competition_data.closing_rate}%`} color={comp.competition_data.closing_rate > 5 ? "red" : "yellow"} />
                 </div>
                 <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-600">
                     {comp.competition_data.net_change > 0
-                      ? `순증가 ${comp.competition_data.net_change}%p — 경쟁이 심화되고 있습니다. 차별화가 필요합니다.`
+                      ? `이번 분기 순증가 ${comp.competition_data.net_change}%p (개업이 폐업보다 많음) — 경쟁이 심화되고 있습니다. 차별화가 필요합니다.`
                       : comp.competition_data.net_change < 0
-                        ? `순감소 ${Math.abs(comp.competition_data.net_change)}%p — 시장이 축소 중입니다. 고객 유지에 집중하세요.`
-                        : "개폐업 균형 상태입니다."}
+                        ? `이번 분기 순감소 ${Math.abs(comp.competition_data.net_change)}%p (폐업이 개업보다 많음) — 시장이 축소 중입니다. 고객 유지에 집중하세요.`
+                        : "이번 분기 개폐업 균형 상태입니다."}
                   </p>
                 </div>
               </div>
@@ -232,31 +298,39 @@ export default function InsightsPage() {
             {/* 서울 평균 대비 벤치마킹 */}
             {comp.benchmark && (
               <div className="bg-white rounded-xl p-4 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-3">서울 평균 대비 분석</h3>
-                <p className="text-xs text-gray-400 mb-3">{comp.benchmark.business_type} 기준</p>
+                <div className="flex items-baseline justify-between mb-1">
+                  <h3 className="font-semibold text-gray-900">서울 평균 대비 분석</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">분기 단위</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">
+                  {comp.benchmark.business_type} 기준 · 우리 동네 vs 서울 전체 평균 비교
+                </p>
                 <div className="space-y-3">
                   <BenchmarkRow
-                    label="평균 객단가"
+                    label="1건당 평균 객단가 (분기)"
                     local={comp.benchmark.local_avg_ticket}
                     seoul={comp.benchmark.seoul_avg_ticket}
                     diff={comp.benchmark.ticket_diff_pct}
                     format="money"
                   />
                   <BenchmarkRow
-                    label="주말 매출 비중"
+                    label="주말 매출 비중 (분기)"
                     local={comp.benchmark.local_weekend_ratio}
                     seoul={comp.benchmark.seoul_weekend_ratio}
                     diff={comp.benchmark.local_weekend_ratio - comp.benchmark.seoul_weekend_ratio}
                     format="pct"
                   />
                   <BenchmarkRow
-                    label="여성 고객 비중"
+                    label="여성 고객 매출 비중 (분기)"
                     local={comp.benchmark.local_female_ratio}
                     seoul={comp.benchmark.seoul_female_ratio}
                     diff={comp.benchmark.local_female_ratio - comp.benchmark.seoul_female_ratio}
                     format="pct"
                   />
                 </div>
+                <p className="text-[10px] text-gray-400 mt-3 italic">
+                  ※ 객단가 = 분기 총매출 ÷ 거래건수. 1번 결제할 때 평균 얼마인지를 의미합니다.
+                </p>
               </div>
             )}
 
@@ -283,10 +357,16 @@ export default function InsightsPage() {
             {/* 요일별 매출 */}
             {comp.sales_detail?.day_of_week && (
               <div className="bg-white rounded-xl p-4 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-3">요일별 매출 패턴</h3>
+                <div className="flex items-baseline justify-between mb-1">
+                  <h3 className="font-semibold text-gray-900">요일별 매출 패턴</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">분기 매출 비중</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  분기 동안 발생한 매출을 요일별로 나눈 비율 (월~일 합계 = 100%)
+                </p>
                 <BarChart data={comp.sales_detail.day_of_week} unit="%" />
                 <p className="mt-2 text-xs text-gray-400">
-                  {comp.sales_detail.sample_count}개 상권 평균 · {comp.location}
+                  ※ {comp.sales_detail.sample_count}개 상권 분기 평균 · {comp.location}
                 </p>
               </div>
             )}
@@ -294,7 +374,13 @@ export default function InsightsPage() {
             {/* 시간대별 매출 */}
             {comp.sales_detail?.time_zone && (
               <div className="bg-white rounded-xl p-4 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-3">시간대별 매출 패턴</h3>
+                <div className="flex items-baseline justify-between mb-1">
+                  <h3 className="font-semibold text-gray-900">시간대별 매출 패턴</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">분기 매출 비중</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  하루 6개 시간대 중 어디서 매출이 가장 많이 발생하는지 비율 (분기 합계 = 100%)
+                </p>
                 <BarChart data={comp.sales_detail.time_zone} unit="%" />
                 <PeakInsight data={comp.sales_detail.time_zone} type="시간대" />
               </div>
@@ -303,20 +389,26 @@ export default function InsightsPage() {
             {/* 고객 분석 */}
             {comp.sales_detail && (
               <div className="bg-white rounded-xl p-4 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-3">고객 분석</h3>
+                <div className="flex items-baseline justify-between mb-1">
+                  <h3 className="font-semibold text-gray-900">고객 분석</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">분기 매출 비중</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  분기 동안 매장에서 발생한 매출을 성별·연령·주중주말로 나눈 비율
+                </p>
 
                 {/* 성별 비교 */}
                 <GenderCompare gender={comp.sales_detail.gender} />
 
                 {/* 주중 vs 주말 */}
                 <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-2">주중 vs 주말</p>
+                  <p className="text-xs text-gray-500 mb-2">주중 vs 주말 매출 비중 (분기)</p>
                   <WeekdayCompare data={comp.sales_detail.weekday_vs_weekend} />
                 </div>
 
                 {/* 연령대별 매출 */}
                 <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-2">연령대별 매출</p>
+                  <p className="text-xs text-gray-500 mb-2">연령대별 매출 비중 (분기, 합계 100%)</p>
                   <BarChart data={comp.sales_detail.age_group} unit="%" />
                   <PeakInsight data={comp.sales_detail.age_group} type="연령대" />
                 </div>
@@ -324,7 +416,7 @@ export default function InsightsPage() {
                 {/* 연령대별 건수 */}
                 {comp.sales_detail.age_group_count && (
                   <div className="mt-4">
-                    <p className="text-xs text-gray-500 mb-2">연령대별 이용 건수</p>
+                    <p className="text-xs text-gray-500 mb-2">연령대별 이용 건수 비중 (분기, 합계 100%)</p>
                     <BarChart data={comp.sales_detail.age_group_count} unit="%" />
                     <PeakInsight data={comp.sales_detail.age_group_count} type="연령대" />
                   </div>
@@ -373,15 +465,23 @@ export default function InsightsPage() {
                   </div>
                 )}
                 {comp.change_index.avg_monthly_sales > 0 && (
-                  <p className="text-xs text-gray-400 mt-2">월평균 매출: {comp.change_index.avg_monthly_sales.toLocaleString()}만원</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    상권 1곳당 월평균 매출 (분기 평균): {comp.change_index.avg_monthly_sales.toLocaleString()}만원
+                  </p>
                 )}
+                <p className="text-[10px] text-gray-400 mt-2 italic">
+                  ※ 출처: 서울시 VwsmTrdarIxQq · 분기 1회 갱신
+                </p>
               </div>
             )}
 
             {/* 집객시설 */}
             {comp.facilities && (
               <div className="bg-white rounded-xl p-4 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-3">주변 집객시설</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">주변 집객시설</h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  같은 상권 내 평균 시설 수 (관공서·은행·병원·대중교통 등)
+                </p>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(comp.facilities)
                     .filter(([k, v]: [string, any]) => k !== "sample_count" && v > 0)
@@ -398,7 +498,11 @@ export default function InsightsPage() {
             {/* 직장인구 */}
             {comp.workplace_population && (
               <div className="bg-white rounded-xl p-4 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-2">직장인구</h3>
+                <div className="flex items-baseline justify-between mb-1">
+                  <h3 className="font-semibold text-gray-900">직장인구</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">분기 평균</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">상권 내 출근하는 직장인 평균 인원 (점심 매출 잠재력 지표)</p>
                 <p className="text-2xl font-bold text-gray-900 mb-2">{comp.workplace_population.total?.toLocaleString()}명</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-blue-50 rounded-lg p-2 text-center">
@@ -416,11 +520,15 @@ export default function InsightsPage() {
             {/* 상권 유동인구 */}
             {comp.floating_population && (
               <div className="bg-white rounded-xl p-4 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-2">상권 유동인구</h3>
+                <div className="flex items-baseline justify-between mb-1">
+                  <h3 className="font-semibold text-gray-900">상권 유동인구</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">분기 일평균</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">분기 동안 상권을 지나간 평균 인원 (하루 기준)</p>
                 <p className="text-2xl font-bold text-gray-900 mb-3">{comp.floating_population.total?.toLocaleString()}명</p>
                 {comp.floating_population.time_zone && (
                   <>
-                    <p className="text-xs text-gray-500 mb-2">시간대별 유동인구</p>
+                    <p className="text-xs text-gray-500 mb-2">시간대별 유동인구 (분기 일평균)</p>
                     <BarChart data={comp.floating_population.time_zone} unit="명" />
                     <PeakInsight data={comp.floating_population.time_zone} type="시간대" />
                   </>
@@ -487,27 +595,60 @@ export default function InsightsPage() {
               <div className="flex flex-col items-center justify-center py-16">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-400 mb-4" />
                 <p className="text-sm text-gray-500">AI가 마케팅 전략을 분석하고 있습니다...</p>
-                <p className="text-xs text-gray-400 mt-1">사장님 데이터 기반 맞춤 분석 중</p>
+                <p className="text-xs text-gray-400 mt-1">사장님 데이터 기반 맞춤 분석 중 · 최대 30초 소요</p>
+              </div>
+            ) : marketingError ? (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                <p className="text-sm text-red-600 font-semibold mb-2">마케팅 전략을 불러오지 못했습니다</p>
+                <p className="text-xs text-red-500 mb-3">{marketingError}</p>
+                <button onClick={() => loadMarketing(true)}
+                  className="px-4 py-2 bg-yellow-400 text-gray-900 text-sm font-semibold rounded-lg">
+                  다시 시도
+                </button>
               </div>
             ) : marketing ? (
               <>
+                {/* 데이터 단위 안내 — 마케팅 탭 최상단 */}
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                  <p className="text-xs font-semibold text-blue-900 mb-1">📊 이 페이지의 수치 안내</p>
+                  <ul className="text-xs text-blue-800 space-y-0.5 leading-relaxed">
+                    <li>• <b>예상 추가 매출/주문</b>: <b>월 단위</b> 추정 (AI 산출, 공식 미적용)</li>
+                    <li>• <b>객단가</b>: 분기 총매출 ÷ 거래건수 (1건당 평균)</li>
+                    <li>• <b>매출 갭</b>: 우리 가게 vs 서울 평균 (분기 단위)</li>
+                    <li>• <b>fit_score, ROI%</b>: AI 추정치 — 실제 캠페인 결과로 검증 필요</li>
+                  </ul>
+                </div>
                 <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+                  <p className="text-xs text-yellow-700 font-medium mb-1">📰 마케팅 진단 한 줄</p>
                   <p className="text-sm font-semibold text-yellow-800">{marketing.strategy.summary}</p>
                 </div>
                 {marketing.strategy.quick_win && (
                   <div className="bg-green-50 border border-green-100 rounded-xl p-4">
-                    <p className="text-xs text-green-600 font-medium mb-1">오늘 당장 할 수 있는 것</p>
+                    <p className="text-xs text-green-600 font-medium mb-1">⚡ 오늘 당장 (30분 내) 할 수 있는 것</p>
                     <p className="text-sm text-green-800 font-semibold">{marketing.strategy.quick_win}</p>
                   </div>
+                )}
+
+                {marketing.strategy.budget_scenarios && marketing.strategy.budget_scenarios.length > 0 && (
+                  <BudgetScenariosCard scenarios={marketing.strategy.budget_scenarios} />
+                )}
+
+                {marketing.strategy.channel_priority && marketing.strategy.channel_priority.length > 0 && (
+                  <ChannelPriorityCard channels={marketing.strategy.channel_priority} />
                 )}
 
                 {marketing.strategy.revenue_uplift_plan && (
                   <UpliftCard plan={marketing.strategy.revenue_uplift_plan} />
                 )}
 
-                {marketing.strategy.ready_to_use_copies && (
+                <MenuStrategyCard />
+
+
+                {marketing.strategy.copy_variants ? (
+                  <CopyVariantsCard variants={marketing.strategy.copy_variants} />
+                ) : marketing.strategy.ready_to_use_copies ? (
                   <CopiesCard copies={marketing.strategy.ready_to_use_copies} />
-                )}
+                ) : null}
                 <div className="space-y-3">
                   {marketing.strategy.strategies?.map((s, i) => (
                     <div key={i} className="bg-white rounded-xl p-4 border border-gray-100">
@@ -519,6 +660,12 @@ export default function InsightsPage() {
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">{s.title}</h3>
                       <p className="text-sm text-gray-600 mb-2">{s.description}</p>
+                      {s.evidence && (
+                        <div className="flex items-start gap-1.5 mb-2 p-2 bg-blue-50 rounded-md">
+                          <span className="text-[10px] font-bold text-blue-600 mt-0.5 shrink-0">근거</span>
+                          <span className="text-xs text-blue-700 leading-relaxed">{s.evidence}</span>
+                        </div>
+                      )}
                       <p className="text-xs text-green-600 font-medium">{s.expected_effect}</p>
                       {(s.budget || s.timeline) && (
                         <div className="flex gap-3 mt-1">
@@ -564,15 +711,41 @@ export default function InsightsPage() {
               <div className="flex flex-col items-center justify-center py-16">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-400 mb-4" />
                 <p className="text-sm text-gray-500">AI가 종합 경영 진단을 수행하고 있습니다...</p>
-                <p className="text-xs text-gray-400 mt-1">서울시 빅데이터 + 상권 분석 + 경쟁사 데이터 종합 중</p>
+                <p className="text-xs text-gray-400 mt-1">서울시 빅데이터 + 상권 분석 + 경쟁사 데이터 종합 중 · 최대 60초 소요</p>
+              </div>
+            ) : deepError ? (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                <p className="text-sm text-red-600 font-semibold mb-2">집중분석 리포트를 불러오지 못했습니다</p>
+                <p className="text-xs text-red-500 mb-3">{deepError}</p>
+                <button onClick={() => loadDeepReport(true)}
+                  className="px-4 py-2 bg-yellow-400 text-gray-900 text-sm font-semibold rounded-lg">
+                  다시 시도
+                </button>
               </div>
             ) : deepReport ? (
               <>
-                {/* 경영 현황 요약 */}
-                <div className="bg-red-50 border border-red-100 rounded-xl p-4">
-                  <h3 className="font-semibold text-red-700 text-sm mb-1">경영 진단 요약</h3>
-                  <p className="text-sm text-red-600">{safeText(deepReport.report.executive_summary)}</p>
+                {/* 데이터 단위 안내 — 집중분석 탭 최상단 */}
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                  <p className="text-xs font-semibold text-blue-900 mb-1">📊 이 리포트의 수치 안내</p>
+                  <ul className="text-xs text-blue-800 space-y-0.5 leading-relaxed">
+                    <li>• <b>매출·객단가·점포 수</b>: <b>분기 단위</b> (서울시 상권분석)</li>
+                    <li>• <b>유동인구</b>: 분기 일평균 (서울시 생활인구)</li>
+                    <li>• <b>SWOT·TOWS·전략 권고</b>: AI 분석 (검증된 데이터 위에 작성)</li>
+                    <li>• <b>포지셔닝맵 좌표·KPI 목표값</b>: AI 추정 — 실데이터 검증 필요</li>
+                    <li>• <b>액션 임팩트/난이도 점수</b>: AI 추정 1~10점</li>
+                  </ul>
                 </div>
+
+                {/* 경영 진단 요약 (3-section: 현황/위험/권고) */}
+                <ExecutiveSummaryCard summary={deepReport.report.executive_summary} />
+
+                {/* 지난 진단 대비 변화 (시계열 diff) */}
+                {deepReport.previous && (
+                  <PreviousDiffCard
+                    previous={deepReport.previous}
+                    currentRisk={safeText(deepReport.report.risk_alert)}
+                  />
+                )}
 
                 {/* 시급한 위험 */}
                 {deepReport.report.risk_alert && (
@@ -601,6 +774,16 @@ export default function InsightsPage() {
                       <SwotCard title="위협 (T)" items={deepReport.report.swot.threats} color="yellow" />
                     </div>
                   </div>
+                )}
+
+                {/* TOWS 매트릭스 (전략 도출) */}
+                {deepReport.report.tows_matrix && (
+                  <TowsMatrixCard tows={deepReport.report.tows_matrix} />
+                )}
+
+                {/* 포지셔닝 맵 */}
+                {deepReport.report.positioning_map && (
+                  <PositioningMapCard map={deepReport.report.positioning_map} />
                 )}
 
                 {/* 핵심 고객층 분석 */}
@@ -635,45 +818,14 @@ export default function InsightsPage() {
                   </div>
                 )}
 
-                {/* 실행 항목 */}
+                {/* 실행 항목: Impact-Effort 2x2 + 리스트 */}
                 {deepReport.report.action_items?.length > 0 && (
-                  <div className="bg-white rounded-xl p-4 border border-gray-100">
-                    <h3 className="font-semibold text-gray-900 mb-3">실행 항목</h3>
-                    <div className="space-y-2">
-                      {deepReport.report.action_items.map((item: any, i: number) => (
-                        <div key={i} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
-                          <span className={`shrink-0 px-2 py-0.5 text-xs font-medium rounded-full h-fit ${
-                            item.priority === "high" ? "bg-red-100 text-red-700" :
-                            item.priority === "medium" ? "bg-yellow-100 text-yellow-700" :
-                            "bg-green-100 text-green-700"
-                          }`}>
-                            {item.priority === "high" ? "긴급" : item.priority === "medium" ? "중요" : "참고"}
-                          </span>
-                          <div>
-                            <p className="text-sm text-gray-900 font-medium">{item.action}</p>
-                            <p className="text-xs text-green-600 mt-0.5">{item.expected_impact}</p>
-                            {item.timeline && <p className="text-xs text-gray-400 mt-0.5">{item.timeline}</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <ActionImpactMatrix items={deepReport.report.action_items} />
                 )}
 
-                {/* 이번 달 목표 */}
+                {/* 이번 달 목표 (정량 KPI 게이지) */}
                 {deepReport.report.monthly_goal && (
-                  <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
-                    <h3 className="font-semibold text-yellow-800 mb-1">이번 달 목표</h3>
-                    {typeof deepReport.report.monthly_goal === "string" ? (
-                      <p className="text-sm text-yellow-700">{deepReport.report.monthly_goal}</p>
-                    ) : (
-                      <ul className="space-y-1">
-                        {Object.entries(deepReport.report.monthly_goal).map(([k, v]: [string, any]) => (
-                          <li key={k} className="text-sm text-yellow-700">· {k}: {typeof v === "string" ? v : JSON.stringify(v)}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  <MonthlyGoalCard goal={deepReport.report.monthly_goal} />
                 )}
 
                 <button onClick={() => { setDeepReport(null); loadDeepReport(true); }}
@@ -905,6 +1057,15 @@ function UpliftCard({ plan }: { plan: RevenueUpliftPlan }) {
     ? Math.min(100, Math.round((plan.current_avg_ticket / plan.target_avg_ticket) * 100))
     : 0;
 
+  // 옵션 선택 → 30일 누적 매출 증분 미니 차트
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const selected = plan.uplift_options[selectedIdx];
+  const dailyOrders = plan.monthly_orders_estimate / 30;
+  const dailyUplift = selected ? selected.expected_avg_uplift_won * dailyOrders : 0;
+  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+  const points = days.map((d) => Math.round(dailyUplift * d));
+  const peakUplift = points[points.length - 1] || 0;
+
   return (
     <div className="bg-white rounded-xl p-4 border border-gray-100">
       <div className="flex items-center gap-2 mb-3">
@@ -931,11 +1092,17 @@ function UpliftCard({ plan }: { plan: RevenueUpliftPlan }) {
 
       <p className="text-xs text-gray-600 mb-3 bg-gray-50 rounded-lg p-2">{plan.rationale}</p>
 
-      {/* 추천 옵션 3종 */}
-      <p className="text-xs text-gray-500 font-medium mb-2">추천 옵션 (쉬운 순)</p>
+      {/* 추천 옵션 3종 (선택 시 30일 차트 갱신) */}
+      <p className="text-xs text-gray-500 font-medium mb-2">추천 옵션 (탭하면 30일 시뮬)</p>
       <div className="space-y-2">
         {plan.uplift_options.map((opt, i) => (
-          <div key={i} className="border border-gray-100 rounded-lg p-3">
+          <button
+            key={i}
+            onClick={() => setSelectedIdx(i)}
+            className={`w-full text-left border rounded-lg p-3 transition-colors ${
+              i === selectedIdx ? "border-yellow-400 bg-yellow-50" : "border-gray-100 hover:border-gray-200"
+            }`}
+          >
             <div className="flex items-start justify-between gap-2 mb-1">
               <p className="font-semibold text-gray-900 text-sm flex-1">{opt.name}</p>
               <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${easeColor[opt.ease] || "bg-gray-100 text-gray-700"}`}>
@@ -948,8 +1115,169 @@ function UpliftCard({ plan }: { plan: RevenueUpliftPlan }) {
               <span className="text-green-600 font-semibold">평균 +{won(opt.expected_avg_uplift_won)}</span>
             </div>
             <p className="text-xs text-gray-600">{opt.how}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* 30일 누적 매출 증분 미니 차트 */}
+      {selected && peakUplift > 0 && (
+        <div className="mt-4 p-3 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-lg">
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-[11px] text-green-700 font-medium">
+              &ldquo;{selected.name}&rdquo; 적용 시 30일 예상 누적
+            </p>
+            <p className="text-base font-extrabold text-green-700 tabular-nums">+{won(peakUplift)}</p>
+          </div>
+          <svg viewBox="0 0 300 60" className="w-full h-12">
+            <polyline
+              fill="none"
+              stroke="#10b981"
+              strokeWidth="2"
+              points={points
+                .map((v, i) => `${(i / 29) * 300},${60 - (v / peakUplift) * 55}`)
+                .join(" ")}
+            />
+            <polygon
+              fill="#10b98120"
+              points={`0,60 ${points
+                .map((v, i) => `${(i / 29) * 300},${60 - (v / peakUplift) * 55}`)
+                .join(" ")} 300,60`}
+            />
+          </svg>
+          <p className="text-[10px] text-green-600/80 mt-1">
+            일 {Math.round(dailyOrders)}건 × {selected.expected_attach_rate_pct}% × {won(selected.add_price_won)} 가정
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BudgetScenariosCard({ scenarios }: { scenarios: BudgetScenario[] }) {
+  const won = (n: number) => n.toLocaleString() + "원";
+  const colorMap = ["bg-gray-50 border-gray-200", "bg-yellow-50 border-yellow-200", "bg-orange-50 border-orange-200"];
+  return (
+    <div className="bg-white rounded-xl p-4 border border-gray-100">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="font-semibold text-gray-900">예산별 시나리오</h3>
+        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded font-medium">3-Tier</span>
+      </div>
+      <p className="text-xs text-gray-500 mb-1">현재 가용 예산에 맞춰 골라 실행하세요</p>
+      <p className="text-[10px] text-amber-700 bg-amber-50 px-2 py-1 rounded mb-3">
+        ⓘ 예상 추가 매출은 <span className="font-semibold">AI 추정치 (공식 미적용)</span>입니다. 실제 캠페인 결과로 검증하세요.
+      </p>
+      <div className="space-y-2">
+        {scenarios.map((s, i) => (
+          <div key={i} className={`rounded-lg p-3 border ${colorMap[i] || "bg-gray-50 border-gray-200"}`}>
+            <div className="flex items-baseline justify-between mb-1">
+              <p className="font-bold text-sm text-gray-900">{s.budget_label}</p>
+              <p className="text-xs font-semibold text-green-600 tabular-nums">
+                +{won(s.expected_uplift_won)}/월
+              </p>
+            </div>
+            <p className="text-sm text-gray-800 font-medium mb-2">{s.headline}</p>
+            <ul className="space-y-1 mb-2">
+              {(s.actions || []).map((a, j) => (
+                <li key={j} className="text-xs text-gray-600 flex gap-1.5">
+                  <span className="text-gray-400 shrink-0">·</span>
+                  <span>{a}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[10px] text-gray-500">예상 추가 주문 ≈ {s.expected_orders}건/월</p>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ChannelPriorityCard({ channels }: { channels: ChannelScore[] }) {
+  const sorted = [...channels].sort((a, b) => b.fit_score - a.fit_score);
+  const maxScore = Math.max(...sorted.map((c) => c.fit_score), 1);
+  return (
+    <div className="bg-white rounded-xl p-4 border border-gray-100">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="font-semibold text-gray-900">채널 우선순위</h3>
+        <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">AI 추정</span>
+      </div>
+      <p className="text-[10px] text-amber-700 bg-amber-50 px-2 py-1 rounded mb-3">
+        ⓘ 적합도·ROI는 <span className="font-semibold">AI 추정치 (공식 미적용)</span>. 의사결정 시 실데이터 검증 필요.
+      </p>
+      <div className="space-y-3">
+        {sorted.map((c, i) => {
+          const barPct = (c.fit_score / maxScore) * 100;
+          const isTop = i === 0;
+          return (
+            <div key={i}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold ${isTop ? "text-yellow-600" : "text-gray-400"}`}>
+                    #{i + 1}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">{c.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">적합 {c.fit_score}</span>
+                  <span className={`text-xs font-semibold tabular-nums ${
+                    c.expected_roi_pct >= 100 ? "text-green-600" : "text-red-500"
+                  }`}>
+                    ROI {c.expected_roi_pct}%
+                  </span>
+                </div>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-1.5">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isTop ? "bg-yellow-400" : "bg-gray-300"
+                  }`}
+                  style={{ width: `${barPct}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-gray-500 leading-relaxed">{c.rationale}</p>
+              <p className="text-[11px] text-blue-600 mt-0.5">→ {c.first_step}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CopyVariantsCard({ variants }: { variants: CopyVariants }) {
+  const tones = (["trust", "friendly", "urgent"] as const).filter((t) => variants[t]);
+  const [active, setActive] = useState<typeof tones[number]>(tones[0] || "trust");
+  const current = variants[active];
+  if (!current) return null;
+  const labelMap = { trust: "신뢰형", friendly: "친근형", urgent: "긴급형" };
+  return (
+    <div className="bg-white rounded-xl p-4 border border-gray-100">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="font-semibold text-gray-900">바로 쓰는 카피 4종</h3>
+        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded font-medium">톤 3종</span>
+      </div>
+
+      {/* 톤 탭 */}
+      <div className="flex gap-1 mb-2 p-1 bg-gray-100 rounded-lg">
+        {tones.map((t) => (
+          <button
+            key={t}
+            onClick={() => setActive(t)}
+            className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors ${
+              active === t ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"
+            }`}
+          >
+            {labelMap[t]}
+          </button>
+        ))}
+      </div>
+      <p className="text-[11px] text-gray-500 mb-3">{current.tone_desc}</p>
+
+      <div className="space-y-2">
+        {current.sms_to_regulars && <CopyRow label="단골 SMS (140자)" text={current.sms_to_regulars} />}
+        {current.store_pop && <CopyRow label="매장 POP (50자)" text={current.store_pop} />}
+        {current.sns_caption && <CopyRow label="SNS 캡션 + 해시태그" text={current.sns_caption} />}
+        {current.delivery_intro && <CopyRow label="배달앱 가게 소개 한 줄" text={current.delivery_intro} />}
       </div>
     </div>
   );
@@ -995,6 +1323,471 @@ function CopiesCard({ copies }: { copies: ReadyCopies }) {
         {copies.sns_caption && <CopyRow label="SNS 캡션 + 해시태그" text={copies.sns_caption} />}
         {copies.delivery_intro && <CopyRow label="배달앱 가게 소개 한 줄" text={copies.delivery_intro} />}
       </div>
+    </div>
+  );
+}
+
+function ExecutiveSummaryCard({ summary }: { summary: any }) {
+  // 신구조: {current, risk, recommendation} | 구구조: string
+  const isStructured = summary && typeof summary === "object" && (summary.current || summary.risk || summary.recommendation);
+  if (!isStructured) {
+    return (
+      <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+        <h3 className="font-semibold text-red-700 text-sm mb-1">경영 진단 요약</h3>
+        <p className="text-sm text-red-600">{safeText(summary)}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-4 py-2.5">
+        <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider">전문가 진단 리포트</p>
+      </div>
+      <div className="p-4 space-y-3">
+        {summary.current && (
+          <div className="border-l-2 border-blue-400 pl-3">
+            <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wide mb-1">현황</p>
+            <p className="text-sm text-gray-700 leading-relaxed">{safeText(summary.current)}</p>
+          </div>
+        )}
+        {summary.risk && (
+          <div className="border-l-2 border-red-400 pl-3">
+            <p className="text-[10px] text-red-600 font-bold uppercase tracking-wide mb-1">핵심 위험</p>
+            <p className="text-sm text-gray-700 leading-relaxed">{safeText(summary.risk)}</p>
+          </div>
+        )}
+        {summary.recommendation && (
+          <div className="border-l-2 border-green-400 pl-3">
+            <p className="text-[10px] text-green-600 font-bold uppercase tracking-wide mb-1">권고</p>
+            <p className="text-sm text-gray-700 leading-relaxed">{safeText(summary.recommendation)}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PreviousDiffCard({ previous, currentRisk }: { previous: any; currentRisk: string }) {
+  if (!previous || (!previous.summary && !previous.risk_alert)) return null;
+  const dateStr = previous.generated_at
+    ? new Date(previous.generated_at).toISOString().slice(0, 10)
+    : "이전";
+  const riskChanged = previous.risk_alert && currentRisk && previous.risk_alert !== currentRisk;
+  return (
+    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">지난 진단 대비</span>
+        <span className="text-[10px] text-indigo-400">{dateStr}</span>
+      </div>
+      {previous.summary && (
+        <div className="text-xs text-indigo-900/70 leading-relaxed mb-2 line-clamp-3">
+          이전: {previous.summary}
+        </div>
+      )}
+      {riskChanged && (
+        <div className="text-xs text-indigo-700 bg-white rounded-md p-2 border border-indigo-100">
+          <span className="font-semibold">위험 변동: </span>
+          기존 위험과 다른 새로운 위험이 식별됐습니다.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TowsMatrixCard({ tows }: { tows: any }) {
+  if (!tows) return null;
+  const cells = [
+    { key: "so_strategy", label: "SO · 강점×기회 (공격)", color: "bg-green-50 border-green-200 text-green-900" },
+    { key: "st_strategy", label: "ST · 강점×위협 (방어)", color: "bg-blue-50 border-blue-200 text-blue-900" },
+    { key: "wo_strategy", label: "WO · 약점×기회 (보완)", color: "bg-yellow-50 border-yellow-200 text-yellow-900" },
+    { key: "wt_strategy", label: "WT · 약점×위협 (회피)", color: "bg-red-50 border-red-200 text-red-900" },
+  ];
+  return (
+    <div className="bg-white rounded-xl p-4 border border-gray-100">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="font-semibold text-gray-900">TOWS 전략 도출</h3>
+        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded font-medium">SWOT 결합</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {cells.map((c) => (
+          <div key={c.key} className={`rounded-lg p-3 border ${c.color}`}>
+            <p className="text-[10px] font-bold mb-1.5 opacity-80">{c.label}</p>
+            <p className="text-xs leading-relaxed">{safeText(tows[c.key]) || "—"}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PositioningMapCard({ map }: { map: any }) {
+  if (!map || !map.us) return null;
+  const us = map.us;
+  const competitors = (map.competitors || []) as { x: number; y: number; label: string }[];
+  return (
+    <div className="bg-white rounded-xl p-4 border border-gray-100">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="font-semibold text-gray-900">포지셔닝 맵</h3>
+        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded font-medium">2D</span>
+      </div>
+      <div className="relative">
+        <svg viewBox="0 0 240 240" className="w-full bg-gray-50 rounded-lg">
+          {/* 4분면 */}
+          <line x1="120" y1="10" x2="120" y2="230" stroke="#cbd5e1" strokeWidth="1" />
+          <line x1="10" y1="120" x2="230" y2="120" stroke="#cbd5e1" strokeWidth="1" />
+          {/* 축 라벨 */}
+          <text x="120" y="240" textAnchor="middle" className="text-[8px] fill-gray-500">{map.x_label || "X"}</text>
+          <text x="6" y="120" transform="rotate(-90 6 120)" textAnchor="middle" className="text-[8px] fill-gray-500">{map.y_label || "Y"}</text>
+          {/* 경쟁사 */}
+          {competitors.map((c, i) => {
+            const cx = 10 + (c.x / 100) * 220;
+            const cy = 230 - (c.y / 100) * 220;
+            return (
+              <g key={i}>
+                <circle cx={cx} cy={cy} r="5" fill="#9ca3af" />
+                <text x={cx + 7} y={cy + 3} className="text-[8px] fill-gray-600">{c.label}</text>
+              </g>
+            );
+          })}
+          {/* 우리 가게 */}
+          {(() => {
+            const cx = 10 + (us.x / 100) * 220;
+            const cy = 230 - (us.y / 100) * 220;
+            return (
+              <g>
+                <circle cx={cx} cy={cy} r="9" fill="#facc15" stroke="#ca8a04" strokeWidth="2" />
+                <text x={cx + 11} y={cy + 3} className="text-[9px] font-bold fill-yellow-800">{us.label || "우리"}</text>
+              </g>
+            );
+          })()}
+        </svg>
+      </div>
+      {map.interpretation && (
+        <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded-md p-2 leading-relaxed">
+          {safeText(map.interpretation)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ActionImpactMatrix({ items }: { items: any[] }) {
+  // 점수 없는 아이템은 priority로 폴백
+  const scored = items.map((it) => {
+    const impact = typeof it.impact_score === "number" ? it.impact_score
+      : it.priority === "high" ? 8 : it.priority === "medium" ? 5 : 3;
+    const effort = typeof it.effort_score === "number" ? it.effort_score : 5;
+    return { ...it, _impact: impact, _effort: effort };
+  });
+
+  return (
+    <div className="bg-white rounded-xl p-4 border border-gray-100">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="font-semibold text-gray-900">실행 항목</h3>
+        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded font-medium">Impact-Effort 2×2</span>
+      </div>
+      {/* 2x2 매트릭스 */}
+      <div className="relative bg-gradient-to-br from-green-50 via-white to-red-50 rounded-lg p-2 mb-4 border border-gray-100">
+        <svg viewBox="0 0 240 200" className="w-full">
+          <line x1="120" y1="10" x2="120" y2="190" stroke="#e5e7eb" strokeWidth="1" />
+          <line x1="10" y1="100" x2="230" y2="100" stroke="#e5e7eb" strokeWidth="1" />
+          {/* 분면 라벨 */}
+          <text x="170" y="20" textAnchor="middle" className="text-[8px] fill-green-600 font-bold">⭐ 즉시 실행</text>
+          <text x="70" y="20" textAnchor="middle" className="text-[8px] fill-blue-600 font-bold">대형 프로젝트</text>
+          <text x="170" y="195" textAnchor="middle" className="text-[8px] fill-yellow-600 font-bold">자투리 시간</text>
+          <text x="70" y="195" textAnchor="middle" className="text-[8px] fill-gray-500 font-bold">고려 안 함</text>
+          {/* 축 */}
+          <text x="6" y="100" transform="rotate(-90 6 100)" textAnchor="middle" className="text-[8px] fill-gray-500">임팩트 →</text>
+          <text x="120" y="200" textAnchor="middle" className="text-[8px] fill-gray-500">← 실행 쉬움  /  어려움 →</text>
+          {/* 데이터 점 — effort 낮을수록 오른쪽 (= 쉬움) */}
+          {scored.map((it, i) => {
+            const cx = 10 + ((10 - it._effort) / 10) * 220;
+            const cy = 190 - (it._impact / 10) * 180;
+            const color = it.priority === "high" ? "#ef4444" : it.priority === "medium" ? "#eab308" : "#22c55e";
+            return (
+              <g key={i}>
+                <circle cx={cx} cy={cy} r="6" fill={color} fillOpacity="0.7" stroke="white" strokeWidth="1.5" />
+                <text x={cx} y={cy + 3} textAnchor="middle" className="text-[8px] fill-white font-bold">{i + 1}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* 리스트 */}
+      <div className="space-y-2">
+        {scored.map((item, i) => (
+          <div key={i} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-gray-700 text-white text-xs font-bold flex items-center justify-center">
+              {i + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                  item.priority === "high" ? "bg-red-100 text-red-700" :
+                  item.priority === "medium" ? "bg-yellow-100 text-yellow-700" :
+                  "bg-green-100 text-green-700"
+                }`}>
+                  {item.priority === "high" ? "긴급" : item.priority === "medium" ? "중요" : "참고"}
+                </span>
+                <span className="text-[10px] text-gray-400">임팩트 {item._impact}/10</span>
+                <span className="text-[10px] text-gray-400">난이도 {item._effort}/10</span>
+              </div>
+              <p className="text-sm text-gray-900 font-medium">{item.action}</p>
+              <p className="text-xs text-green-600 mt-0.5">{item.expected_impact}</p>
+              {(item.timeline || item.cost) && (
+                <div className="flex gap-3 mt-1">
+                  {item.timeline && <p className="text-xs text-gray-400">기간 {item.timeline}</p>}
+                  {item.cost && <p className="text-xs text-gray-400">비용 {item.cost}</p>}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MonthlyGoalCard({ goal }: { goal: any }) {
+  // 신구조: {summary, kpis: [{name, target_value, current_value, unit, rationale}]}
+  const kpis = goal && Array.isArray(goal.kpis) ? goal.kpis : null;
+  if (!kpis) {
+    // legacy fallback
+    return (
+      <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+        <h3 className="font-semibold text-yellow-800 mb-1">이번 달 목표</h3>
+        {typeof goal === "string" ? (
+          <p className="text-sm text-yellow-700">{goal}</p>
+        ) : (
+          <ul className="space-y-1">
+            {Object.entries(goal || {}).map(([k, v]: [string, any]) => (
+              <li key={k} className="text-sm text-yellow-700">· {k}: {typeof v === "string" ? v : JSON.stringify(v)}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+  const fmt = (n: number, u: string) => {
+    if (u === "원") {
+      if (n >= 100000000) return `${(n / 100000000).toFixed(1)}억`;
+      if (n >= 10000) return `${(n / 10000).toFixed(0)}만`;
+    }
+    return n.toLocaleString();
+  };
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-gradient-to-r from-yellow-400 to-orange-400 px-4 py-2.5">
+        <p className="text-[10px] text-white/90 font-bold uppercase tracking-wider">이번 달 목표</p>
+        {goal.summary && <p className="text-sm text-white font-semibold mt-0.5">{goal.summary}</p>}
+      </div>
+      <div className="p-4 space-y-3">
+        {kpis.map((k: any, i: number) => {
+          const target = Number(k.target_value) || 0;
+          const current = Number(k.current_value) || 0;
+          const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+          return (
+            <div key={i}>
+              <div className="flex items-baseline justify-between mb-1">
+                <p className="text-sm font-semibold text-gray-900">{k.name}</p>
+                <p className="text-xs text-gray-500 tabular-nums">
+                  <span className="font-bold text-gray-900">{fmt(current, k.unit)}</span>
+                  <span className="text-gray-400"> / {fmt(target, k.unit)}{k.unit}</span>
+                </p>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${
+                    pct >= 80 ? "bg-green-400" : pct >= 50 ? "bg-yellow-400" : "bg-red-400"
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[10px] text-gray-500">{k.rationale}</p>
+                <p className="text-[10px] font-bold text-gray-600">{pct}%</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+interface MenuMissingCategory {
+  category: string;
+  competitor_coverage_pct: number;
+  fit_score: number;
+  rationale: string;
+  expected_avg_ticket_change_pct: number;
+  implementation_cost: "low" | "medium" | "high";
+}
+interface MenuSeasonalWeek {
+  week_label: string;
+  theme: string;
+  menu_idea: string;
+  rationale: string;
+  channel_action: string;
+}
+interface MenuDifferentiationPick {
+  menu_name: string;
+  why_us: string;
+  why_not_competitors: string;
+  first_step: string;
+}
+interface MenuStrategyData {
+  strategy: {
+    summary: string;
+    gap_analysis: { headline: string; missing_categories: MenuMissingCategory[] };
+    seasonal_calendar: MenuSeasonalWeek[];
+    differentiation_pick: MenuDifferentiationPick | null;
+  };
+  generated_at: string;
+}
+
+function MenuStrategyCard() {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<MenuStrategyData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async (refresh = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.getMenuStrategy(refresh);
+      setData(res);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "메뉴 전략 로드 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpen = () => {
+    if (!open && !data && !loading) load();
+    setOpen(!open);
+  };
+
+  const costLabel = { low: "낮음", medium: "보통", high: "높음" };
+  const costColor = {
+    low: "bg-green-100 text-green-700",
+    medium: "bg-yellow-100 text-yellow-700",
+    high: "bg-red-100 text-red-700",
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <button
+        onClick={handleOpen}
+        className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-gray-900">메뉴 전략</h3>
+          <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded font-medium">
+            갭 + 시즌 + 차별화
+          </span>
+        </div>
+        <span className="text-gray-400 text-sm">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 border-t border-gray-100 pt-4">
+          {loading && (
+            <div className="flex flex-col items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mb-3" />
+              <p className="text-xs text-gray-500">주변 경쟁사 + 핵심 고객층 데이터 분석 중...</p>
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-4">
+              <p className="text-sm text-red-500 mb-2">{error}</p>
+              <button onClick={() => load(true)} className="text-xs text-gray-500 underline">
+                다시 시도
+              </button>
+            </div>
+          )}
+          {data && data.strategy && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="bg-purple-50 border border-purple-100 rounded-lg p-3">
+                <p className="text-sm font-semibold text-purple-800">{data.strategy.summary}</p>
+              </div>
+
+              {/* Gap Analysis */}
+              {data.strategy.gap_analysis?.missing_categories?.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">갭 분석</p>
+                    <p className="text-[11px] text-gray-500">{data.strategy.gap_analysis.headline}</p>
+                  </div>
+                  <div className="space-y-2">
+                    {data.strategy.gap_analysis.missing_categories.map((m, i) => (
+                      <div key={i} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p className="font-semibold text-sm text-gray-900 flex-1">{m.category}</p>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${costColor[m.implementation_cost] || "bg-gray-100"}`}>
+                            도입비용 {costLabel[m.implementation_cost] || m.implementation_cost}
+                          </span>
+                        </div>
+                        <div className="flex gap-3 text-[11px] text-gray-500 mb-2 tabular-nums">
+                          <span>주변 보유 {m.competitor_coverage_pct}%</span>
+                          <span>적합도 {m.fit_score}/100</span>
+                          <span className={m.expected_avg_ticket_change_pct >= 0 ? "text-green-600 font-semibold" : "text-red-500 font-semibold"}>
+                            객단가 {m.expected_avg_ticket_change_pct >= 0 ? "+" : ""}{m.expected_avg_ticket_change_pct}%
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed">{m.rationale}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Seasonal Calendar */}
+              {data.strategy.seasonal_calendar?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">시즌 캘린더 (4주)</p>
+                  <div className="space-y-2">
+                    {data.strategy.seasonal_calendar.map((w, i) => (
+                      <div key={i} className="border-l-2 border-yellow-300 bg-yellow-50/50 pl-3 py-2">
+                        <div className="flex items-baseline justify-between mb-1">
+                          <p className="text-xs font-bold text-yellow-700">{w.week_label}</p>
+                          <p className="text-[10px] text-gray-500">{w.theme}</p>
+                        </div>
+                        <p className="text-sm text-gray-900 font-medium">{w.menu_idea}</p>
+                        <p className="text-[11px] text-gray-600 mt-0.5">{w.rationale}</p>
+                        <p className="text-[11px] text-blue-600 mt-1">→ {w.channel_action}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Differentiation Pick */}
+              {data.strategy.differentiation_pick && (
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-1">차별화 한 수</p>
+                  <p className="text-base font-extrabold text-purple-900 mb-2">{data.strategy.differentiation_pick.menu_name}</p>
+                  <div className="space-y-1.5 text-xs">
+                    <p><span className="text-gray-500">우리 가게 적합 이유: </span><span className="text-gray-800">{data.strategy.differentiation_pick.why_us}</span></p>
+                    <p><span className="text-gray-500">경쟁사가 못 하는 이유: </span><span className="text-gray-800">{data.strategy.differentiation_pick.why_not_competitors}</span></p>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-purple-200">
+                    <p className="text-xs text-purple-700"><span className="font-semibold">오늘 시작: </span>{data.strategy.differentiation_pick.first_step}</p>
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => load(true)} className="w-full py-2 text-xs text-gray-400 hover:text-gray-600">
+                메뉴 전략 다시 분석하기
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

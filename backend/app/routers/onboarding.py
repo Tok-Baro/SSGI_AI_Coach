@@ -8,12 +8,12 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
-from app.database import get_db
+from app.database import get_db, async_session_factory
 from app.schemas.onboarding import (
     VerifyBusinessRequest, VerifyBusinessResponse,
     KakaoLocalSearchResult, CompleteOnboardingRequest, CompleteOnboardingResponse,
@@ -24,6 +24,8 @@ from app.services.seoul_api_service import SeoulAPIService
 from app.services.rag_service import RAGService
 from app.services.action_generator import ActionGenerator
 from app.utils.auth import get_current_user
+from app.utils.business_type import normalize_business_type
+from app.utils.rate_limit import onboarding_rate
 from app.utils.verification import create_verification_token, verify_verification_token
 from app.models.user import User
 
@@ -38,6 +40,7 @@ MAX_ONBOARDING_ATTEMPTS = 10
 @router.post("/verify-business", response_model=VerifyBusinessResponse)
 async def verify_business(
     req: VerifyBusinessRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -46,8 +49,14 @@ async def verify_business(
     보안:
     - 이미 온보딩 완료된 사용자는 재검증 차단
     - 다른 사용자가 이미 등록한 사업자번호 차단
-    - 시도 횟수 제한
+    - 시도 횟수 제한 + IP rate limit (NTS API 비용/할당량 보호)
     """
+    # IP-based rate limit (user-level과 별개로 봇 차단)
+    onboarding_rate.check(request.client.host if request.client else "unknown")
+
+    # 0. detached 사용자 객체 재부착 (get_current_user 세션 분리 대응)
+    db.add(current_user)
+
     # 1. 이미 온보딩 완료된 사용자 차단
     if current_user.onboarding_completed:
         raise HTTPException(
@@ -122,9 +131,13 @@ async def search_business(
 async def complete_onboarding(
     req: CompleteOnboardingRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
     """온보딩 완료: 검증 토큰 확인 → 사업 정보 저장 → 서울시 API → RAG 매칭.
+
+    Phased pattern:
+    - A1: dedupe check + user record save (DB short session, commit)
+    - B: Seoul API gather (no DB)
+    - A2: RAG + first action (DB short session)
 
     보안:
     - 이미 온보딩 완료된 사용자 차단
@@ -132,7 +145,7 @@ async def complete_onboarding(
     - 토큰의 user_id + business_number 바인딩 검증
     - 사업자번호 중복 재확인 (race condition 방지)
     """
-    # 1. 이미 완료된 사용자 차단
+    # 1. 이미 완료된 사용자 차단 (검증 토큰 전 빠른 cutoff)
     if current_user.onboarding_completed:
         raise HTTPException(
             status_code=409,
@@ -150,71 +163,78 @@ async def complete_onboarding(
             detail="사업자 검증이 완료되지 않았거나 검증 유효시간(10분)이 초과되었습니다. 다시 검증해주세요.",
         )
 
-    # 3. 사업자번호 중복 재확인 (동시 요청 race condition 방지)
-    stmt = select(User).where(
-        User.business_number == req.business_number,
-        User.onboarding_completed == True,
-        User.id != current_user.id,
-    )
-    result = await db.execute(stmt)
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=409,
-            detail="이미 등록된 사업자번호입니다.",
-        )
+    canonical_btype = normalize_business_type(req.business_type)
 
-    # 4. 사업 정보 저장
-    current_user.business_number = req.business_number
-    current_user.business_name = req.business_name
-    current_user.business_type = req.business_type
-    current_user.address = req.address
-    current_user.dong_name = req.dong_name
-    current_user.gu_name = req.gu_name
-    current_user.lat = req.lat
-    current_user.lng = req.lng
-    current_user.onboarding_completed = True
+    # === Phase A1: dedupe + user record persist (DB short session) ===
+    async with async_session_factory() as db:
+        db.add(current_user)
+        # 사업자번호 중복 재확인 (동시 요청 race 방지)
+        existing = (await db.execute(
+            select(User).where(
+                User.business_number == req.business_number,
+                User.onboarding_completed == True,
+                User.id != current_user.id,
+            )
+        )).scalar_one_or_none()
+        if existing:
+            raise HTTPException(status_code=409, detail="이미 등록된 사업자번호입니다.")
 
-    # 5. 서울시 API 3종 병렬 호출
+        # 사업 정보 저장 (canonical taxonomy로 정규화)
+        current_user.business_number = req.business_number
+        current_user.business_name = req.business_name
+        current_user.business_type = canonical_btype
+        current_user.address = req.address
+        current_user.dong_name = req.dong_name
+        current_user.gu_name = req.gu_name
+        current_user.lat = req.lat
+        current_user.lng = req.lng
+        current_user.business_start_date = req.business_start_date
+        current_user.onboarding_completed = True
+        await db.commit()
+    # === DB session closed ===
+
+    # === Phase B: Seoul API 병렬 호출 (no DB) ===
     seoul = SeoulAPIService()
-    sales_task = seoul.get_commercial_sales(req.gu_name, req.dong_name, req.business_type)
-    population_task = seoul.get_living_population(req.dong_name, req.gu_name)
-    events_task = seoul.get_cultural_events(req.gu_name)
-
     sales_data, population_data, events_data = await asyncio.gather(
-        sales_task, population_task, events_task,
+        seoul.get_commercial_sales(req.gu_name, req.dong_name, canonical_btype),
+        seoul.get_living_population(req.dong_name, req.gu_name),
+        seoul.get_cultural_events(req.gu_name),
         return_exceptions=True,
     )
 
-    # 6. RAG 지원사업 매칭 (온보딩 시점에는 ICP 신호 없음 — user_id 생략)
-    rag = RAGService()
-    matched_subsidies = await rag.search_subsidies_filtered(
-        db=db,
-        gu_name=req.gu_name or "",
-        business_type=req.business_type or "",
-        top_k=5,
-    )
-    subsidy_count = len(matched_subsidies)
+    # === Phase A2: RAG + first action (DB short session) ===
+    async with async_session_factory() as db:
+        db.add(current_user)
+        rag = RAGService()
+        matched_subsidies = await rag.search_subsidies_filtered(
+            db=db,
+            gu_name=req.gu_name or "",
+            business_type=canonical_btype,
+            top_k=5,
+        )
+        subsidy_count = len(matched_subsidies)
 
-    # 7. 복합 위험도 엔진으로 초기 위험 점수 산출
-    from app.services.risk_score_engine import RiskScoreEngine
-    engine = RiskScoreEngine()
-    risk_result = engine.compute(
-        sales_data=sales_data if not isinstance(sales_data, Exception) else None,
-        population_data=population_data if not isinstance(population_data, Exception) else None,
-        subsidy_matches=matched_subsidies,
-    )
-    risk_score = risk_result.composite_score
+        # 위험도 엔진 (DB 무관)
+        from app.services.risk_score_engine import RiskScoreEngine
+        engine = RiskScoreEngine()
+        risk_result = engine.compute(
+            sales_data=sales_data if not isinstance(sales_data, Exception) else None,
+            population_data=population_data if not isinstance(population_data, Exception) else None,
+            subsidy_matches=matched_subsidies,
+        )
+        risk_score = risk_result.composite_score
 
-    # 8. 첫 daily_action 생성
-    generator = ActionGenerator()
-    await generator.create_initial_action(
-        db=db,
-        user=current_user,
-        matched_subsidies=matched_subsidies,
-        sales_data=sales_data if not isinstance(sales_data, Exception) else None,
-        population_data=population_data if not isinstance(population_data, Exception) else None,
-        events_data=events_data if not isinstance(events_data, Exception) else None,
-    )
+        # 첫 daily_action 생성 (DB)
+        generator = ActionGenerator()
+        await generator.create_initial_action(
+            db=db,
+            user=current_user,
+            matched_subsidies=matched_subsidies,
+            sales_data=sales_data if not isinstance(sales_data, Exception) else None,
+            population_data=population_data if not isinstance(population_data, Exception) else None,
+            events_data=events_data if not isinstance(events_data, Exception) else None,
+        )
+        await db.commit()
 
     logger.info(
         "온보딩 완료: user_id=%s, business_number=%s",

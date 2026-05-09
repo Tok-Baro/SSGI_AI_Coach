@@ -144,7 +144,9 @@ class ActionGenerator:
                 response_format={"type": "json_object"},
             )
             content = response.choices[0].message.content
-            return json.loads(content)
+            data = json.loads(content)
+            data["is_fallback"] = False
+            return data
         except Exception as e:
             logger.error(f"GPT-4o daily action failed: {e}")
             return self._fallback_action(subsidy_data, population_data, events_data)
@@ -156,10 +158,13 @@ class ActionGenerator:
         events_data: Optional[list],
     ) -> dict:
         """GPT 실패 시 결정론적 폴백."""
+        # 모든 fallback에 is_fallback=True flag 명시 (P0-12 / P1-5)
         if subsidy_data:
             s = subsidy_data[0]
             amount = s.get("max_amount", 0)
             return {
+                "is_fallback": True,
+                "fallback_reason": "GPT API unavailable, using deterministic subsidy match",
                 "action_type": "subsidy",
                 "title": f"지원금 {amount}만원 마감 임박, 놓치지 마세요",
                 "description": f"{s.get('title', '지원사업')} 신청 가능합니다. 지금 확인하세요.",
@@ -171,6 +176,8 @@ class ActionGenerator:
         if population_data and population_data.get("change_percent", 0) > 10:
             change = population_data["change_percent"]
             return {
+                "is_fallback": True,
+                "fallback_reason": "GPT API unavailable, using population threshold rule",
                 "action_type": "population",
                 "title": f"유동인구 {change}%↑ 놓치지 마세요",
                 "description": "오늘 유동인구가 급증합니다. 이벤트 쿠폰으로 고객을 잡으세요.",
@@ -180,6 +187,8 @@ class ActionGenerator:
             }
 
         return {
+            "is_fallback": True,
+            "fallback_reason": "GPT API unavailable + no actionable data",
             "action_type": "coupon",
             "title": "이번 주 이벤트 없이 지나가고 있어요",
             "description": "QR 쿠폰 이벤트로 매출 기회를 만들어보세요.",

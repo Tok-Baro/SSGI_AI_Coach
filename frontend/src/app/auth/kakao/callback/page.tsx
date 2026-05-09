@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -10,13 +10,25 @@ function KakaoCallbackContent() {
   const searchParams = useSearchParams();
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  // 카카오 OAuth code는 일회용 — StrictMode/리렌더로 useEffect 2회 실행 시 중복 사용 방지
+  const handledRef = useRef(false);
 
   useEffect(() => {
+    if (handledRef.current) return;
     const code = searchParams.get("code");
+    const state = searchParams.get("state");
     if (!code) {
       setError("카카오 인증 코드가 없습니다.");
       return;
     }
+    // OAuth state CSRF 검증 (RFC 6749 §10.12)
+    const expected = sessionStorage.getItem("oauth_state");
+    sessionStorage.removeItem("oauth_state");
+    if (expected && (!state || state !== expected)) {
+      setError("보안 검증에 실패했습니다. 처음부터 다시 시도해주세요.");
+      return;
+    }
+    handledRef.current = true;
 
     login(code)
       .then(() => {
@@ -24,6 +36,8 @@ function KakaoCallbackContent() {
       })
       .catch((err) => {
         setError(err.message || "로그인에 실패했습니다.");
+        // 실패 시에는 다시 시도 가능하도록 가드 해제
+        handledRef.current = false;
       });
   }, [searchParams, login, router]);
 
