@@ -32,7 +32,12 @@ from reportlab.graphics.charts.barcharts import VerticalBarChart, HorizontalBarC
 from reportlab.graphics.charts.linecharts import HorizontalLineChart
 from reportlab.graphics.charts.piecharts import Pie
 
-from app.utils.industry import industry_report_weights, classify_industry
+from app.utils.industry import (
+    industry_report_weights,
+    classify_industry,
+    industry_name,
+    industry_data_caveats,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +129,9 @@ class ReportData:
     strategic: list[str]
     # 집중분석(deep-report) JSON — 있으면 PDF 뒷부분에 추가 섹션 렌더링
     deep_report: Optional[dict] = None
+    # 적용된 세부 업종 플레이북 이름 + 그 업종의 데이터 해석 주의
+    industry_label: Optional[str] = None
+    data_caveats: Optional[list[str]] = None
 
 
 # ===== 카테고리 점수 산출 =====
@@ -396,6 +404,8 @@ def assemble_report_data(
         medium_term=medium,
         strategic=strategic,
         deep_report=deep_report,
+        industry_label=industry_name(business_type, industry_slug),
+        data_caveats=industry_data_caveats(business_type, industry_slug),
     )
 
 
@@ -440,6 +450,8 @@ def generate_pdf(report: ReportData) -> bytes:
         meta,
     ))
     story.append(Paragraph(f"발행일: {report.report_date}", meta))
+    if report.industry_label and report.industry_label not in ("업종 미등록", "미등록"):
+        story.append(Paragraph(f"적용 업종 플레이북: {report.industry_label}", meta))
     story.append(Spacer(1, 14))
 
     # 점수 카드 (Table로 score + label을 셀 단위 분리 → 겹침 0)
@@ -918,6 +930,13 @@ def generate_pdf(report: ReportData) -> bytes:
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                 ]))
                 story.append(kpi_tbl)
+
+    # 업종 데이터 해석 주의 (세부 업종 플레이북에 등록된 경우만)
+    if report.data_caveats:
+        story.append(Spacer(1, 16))
+        story.append(Paragraph("이 업종 데이터, 이렇게 해석했어요", h2))
+        for c in report.data_caveats[:3]:
+            story.append(Paragraph(f"· {c}", meta))
 
     # 마지막: 각주
     story.append(Spacer(1, 20))
