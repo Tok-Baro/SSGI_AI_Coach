@@ -32,8 +32,23 @@ def classify_industry(business_type: Optional[str], industry_slug: Optional[str]
 
 
 def industry_prompt_block(business_type: Optional[str], industry_slug: Optional[str] = None) -> str:
-    """GPT 시스템/유저 프롬프트에 임베드할 업종 분기 가이드."""
-    return registry.resolve_for(industry_slug, business_type).prompt_block
+    """GPT 시스템/유저 프롬프트에 임베드할 업종 분기 가이드 (+ 업종별 데이터 해석 주의)."""
+    pack = registry.resolve_for(industry_slug, business_type)
+    block = pack.prompt_block
+    if pack.data_caveats:
+        caveats = "\n".join(f"- {c}" for c in pack.data_caveats)
+        block = f"{block}\n\n## 데이터 해석 주의 (이 업종 특성상 — 아래를 어기지 마세요)\n{caveats}"
+    return block
+
+
+def industry_data_caveats(business_type: Optional[str], industry_slug: Optional[str] = None) -> list[str]:
+    """이 업종의 공공데이터 해석 주의 사항 목록."""
+    return list(registry.resolve_for(industry_slug, business_type).data_caveats)
+
+
+def industry_name(business_type: Optional[str], industry_slug: Optional[str] = None) -> str:
+    """이 업종 팩의 표시 이름 (예: '입시·교과 학원')."""
+    return registry.resolve_for(industry_slug, business_type).name
 
 
 def industry_audit_weights(business_type: Optional[str], industry_slug: Optional[str] = None) -> dict[str, float]:

@@ -1,0 +1,62 @@
+# restaurant.pub — 주점·술집 (호프·생맥주·포차 / 와인바·칵테일바)
+# ※ 지금까지 주점/호프는 어느 팩에도 안 잡혀 unknown 으로 빠지던 업종 — 신설.
+# ※ 일반·무도 유흥주점은 다수 소상공인 지원사업 제외 대상 (개별 공고 확인 필요).
+# 출처: 농식품부 외식업체 경영실태조사 2024 + KCD(2024 4Q 술집 -1.7%) + sme-coach.
+id: restaurant.pub
+name: 주점·술집 (호프·포차·와인바)
+group: restaurant
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 농식품부 외식업체 경영실태조사 2024 + 한국신용데이터 데이터랩 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 22
+  keywords: [호프, 호프집, 생맥주, 비어, 펍, 브루어리, 수제맥주, 포차, 포장마차, 실내포차, 술집, 요리주점, 와인바, 칵테일바, 칵테일, 위스키바, 하이볼바, 막걸리집, 전통주점, 민속주점, 맥주펍, 안주전문, 양주바]
+  ksic_codes: ["56213", "56219"]   # 생맥주 전문점 / 기타 주점업
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 주점·술집 (호프·생맥주·포차 / 와인바·칵테일바)
+  - Hero KPI: **야간 매출 비중 + 금·토 매출 집중도** + 주류 마진 + 테이블 체류·재방문(단골). 안주 회전보다 좌석·시간당 매출이 hero
+  - 객단가: 호프·생맥주 1인 12,000~20,000원 / 포차 15,000~25,000원 / 와인바·칵테일바 20,000~40,000원+ (체류 길어 테이블 객단가는 더 큼)
+  - 운영 리듬: **저녁 19시~심야, 금·토에 주중 합산 이상 매출** / 연말(12월 송년회) 최대 성수기 / 여름(맥주·치맥) 성수기 / 1월·명절 직후 비수기 / 날씨·기온 민감(테라스·포차)
+  - Top 채널: **인스타그램 1순위(분위기·안주샷·이벤트) + 네이버 플레이스("○○역 술집" 검색)·카카오맵** / 와인바·칵테일바는 캐치테이블(예약)도 / 당근(동네 단골) / 카카오 채널 단골 이벤트 공지. 배달·전단 효과 낮음
+  - 손실 프레임: "분위기·안주·이벤트 인스타 콘텐츠 부재", "'○○역 술집' 네이버 플레이스 검색 노출 미정비", "12월 송년회·여름 치맥 시즌 무대응", "단골 이벤트 공지 채널 없음"
+  - 위험 신호: 야간(19시 이후) 매출 비중 < 70% / 금·토 매출 < 주중 합산 / 12월 매출 스파이크 없음 / 인스타 게시 빈약
+  - 카피 예: "12월 송년회 시즌엔 단체석·예약을 미리 받으세요 — 술집은 12월 한 달이 1·2월 두 달치예요", "안주 한 접시·테라스 사진 1장만 인스타에 올려도 '○○역 술집' 검색에서 위로 올라옵니다"
+  - 금지: "점심 회전율 올리세요"(야간 업종엔 무관), "배달 비중 늘리세요"(주점은 배달 적합도 낮음), 유흥·단란주점에 일반 소상공인 지원사업 권하기(제외 대상 — 공고 확인)
+
+hero_kpis:
+  - {key: "night_sales_ratio", label: "야간(19시 이후) 매출 비중", unit: "%", good: "≥ 80", warn: "70–79", danger: "< 70", confidence: "estimated", source: "업계 추정 — 주점은 야간이 본질"}
+  - {key: "weekend_concentration", label: "금·토 매출 집중도", unit: "% (주중 합산 대비)", good: "≥ 100", warn: "70–99", danger: "< 70", confidence: "estimated", source: "업계 추정 — 금·토가 주중 합산 이상"}
+  - {key: "avg_ticket", label: "테이블 객단가", unit: "원", good: "호프 ≥ 30,000 / 와인바 ≥ 50,000 (테이블 기준)", warn: "—", danger: "—", confidence: "estimated", source: "추정 — 1인 호프 1.2~2만, 체류 길어 테이블 단가는 더 큼"}
+  - {key: "liquor_cost_ratio", label: "주류·안주 혼합 원가율", unit: "% 매출", good: "≤ 35", warn: "36–40", danger: "> 40", confidence: "estimated", source: "추정 — 주류 25~30%·안주 30~40%"}
+
+kpi_thresholds:
+  야간_매출_비율_위험: "< 70%"
+  금토_집중도_위험: "< 주중 합산"
+  혼합_원가율_위험: "> 40%"
+
+risk_signal_weights:   # 번화가 술집 경쟁 극심 / 시즌(연말·여름)·날씨 변동 큼 / 야간 유동인구 의존
+  competition: 1.2
+
+subsidy_tags: [digital, store_renovation]   # 스마트상점(키오스크·테이블오더·POS)·점포환경개선 / ※ 배달비 지원·유흥주점 제외 사업은 제외
+
+channels:
+  - {key: "instagram", name: "인스타그램(분위기·안주·이벤트)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·문의·방문", roi_note: "분위기·안주샷·이벤트 콘텐츠가 2030 유입 핵심. 광고는 일 1,000원+", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고)", fit: "high", entry_cost_won: 0, primary_metric: "'○○역 술집' 검색→방문", roi_note: "무료 등록 + CPC 광고. 2030이 역명+'술집'으로 검색", confidence: "measured", source: "네이버"}
+  - {key: "kakaomap", name: "카카오맵(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "위치 검색·모임", roi_note: "무료", confidence: "measured", source: "카카오"}
+  - {key: "catchtable", name: "캐치테이블(와인바·칵테일바 예약)", fit: "medium", primary_metric: "예약·모임", roi_note: "고가 와인바·칵테일바·요리주점은 예약 활용", confidence: "hypothesis"}
+  - {key: "kakao_channel_daangn", name: "카카오 채널·당근(단골 이벤트)", fit: "medium", per_unit_cost_won: 15, primary_metric: "재방문·이벤트 공지", roi_note: "단골 이벤트·신메뉴 공지. 카카오 채널 텍스트 15원/건. 당근은 무료", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "baemin_musinsa", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음 (주점은 배달 적합도 낮음)", confidence: "measured"}
+
+copy_tone:
+  vocab: ["야간 매출", "금·토 집중", "송년회 시즌", "분위기·안주샷", "단골 이벤트"]
+  loss_frames: ["분위기·안주·이벤트 인스타 콘텐츠 부재", "'○○역 술집' 검색 노출 미정비", "12월 송년회·여름 치맥 시즌 무대응", "단골 이벤트 공지 채널 없음"]
+  examples:
+    - "12월 송년회 시즌엔 단체석·예약을 미리 받으세요 — 술집은 12월 한 달이 1·2월 두 달치예요"
+    - "안주 한 접시·테라스 사진 1장만 인스타에 올려도 '○○역 술집' 검색에서 위로 올라옵니다"
+  do: ["인스타 분위기·안주·이벤트 콘텐츠", "네이버 플레이스 '○○역 술집' 키워드 정비", "12월 송년회·여름 치맥 시즌 단체·이벤트 준비"]
+  dont: ["점심 회전율 신경쓰기 (야간 업종엔 무관)", "배달 비중 늘리기 (주점은 배달 적합도 낮음)", "유흥·단란주점에 일반 지원사업 권하기 (제외 대상)"]

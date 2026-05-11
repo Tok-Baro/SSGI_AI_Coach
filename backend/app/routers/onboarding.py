@@ -17,6 +17,7 @@ from app.database import get_db, async_session_factory
 from app.schemas.onboarding import (
     VerifyBusinessRequest, VerifyBusinessResponse,
     KakaoLocalSearchResult, CompleteOnboardingRequest, CompleteOnboardingResponse,
+    UpdateProfileRequest, UpdateProfileResponse,
 )
 from app.services.nts_service import NTSService
 from app.services.kakao_service import KakaoService
@@ -25,7 +26,7 @@ from app.services.rag_service import RAGService
 from app.services.action_generator import ActionGenerator
 from app.utils.auth import get_current_user
 from app.utils.business_type import normalize_business_type
-from app.utils.industry import classify_industry, industry_risk_weights
+from app.utils.industry import classify_industry, industry_risk_weights, industry_name
 from app.utils.rate_limit import onboarding_rate
 from app.utils.verification import create_verification_token, verify_verification_token
 from app.models.user import User
@@ -254,3 +255,42 @@ async def complete_onboarding(
         subsidy_count=subsidy_count,
         risk_score=risk_score,
     )
+
+@router.patch("/profile", response_model=UpdateProfileResponse)
+async def update_profile(
+    req: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """온보딩 완료 후 가게 정보(업종/개점일) 일부 수정 — 사업자번호 재검증 없음.
+
+    "개인 페이지"에서 사장님이 업종을 다시 고르거나(특히 학원 세부 업종 등) 개점일을 채울 때 사용.
+    """
+    if not current_user.onboarding_completed:
+        raise HTTPException(
+            status_code=400,
+            detail="온보딩을 먼저 완료해주세요.",
+        )
+
+    async with async_session_factory() as db:
+        db.add(current_user)
+        raw_btype = req.business_type
+        if raw_btype is not None:
+            current_user.business_type = normalize_business_type(raw_btype)
+        if req.business_start_date is not None:
+            current_user.business_start_date = req.business_start_date
+        # industry_slug: 피커에서 명시 선택한 slug 우선, 없으면 (바뀐) 업종명으로 분류.
+        if req.industry_slug is not None or raw_btype is not None:
+            current_user.industry_slug = classify_industry(
+                raw_btype or current_user.business_type, req.industry_slug
+            )
+        await db.commit()
+        # detached 방지: 응답 값은 커밋 후 그대로 읽음 (UUID/문자열이라 lazy 로드 없음)
+        result = UpdateProfileResponse(
+            business_type=current_user.business_type,
+            industry_slug=current_user.industry_slug,
+            industry_name=industry_name(current_user.business_type, current_user.industry_slug),
+            business_start_date=current_user.business_start_date,
+        )
+
+    logger.info("프로필 수정: user_id=%s, industry_slug=%s", current_user.id, result.industry_slug)
+    return result

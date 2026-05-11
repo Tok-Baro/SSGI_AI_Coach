@@ -1,0 +1,61 @@
+# restaurant.western_asian — 양식·아시안 (파스타·스테이크·피자 레스토랑 / 브런치 / 쌀국수·태국·인도 등)
+# 출처: 농식품부 외식업체 경영실태조사 2024 + KCD(2024 4Q 양식 +8.8%·아시아음식 +6.3% — 외식 중 성장 1·2위) + sme-coach.
+id: restaurant.western_asian
+name: 양식·아시안 (파스타·스테이크·브런치·쌀국수)
+group: restaurant
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 농식품부 외식업체 경영실태조사 2024 + 한국신용데이터 데이터랩 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 22
+  keywords: [양식, 이탈리안, 파스타, 스파게티, 화덕피자, 피자레스토랑, 스테이크, 스테이크하우스, 리조또, 브런치레스토랑, 브런치다이닝, 멕시칸, 타코, 지중해음식, 스페인음식, 패밀리레스토랑, 다이닝, 비스트로, 아시안, 아시안푸드, 쌀국수, 베트남음식, 분짜, 팟타이, 태국음식, 똠얌, 인도음식, 인도카레, 케밥, 동남아음식, 싱가포르음식, 수제버거레스토랑]
+  ksic_codes: ["56123", "56129"]   # 서양식 / 기타 외국식
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 양식·아시안 (파스타·스테이크·피자 레스토랑 / 브런치 / 쌀국수·태국·인도 등)
+  - 파스타·피자 캐주얼: 13,000~22,000원 / 스테이크·다이닝: 25,000~50,000원+. Hero KPI = 객단가 + 저녁·주말 가족·데이트 비중·신규/단골
+  - 브런치: 12,000~20,000원. Hero KPI = **주말 오전~오후 회전·인스타 노출**(데이트·가족). 발렌타인·크리스마스·기념일 피크
+  - 아시안 캐주얼(쌀국수·팟타이·커리): 9,000~16,000원. Hero KPI = 점심 회전 + 배달 비중(쌀국수·커리는 배달 잘 됨)
+  - 운영 리듬: 양식·브런치는 **주말 점심~저녁이 평일보다 강함**(데이트·가족) + 기념일 피크 / 아시안은 평일 점심도 강함. 2024 외식 중 매출 성장 1·2위(소비 회복)
+  - Top 채널: 양식·브런치 → **인스타그램 1순위(비주얼·해시태그) + 네이버 플레이스(사진·메뉴·예약) + 캐치테이블(다이닝·기념일)** / 아시안 캐주얼 → 네이버 플레이스·배민(쌀국수·커리 배달)·인스타. 블로그 체험단도 효과
+  - 손실 프레임: "(양식·브런치) 인스타 비주얼 콘텐츠 부재", "(다이닝) 기념일·예약 무대응", "(브런치) 주말 회전 한계 무대응", "(아시안) 점심·배달 노출 미정비"
+  - 위험 신호: 객단가 < (캐주얼 1.3만 / 다이닝 2.5만) / 주말 매출 비중 < 평일 / 인스타 게시·태그 빈약 / 임차료 비율 > 18%(번화가 입지)
+  - 카피 예: "(양식·브런치) 시그니처 메뉴 사진 1장 + 위치 태그만 인스타에 꾸준히 올려도 데이트·가족 손님이 찾아옵니다", "(아시안) 쌀국수·커리는 배달이 잘 돼요 — 배민에 점심 세트로 올려보세요"
+  - 금지: 양식·브런치/아시안 캐주얼 구분 없이 일반론, "(파인다이닝) 배달 비중 늘리세요"
+
+hero_kpis:
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "캐주얼 ≥ 14,000 / 다이닝 ≥ 28,000 / 아시안 ≥ 11,000", warn: "—", danger: "—", confidence: "estimated", source: "추정"}
+  - {key: "weekend_ratio", label: "주말 매출 비중(양식·브런치)", unit: "% (평일 대비)", good: "≥ 100", warn: "70–99", danger: "< 70", confidence: "estimated", source: "업계 추정 — 데이트·가족 수요는 주말 집중"}
+  - {key: "instagram_activity", label: "인스타 콘텐츠(양식·브런치)", unit: "게시/월", good: "≥ 8", warn: "3–7", danger: "< 3", confidence: "hypothesis", source: "추정 — 비주얼 채널이 핵심 유입"}
+  - {key: "food_cost_ratio", label: "식재료비 비율", unit: "% 매출", good: "≤ 35(파스타·피자) / ≤ 45(스테이크)", warn: "—", danger: "> 45", confidence: "estimated", source: "추정"}
+
+kpi_thresholds:
+  객단가_위험: "< 14,000원 (캐주얼 기준)"
+  주말_매출_위험: "< 평일 (양식·브런치)"
+  인스타_콘텐츠_위험: "< 월 3건 (양식·브런치)"
+
+risk_signal_weights:
+  competition: 1.1
+
+subsidy_tags: [digital, store_renovation, marketing]   # 스마트상점·예약·키오스크 / 점포환경개선(인테리어) / 배달앱 수수료(아시안)·홍보
+
+channels:
+  - {key: "instagram", name: "인스타그램(양식·브런치 비주얼)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·저장·위치 태그", roi_note: "비주얼 소비가 핵심 — 시그니처 메뉴·공간 사진. 광고는 일 1,000원+", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고·예약)", fit: "high", entry_cost_won: 0, primary_metric: "검색→방문·예약", roi_note: "무료 등록 + CPC 광고. 사진·메뉴·예약 정비", confidence: "measured", source: "네이버"}
+  - {key: "catchtable", name: "캐치테이블(다이닝·기념일 예약)", fit: "medium", primary_metric: "예약·기념일 손님", roi_note: "스테이크·파인다이닝·브런치 다이닝에. 기념일·연말 예약", confidence: "hypothesis"}
+  - {key: "blog_review", name: "네이버 블로그·맛집 큐레이션", fit: "medium", primary_metric: "검색 노출·신뢰", roi_note: "체험단·맛집 큐레이션 노출", confidence: "hypothesis"}
+  - {key: "baemin", name: "배민 울트라콜·CPC(아시안 캐주얼)", fit: "medium", entry_cost_won: 88000, primary_metric: "배달 주문", roi_note: "쌀국수·커리·팟타이는 배달 잘 됨. 파인다이닝·브런치는 배달 적합도 낮음", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["시그니처 메뉴", "위치 태그", "기념일 예약", "주말 회전", "데이트·가족"]
+  loss_frames: ["(양식·브런치) 인스타 비주얼 콘텐츠 부재", "(다이닝) 기념일·예약 무대응", "(브런치) 주말 회전 한계 무대응", "(아시안) 점심·배달 노출 미정비"]
+  examples:
+    - "(양식·브런치) 시그니처 메뉴 사진 + 위치 태그만 인스타에 꾸준히 올려도 데이트·가족 손님이 찾아옵니다"
+    - "(아시안) 쌀국수·커리는 배달이 잘 돼요 — 배민에 점심 세트로 올려보세요"
+  do: ["(양식·브런치) 인스타 시그니처·공간 사진 + 위치 태그", "(다이닝) 캐치테이블 기념일 예약", "(아시안) 배민 점심 세트 + 네이버 플레이스"]
+  dont: ["양식·브런치/아시안 캐주얼 구분 없이 일반론", "(파인다이닝) 배달 비중 늘리기"]

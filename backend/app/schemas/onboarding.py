@@ -47,3 +47,18 @@ class CompleteOnboardingResponse(BaseModel):
     message: str
     subsidy_count: int = 0
     risk_score: float = 0.0
+
+
+class UpdateProfileRequest(BaseModel):
+    """온보딩 완료 후 가게 정보 일부 수정 (업종/개점일). 사업자번호 재검증 없음."""
+    industry_slug: Optional[str] = Field(None, max_length=64, description="업종 지식팩 pack id (피커 선택)")
+    business_type: Optional[str] = Field(None, min_length=1, max_length=100, description="업종명 (raw — 정규화는 서버가)")
+    business_start_date: Optional[date] = Field(None, description="가게 개점일")
+
+
+class UpdateProfileResponse(BaseModel):
+    business_type: Optional[str] = None
+    industry_slug: Optional[str] = None
+    industry_name: Optional[str] = None
+    business_start_date: Optional[date] = None
+    message: str = "저장됐어요."

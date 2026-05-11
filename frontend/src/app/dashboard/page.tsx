@@ -133,12 +133,20 @@ export default function DashboardPage() {
               {data.user.business_name}
             </h1>
           </div>
-          <button
-            onClick={() => { logout(); router.push("/"); }}
-            className="press-effect text-sm font-medium text-gray-500 px-4 py-2 bg-gray-100 rounded-xl hover:bg-gray-200"
-          >
-            로그아웃
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/profile")}
+              className="press-effect text-sm font-medium text-gray-600 px-3 py-2 bg-gray-100 rounded-xl hover:bg-gray-200"
+            >
+              내 가게
+            </button>
+            <button
+              onClick={() => { logout(); router.push("/"); }}
+              className="press-effect text-sm font-medium text-gray-500 px-3 py-2 bg-gray-100 rounded-xl hover:bg-gray-200"
+            >
+              로그아웃
+            </button>
+          </div>
         </div>
       </header>
 

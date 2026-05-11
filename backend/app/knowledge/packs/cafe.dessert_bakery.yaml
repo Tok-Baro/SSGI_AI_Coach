@@ -1,0 +1,61 @@
+# cafe.dessert_bakery — 디저트·베이커리 카페 (디저트 전문·케이크·베이커리 겸 카페·브런치카페)
+# 출처: 업계·납품사 자료 + KCI 논문(디저트카페 SNS 특성→재방문의도) + KB 자영업 베이커리 보고서 + sme-coach. (한국 공식 객단가 통계 미확인 — 추정.)
+id: cafe.dessert_bakery
+name: 디저트·베이커리 카페
+group: cafe
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 업계·납품업체 자료 + KCI 논문(디저트카페 SNS 특성과 재방문의도) + KB 자영업 분석 보고서 + sme-coach 플레이북
+    year: 2025
+
+match:
+  priority: 16
+  keywords: [디저트카페, 디저트, 케이크전문점, 케이크, 베이커리카페, 베이커리, 브런치카페, 와플, 마카롱, 도넛전문, 타르트, 빙수, 스콘, 쿠키, 디저트맛집, 케이크맛집]
+  ksic_codes: ["56191", "56221"]   # 제과점 / 커피전문점(겸업)
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 디저트·베이커리 카페 (디저트 전문·케이크·브런치카페)
+  - Hero KPI: ① 객단가(디저트 부착률 attach rate — 음료+디저트 세트) ② 폐기율(케이크·생크림류 당일 소진) ③ 인스타 저장·태그 수(신규 유입 직결) ④ 주말 매출 비중(데이트·나들이 → 주말↑)
+  - 객단가: 1인 7,000~15,000원(음료+디저트 세트), 케이크 홀 주문 시 건당 25,000~50,000원 (추정 — 한국 공식 통계 미확인)
+  - 운영 리듬: 주말·공휴일 피크 / 평일 14~18시(브런치·티타임) / **발렌타인·화이트데이·크리스마스·빼빼로데이·명절(설·추석 디저트 기프트)·가정의달 매출 스파이크** / 디저트 유행 주기 짧음(SNS 인증→급증→급랭 — 메뉴 회전 필요)
+  - Top 채널: ① 인스타그램·릴스(비주얼 소비가 핵심 — 디저트카페 SNS 특성이 재방문의도에 유의미한 영향) ② 네이버 플레이스+예약(케이크 픽업) ③ 블로그 체험단·맛집 큐레이션 ④ 카카오 채널(케이크 예약 알림)
+  - 손실 프레임: "인스타 비주얼·릴스 콘텐츠 부재", "케이크 픽업 예약(네이버 예약) 미운영", "발렌타인·크리스마스 등 기프트 시즌 무대응", "유행 지난 메뉴 방치(회전 없음)", "폐기율 관리 안 됨"
+  - 위험 신호: 디저트 부착률 저조(음료만 팔림) / 폐기율 > 8% / 인스타 게시·태그 빈약 / 기프트 시즌 매출 스파이크 없음 / 영업이익률 < 6%
+  - 카피 예: "케이크는 인스타 사진이 곧 주문서예요 — 신메뉴·디스플레이 사진을 꾸준히 올리고 네이버 예약에 픽업 캘린더를 여세요", "크리스마스·발렌타인 한정 케이크는 2~3주 전부터 예약을 받으세요"
+  - 금지: "배민 광고비 늘리세요"(디저트카페는 배달 적합도 보통 — 배달 전문이면 별개), "유행 지난 시그니처 그대로 유지"
+
+hero_kpis:
+  - {key: "dessert_attach_rate", label: "디저트 부착률(음료+디저트)", unit: "%", good: "≥ 50", warn: "30–49", danger: "< 30", confidence: "hypothesis", source: "추정 — 디저트카페 객단가의 핵심"}
+  - {key: "waste_ratio", label: "폐기율(케이크·생크림류)", unit: "% 생산", good: "≤ 5", warn: "6–8", danger: "> 8", confidence: "estimated", source: "업계 통설"}
+  - {key: "weekend_ratio", label: "주말 매출 비중", unit: "% (평일 대비)", good: "≥ 100", warn: "70–99", danger: "< 70", confidence: "estimated", source: "업계 추정 — 데이트·나들이 수요 주말 집중"}
+  - {key: "food_cost_ratio", label: "식재료비 비율", unit: "% 매출", good: "≤ 38", warn: "39–45", danger: "> 45", confidence: "estimated", source: "추정 — 생크림·과일·버터 변동 큼"}
+
+kpi_thresholds:
+  디저트_부착률_위험: "< 30%"
+  폐기율_위험: "> 8%"
+  주말_매출_위험: "< 평일"
+
+risk_signal_weights:
+  population_trend: 1.1
+  action_engagement: 0.9
+
+subsidy_tags: [digital, store_renovation, marketing]   # 스마트상점·HACCP·점포환경개선·홍보
+
+channels:
+  - {key: "instagram", name: "인스타그램·릴스(디저트 비주얼)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·저장·태그·신규 유입", roi_note: "디저트는 비주얼 소비가 본질 — 신메뉴·디스플레이·릴스. SNS 특성이 재방문의도에 유의미(KCI 논문). 광고 일 1,000원+", confidence: "hypothesis"}
+  - {key: "naver_place_reservation", name: "네이버 플레이스·예약(케이크 픽업)", fit: "high", entry_cost_won: 0, primary_metric: "검색·픽업 예약", roi_note: "무료 등록 + 케이크 픽업 캘린더 예약. 기프트 시즌 사전 예약", confidence: "measured", source: "네이버"}
+  - {key: "blog_review", name: "네이버 블로그 체험단·맛집 큐레이션", fit: "medium", monthly_budget_min_won: 100000, monthly_budget_max_won: 500000, primary_metric: "검색 노출·신뢰", roi_note: "디저트맛집 큐레이션·체험단 노출", confidence: "hypothesis"}
+  - {key: "kakao_channel", name: "카카오 채널(케이크 예약 알림·시즌 메뉴)", fit: "medium", per_unit_cost_won: 15, primary_metric: "재방문·예약 알림", roi_note: "카카오 채널 텍스트 15원/건(VAT 별도)", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "baemin", name: "배민 광고", fit: "low", primary_metric: "배달 주문", roi_note: "디저트 배달 전문이면 재검토 — 일반 디저트카페는 적합도 보통", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["디저트 부착률", "케이크 픽업 예약", "기프트 시즌", "릴스·비주얼", "메뉴 회전"]
+  loss_frames: ["인스타 비주얼·릴스 콘텐츠 부재", "케이크 픽업 예약 미운영", "발렌타인·크리스마스 기프트 시즌 무대응", "유행 지난 메뉴 방치", "폐기율 관리 안 됨"]
+  examples:
+    - "케이크는 인스타 사진이 곧 주문서예요 — 신메뉴·디스플레이 사진을 꾸준히 올리고 네이버 예약에 픽업 캘린더를 여세요"
+    - "크리스마스·발렌타인 한정 케이크는 2~3주 전부터 예약을 받으세요"
+  do: ["인스타·릴스 신메뉴·디스플레이 콘텐츠", "네이버 예약 케이크 픽업 캘린더", "기프트 시즌(발렌타인·크리스마스·명절) 한정 메뉴 사전 예약"]
+  dont: ["배민 광고비 늘리기 (일반 디저트카페는 배달 적합도 보통)", "유행 지난 시그니처 그대로 유지"]

@@ -150,6 +150,7 @@ class IndustryPack(BaseModel):
     channels: list[Channel] = Field(default_factory=list)  # 마케팅 채널 적합도/비용/지표 — GPT가 이 표 밖 ROI 생성 금지
     copy_tone: CopyTone = Field(default_factory=CopyTone)  # 카피 톤 (어휘/손실프레임/예시/권장·금지)
     subsidy_tags: list[str] = Field(default_factory=list)  # 이 업종이 자격되기 쉬운 지원사업 카테고리 태그
+    data_caveats: list[str] = Field(default_factory=list)  # 공공데이터 해석 주의 (예: 정기결제 업종은 결제일에 매출 쏠림 → 요일패턴 곧이곧대로 X)
     # P3~ 확장 예정: seasonal_calendar / commercial_zone_fit / zone_overrides
 
     @field_validator("status")

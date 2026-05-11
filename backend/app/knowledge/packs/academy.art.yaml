@@ -1,0 +1,61 @@
+# academy.art — 미술 학원 (입시미술 vs 취미·아동미술 — 두 갈래)
+# 출처: 통계청 사교육비조사 2024(예체능 참여학생 24.3만) + 미술입시 커뮤니티·업계 + sme-coach.
+id: academy.art
+name: 미술 학원
+group: academy
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 통계청 2024 초중고 사교육비조사(예체능 24.3만, 참여학생) + 미술입시·아동미술 업계 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 15
+  keywords: [미술학원, 미술교습소, 아동미술, 어린이미술, 입시미술학원, 입시미술, 미술입시, 디자인학원, 만화학원, 웹툰학원, 캘리그라피, 미술공방, 아트스쿨]
+  ksic_codes: ["85504"]   # 기타 교습 학원 (미술)
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 미술 학원 (입시미술 vs 취미·아동미술)
+  ※ 입시미술과 취미·아동미술은 객단가·시즌·KPI가 다름 — 사장님께 어느 쪽인지 확인하고 답하세요.
+  - 입시미술(기초소묘·디자인): 객단가 월 30~70만+ (입시 직전 단기특강 별도), Hero KPI = 합격 실적(미대·예고)·포트폴리오 결과물, 시즌 9~11월 실기 직전 집중 + 수시·정시 후 신고3 재편성 + 방학 특강
+  - 취미·아동미술: 객단가 월 8~20만 (통계청 예체능 24.3만 상단 참고), Hero KPI = 재등록률·이탈률(저학년은 옮김 잦음)·전시/공모전 수상, 시즌 신학기·방학 캠프·어린이날·전시회
+  - Top 채널: **인스타그램 강세**(작품·과정 영상이 콘텐츠 그 자체) > 입시미술은 합격 실적 + 미술입시 커뮤니티/네이버카페, 아동미술은 맘카페·당근·네이버 플레이스(작품 사진 후기) > 블로그(합격 후기)
+  - 손실 프레임: "작품·과정 사진 콘텐츠 부재(인스타 미운영)", "(입시) 합격 실적 노출 부재", "(아동) 재등록 관리·전시회 미운영", "넓은 작업공간 비수기 적자 위험"
+  - 위험 신호: 재등록률 < 60% / (입시)비수기 적자 / 인스타 팔로워·게시물 빈약 / 임차료 비율 > 20%(넓은 평수)
+  - 카피 예: "이번 주 아이들 작품 3장만 인스타에 올려보세요 — 미술학원은 작품이 곧 광고예요", "(입시) 합격생 포트폴리오를 동의받아 게시하면 신입생 문의가 늘어요"
+  - 금지: "배달앱·무신사" 같은 무관 채널, 입시미술/아동미술 구분 없이 일반론으로 답하기
+
+hero_kpis:
+  - {key: "reenroll_rate", label: "재등록률", unit: "%", good: "≥ 75", warn: "55–74", danger: "< 55", confidence: "estimated", source: "업계 통설 — 아동미술은 이탈 잦음"}
+  - {key: "monthly_tuition", label: "학생 1인당 월 수강료", unit: "원", good: "—", confidence: "estimated", source: "아동·취미 8~20만 / 입시미술 30~70만+ (추정, 재료비 별도 흔함)"}
+  - {key: "instagram_activity", label: "인스타 작품 콘텐츠", unit: "게시/월", good: "≥ 8", warn: "3–7", danger: "< 3", confidence: "hypothesis", source: "추정 — 미술은 시각 콘텐츠가 핵심 마케팅"}
+  - {key: "rent_ratio", label: "임차료 비율", unit: "% 매출", good: "≤ 15", warn: "16–20", danger: "> 20", confidence: "estimated", source: "추정 — 넓은 작업공간 필요"}
+
+kpi_thresholds:
+  재등록률_위험: "< 55%"
+  인스타_콘텐츠_위험: "< 월 3건"
+  임차료_비율_위험: "> 20%"
+
+risk_signal_weights:   # 입시미술은 시즌 집중형 → 매출 추세 변동 큼 / 작업공간 임차 부담
+  competition: 1.1
+
+subsidy_tags: [education, store_renovation]   # 점포환경개선(조명·인테리어 중요) + 교육서비스 일반 + 문화·예술 지자체 사업 일부
+
+channels:
+  - {key: "instagram", name: "인스타그램(작품·과정 영상)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·저장·문의 유입", roi_note: "작품이 곧 콘텐츠 — 미술학원에 가장 강한 채널. 광고는 일 1,000원+", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(작품 사진 후기)", fit: "high", entry_cost_won: 0, primary_metric: "검색·후기", roi_note: "무료 등록 + 작품 사진 후기. 아동미술은 동네 검색 비중 큼", confidence: "measured", source: "네이버"}
+  - {key: "mom_cafe", name: "맘카페·당근(아동미술)", fit: "high", entry_cost_won: 0, primary_metric: "동네 학부모 노출", roi_note: "무료. 아동·취미미술은 동네 학부모 입소문이 핵심", confidence: "hypothesis"}
+  - {key: "art_exam_community", name: "미술입시 커뮤니티·네이버카페(입시미술)", fit: "high", primary_metric: "입시생 정보 탐색", roi_note: "입시미술은 전문 커뮤니티·합격 실적 노출이 핵심", confidence: "hypothesis"}
+  - {key: "blog", name: "네이버 블로그(합격 후기·과정)", fit: "medium", primary_metric: "검색 노출·신뢰", roi_note: "합격 후기·수업 과정 기록", confidence: "hypothesis"}
+  - {key: "kakao_alimtalk", name: "카카오 알림톡", fit: "medium", per_unit_cost_won: 9, primary_metric: "도달 95%+", roi_note: "건당 8~9원. 전시회·수업 안내", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "baemin_musinsa", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["작품", "포트폴리오", "전시회", "합격 실적", "재등록", "재료비"]
+  loss_frames: ["작품·과정 사진 콘텐츠 부재(인스타 미운영)", "(입시) 합격 실적 노출 부재", "(아동) 재등록 관리·전시회 미운영"]
+  examples:
+    - "이번 주 아이들 작품 3장만 인스타에 올려보세요 — 미술학원은 작품이 곧 광고예요"
+    - "(입시반) 합격생 포트폴리오를 동의받아 게시하면 신입생 문의가 늘어요"
+  do: ["아이들 작품·수업 과정 사진 정기 인스타 업로드", "전시회·공모전 참가로 학부모 만족·재등록 유도", "(입시) 합격 실적·포트폴리오 노출"]
+  dont: ["배달앱·무신사 등 무관 채널", "입시미술/아동미술 구분 없이 일반론으로 답하기"]

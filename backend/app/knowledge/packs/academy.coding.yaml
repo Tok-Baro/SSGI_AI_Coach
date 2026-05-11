@@ -1,0 +1,63 @@
+# academy.coding — 코딩·로봇·SW 교육 학원
+# 핵심: 정부 디지털 교육 지원사업 자격이 가장 풍부한 학원 유형 (디지털새싹·SW미래채움·AI바우처·K-디지털 등).
+# 출처: 디지털새싹(교육부·창의재단), NIPA AI바우처, bizinfo 통합공고, 통계청 사교육비조사 + sme-coach.
+id: academy.coding
+name: 코딩·로봇·SW 학원
+group: academy
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 디지털새싹(교육부·한국과학창의재단) + NIPA AI바우처 + bizinfo 통합공고 + sme-coach 플레이북
+    year: 2025
+
+match:
+  priority: 15
+  keywords: [코딩학원, 코딩교실, 코딩교육, 컴퓨터학원, 컴퓨터교습소, SW교육, 소프트웨어교육, 로봇교육, 로봇학원, 메이커교육, 정보처리학원, 게임아카데미, AI교육, 코딩]
+  ksic_codes: ["85503"]   # 컴퓨터 학원
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 코딩·로봇·SW 교육 학원
+  - Hero KPI: 트렌드 민감도(AI·로봇 등 커리큘럼 최신성) + 산출물(프로젝트·로봇 결과물·대회 입상) + 재등록률 + 체험수업 전환율 + 정부 사업 수주 여부
+  - 객단가: 주1회 8~15만, 주2회 15~30만 (로봇·메이커는 교구비 별도). 성인 부트캠프는 국비(KDT) 모델로 수강생 무료
+  - 운영 리듬: 방학(겨울·여름) 특강·캠프가 매출 핵심 + 정부 프로그램(디지털새싹 등) 운영 시기에 무료 수강 유입 → 유료 전환 시즌. 신학기 효과는 교과학원보다 약함
+  - Top 채널: 맘카페·지역카페(학부모 정보 탐색) + 인스타그램(아이 코딩 결과물·로봇 영상은 시각적으로 잘 먹힘) > 네이버 플레이스/블로그(체험수업) > 전단. 정부 사업 운영 자체가 무료 체험 유입 채널
+  - 손실 프레임: "정부 디지털교육 지원사업 미신청(자격 되는데도)", "방학 특강 캠프 미운영", "아이 작품·로봇 영상 콘텐츠 부재", "커리큘럼 노후(AI 미반영)"
+  - 위험 신호: 재등록률 < 60% / 방학 특강 미운영 / 정부사업 0건(자격 충족 시) / 커리큘럼 2년 이상 미개편
+  - 카피 예: "디지털새싹·SW미래채움 운영기관 공모 한 번 알아보세요 — 무료 체험으로 학생 30명 들어옵니다", "이번 방학 로봇 캠프 영상 1편만 인스타에 올려도 학부모 문의가 늘어요"
+  - 금지: "배달앱·무신사" 같은 무관 채널, 정부지원 ROI 단정
+
+hero_kpis:
+  - {key: "reenroll_rate", label: "재등록률", unit: "%", good: "≥ 75", warn: "55–74", danger: "< 55", confidence: "estimated", source: "업계 통설 — 코딩은 입시보다 잔류 약함"}
+  - {key: "trial_conversion", label: "체험수업 전환율", unit: "%", good: "≥ 30", warn: "15–29", danger: "< 15", confidence: "estimated", source: "추정 — 정부 무료체험 → 유료 전환 핵심"}
+  - {key: "monthly_tuition", label: "학생 1인당 월 수강료", unit: "원", good: "—", confidence: "estimated", source: "주1회 8~15만 / 주2회 15~30만 (추정, 교구비 별도)"}
+  - {key: "gov_program_count", label: "정부 디지털교육 사업 수주", unit: "건/년", good: "≥ 1", danger: "0 (자격 충족 시)", confidence: "estimated", source: "디지털새싹·SW미래채움 등"}
+
+kpi_thresholds:
+  재등록률_위험: "< 55%"
+  체험전환율_위험: "< 15%"
+  정부사업_위험: "0건 (자격 충족하는데 미신청)"
+
+risk_signal_weights:   # 정부사업·트렌드 의존 → 코치 활용도(기회 포착) 비중 ↑
+  action_engagement: 1.2
+  population_trend: 0.8
+
+subsidy_tags: [education, digital, store_renovation]   # 디지털새싹·SW미래채움·AI바우처·K-디지털·교육바우처 — 학원 유형 중 가장 풍부
+
+channels:
+  - {key: "mom_cafe", name: "맘카페·지역 학부모 커뮤니티", fit: "high", entry_cost_won: 0, primary_metric: "학부모 정보 탐색·후기 노출", roi_note: "무료. 코딩 트렌드 정보 공유가 활발한 채널", confidence: "hypothesis"}
+  - {key: "instagram", name: "인스타그램·유튜브(작품·로봇 영상)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·문의 유입", roi_note: "아이 코딩 결과물·로봇 작동 영상은 시각적으로 잘 먹힘. 광고는 일 1,000원+", confidence: "hypothesis"}
+  - {key: "gov_program", name: "정부 디지털교육 사업 운영(디지털새싹 등)", fit: "high", entry_cost_won: 0, primary_metric: "무료 체험 유입→유료 전환", roi_note: "운영기관 공모에 선정되면 무료 SW·AI 교육으로 학생 대거 유입 — 사실상 최강 유입 채널", confidence: "hypothesis", source: "디지털새싹·SW미래채움"}
+  - {key: "naver_place", name: "네이버 플레이스·블로그", fit: "medium", entry_cost_won: 0, primary_metric: "검색·체험수업 후기", roi_note: "무료 등록 + 체험수업 후기 블로그", confidence: "measured", source: "네이버"}
+  - {key: "kakao_alimtalk", name: "카카오 알림톡(수강·결석·재등록 안내)", fit: "medium", per_unit_cost_won: 9, primary_metric: "도달 95%+", roi_note: "건당 8~9원", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "flyer", name: "전단지(아파트 단지)", fit: "low", monthly_budget_min_won: 50000, monthly_budget_max_won: 200000, primary_metric: "배포→문의", roi_note: "방학 특강 시즌 외 비추. 반응률 1% 미만 가설", confidence: "hypothesis"}
+  - {key: "baemin_musinsa", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["재등록", "방학 특강", "디지털새싹", "작품·로봇 영상", "체험수업", "커리큘럼 개편"]
+  loss_frames: ["정부 디지털교육 지원사업 미신청(자격 되는데도)", "방학 특강 캠프 미운영", "아이 작품·로봇 영상 콘텐츠 부재"]
+  examples:
+    - "디지털새싹·SW미래채움 운영기관 공모 한 번 알아보세요 — 무료 체험으로 학생 30명이 들어옵니다"
+    - "이번 방학 로봇 캠프 영상 1편만 인스타에 올려도 학부모 문의가 늘어요"
+  do: ["정부 디지털교육 사업 운영기관 공모 모니터링", "아이 작품·로봇 작동 영상 정기 업로드", "방학 특강·캠프로 신규 유입 → 학기중 정규반 전환"]
+  dont: ["배달앱·무신사 등 무관 채널", "객단가 단정 (교구비·국비지원 여부로 천차만별)"]

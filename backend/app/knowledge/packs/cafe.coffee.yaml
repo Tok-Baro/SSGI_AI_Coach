@@ -1,0 +1,62 @@
+# cafe.coffee — 커피전문점 (테이크아웃·좌석형 — 저가커피 vs 스페셜티·좌석형)
+# 출처: 한국신용데이터 캐시노트(카페 평균 객단가 ~4,550원, 2025 추정) + 가맹사업 정보공개서(저가커피) + KB 자영업 보고서 + sme-coach.
+id: cafe.coffee
+name: 커피전문점
+group: cafe
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 한국신용데이터 캐시노트 + 공정위 가맹사업 정보공개서(저가커피) + KB 자영업 분석 보고서 + sme-coach 플레이북
+    year: 2025
+
+match:
+  priority: 16   # cafe(20) 보다 먼저
+  keywords: [커피전문점, 커피숍, 테이크아웃커피, 저가커피, 스페셜티커피, 로스터리카페, 에스프레소바, 커피하우스, 핸드드립카페, 원두커피전문점]
+  ksic_codes: ["56221"]   # 커피 전문점
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 커피전문점 (저가커피 vs 스페셜티·좌석형)
+  ※ 저가커피(메가·컴포즈·빽다방 등 1,500~3,000원/잔)는 박리다매·잔수 게임 / 좌석형·스페셜티(5,000~7,000원/잔)는 객단가+회전율 게임 — 사장님 가게가 어느 쪽인지 확인하고 답하세요.
+  - Hero KPI: ① 재방문율(단골 비중) ② 테이블 점유시간·회전율(좌석형) ③ 일 판매잔수(저가형은 잔수×원가율이 손익 좌우)
+  - 객단가: 카페 평균 약 4,550원. 저가커피 1,500~3,000원/잔, 좌석형·스페셜티 5,000~7,000원/잔. 배달 카페는 건당 ~2만원(묶음)
+  - 운영 리듬: 평일 출근(7~9시)·점심후(11~15시) 피크 / 주말은 좌석형↑·오피스가 저가형↓ / 여름 아이스음료 비중 급증(7~8월) / 12~2월 전체 소폭 둔화
+  - Top 채널: ① 네이버 플레이스(검색·길찾기·리뷰) ② 카카오 친구톡 스탬프(재방문 핵심) ③ 인스타(좌석형 한정 — 공간·시즌메뉴). 저가형은 가격·접근성이 본질이라 SNS 효과 약함 → 플레이스+멤버십 위주
+  - 손실 프레임: "네이버 플레이스 미정비(검색 누락)", "스탬프·멤버십 없어 단골 락인 부재", "(좌석형) 카공족 장기 점유로 회전 손실", "여름 아이스음료 라인업·겨울 비수기 무대응"
+  - 위험 신호: 재방문율 < 25% / (좌석형) 테이블 점유시간 > 150분 / 원가율 > 38% / (저가형) 일 판매잔수 저조
+  - 카피 예: "스탬프 적립판 하나만 만들어도 단골이 한 달에 한두 번 더 와요 — 5천원 한 잔이 회당 1만 5천원으로 회수됩니다", "(좌석형) 콘센트·와이파이 안내를 좌석별로 두면 카공족 회전이 정리돼요"
+  - 금지: "배민 광고비 늘리세요"(카페는 배달 적합도 낮음), 저가형/좌석형 구분 없이 일반론
+
+hero_kpis:
+  - {key: "revisit_rate", label: "재방문율(단골 비중)", unit: "%", good: "≥ 40", warn: "25–39", danger: "< 25", confidence: "estimated", source: "업계 통설 — 단골 매출 60~70%"}
+  - {key: "seat_occupancy_min", label: "테이블 점유시간(좌석형)", unit: "분", good: "≤ 100", warn: "101–150", danger: "> 150", confidence: "estimated", source: "캐시노트 손익분기 분석 — 월 916만원 기준 102분"}
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "좌석형 ≥ 5,000 / 저가형 ≥ 2,500", warn: "—", danger: "—", confidence: "estimated", source: "한국신용데이터 — 카페 평균 ~4,550원"}
+  - {key: "cost_ratio", label: "원가율(원두·우유·컵)", unit: "% 매출", good: "≤ 30", warn: "31–38", danger: "> 38", confidence: "estimated", source: "저가커피 본사 추정 ~38%"}
+
+kpi_thresholds:
+  재방문율_위험: "< 25%"
+  테이블_점유시간_위험: "> 150분 (좌석형)"
+  원가율_위험: "> 38%"
+
+risk_signal_weights:   # 카페는 도보 유동인구 의존 큼 / SNS 외부 마케팅 비중 커서 코치 활용도 비중↓
+  population_trend: 1.1
+  action_engagement: 0.9
+
+subsidy_tags: [digital, store_renovation, marketing]   # 스마트상점(키오스크·POS)·점포환경개선·홍보
+
+channels:
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고)", fit: "high", entry_cost_won: 0, primary_metric: "검색·길찾기·리뷰", roi_note: "무료 등록 + CPC 광고. 도보권 카페 검색 유입이 핵심", confidence: "measured", source: "네이버"}
+  - {key: "kakao_friendtalk_stamp", name: "카카오 친구톡·스탬프(단골 적립)", fit: "high", per_unit_cost_won: 15, primary_metric: "재방문율", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 5회 적립 1잔 무료 — 재방문 락인", confidence: "measured", source: "카카오 비즈메시지 단가"}
+  - {key: "instagram", name: "인스타그램(좌석형 공간·시즌메뉴)", fit: "medium", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·신규 유입", roi_note: "좌석형·스페셜티 한정 — 공간·시즌메뉴 비주얼. 저가형은 효과 약함. 광고 일 1,000원+", confidence: "hypothesis"}
+  - {key: "kakaomap", name: "카카오맵(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "위치 검색", roi_note: "무료", confidence: "measured", source: "카카오"}
+  - {key: "baemin", name: "배민 광고", fit: "low", primary_metric: "배달 주문", roi_note: "카페는 배달 비중 낮음 — 디저트·음료 배달 전문이면 재검토", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["단골 락인", "스탬프 적립", "테이블 회전", "아이스음료", "일 판매잔수"]
+  loss_frames: ["네이버 플레이스 미정비(검색 누락)", "스탬프·멤버십 없어 단골 락인 부재", "(좌석형) 카공족 장기 점유로 회전 손실", "여름·겨울 시즌 라인업 무대응"]
+  examples:
+    - "스탬프 적립판 하나만 만들어도 단골이 한 달에 한두 번 더 와요 — 5천원 한 잔이 회당 1만 5천원으로 회수됩니다"
+    - "(좌석형) 콘센트·와이파이 안내를 좌석별로 두면 카공족 회전이 정리돼요"
+  do: ["네이버 플레이스 정비(검색 키워드·사진)", "5회 적립 1잔 무료 스탬프", "(좌석형) 인스타 공간·시즌메뉴 콘텐츠"]
+  dont: ["배민 광고비 늘리기 (카페는 배달 적합도 낮음)", "저가형/좌석형 구분 없이 일반론"]

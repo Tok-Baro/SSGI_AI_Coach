@@ -1,0 +1,60 @@
+# cafe.bakery — 동네 빵집 (제과점 — 베이커리 중심, 카페 아님)
+# 출처: KB 자영업 베이커리 보고서 + 가맹 정보공개서(파리바게뜨 등) + 언론(제과점 폐업 증가, 서울 평균 영업기간 2.9년) + sme-coach.
+id: cafe.bakery
+name: 동네 빵집 (제과점)
+group: cafe
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: KB 자영업 분석 보고서(베이커리) + 공정위 가맹사업 정보공개서 + 언론(제과점 폐업·영업기간) + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 16
+  keywords: [제과점, 빵집, 동네빵집, 식빵전문점, 베이커리하우스, 빵공방, 천연발효빵, 소금빵전문점, 도넛가게, 단팥빵집, 바게트전문점]
+  ksic_codes: ["56191"]   # 제과점
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 동네 빵집 (제과점 — 베이커리 중심)
+  - Hero KPI: ① **폐기율**(당일 생산·당일 소진이 손익 절대 변수) ② 오전·저녁 피크 매출(생산량 예측 정확도) ③ 단골 비중(주거지 입지 → 반복 구매가 본질) ④ 원가율 관리(밀가루·버터·설탕 가격 급등 직격)
+  - 객단가: 1인 5,000~12,000원(빵 2~4개), 식빵전문점은 단가 더 높음 (추정 — 한국 공식 통계 미확인)
+  - 운영 리듬: 출근길 8~10시(샌드위치·모닝빵)·퇴근길 16~19시(저녁 식사빵·간식) 2피크 / 명절·가정의달 선물세트·빼빼로데이 / 주말 가족 단위↑
+  - Top 채널: ① 네이버 플레이스(동네 검색·길찾기) ② 카카오 채널 단골 알림("오늘 ○○빵 나왔어요") ③ 당근(동네 인지도·갓 구운 빵 알림) ④ 인스타(시그니처 제품 한정). 체험단·인플루언서는 비용 대비 효과 낮음
+  - 손실 프레임: "폐기율 관리 안 됨(생산량 예측 부정확)", "오늘 나온 빵 알림 채널(카카오 채널·당근) 없음", "네이버 플레이스 동네 검색 미정비", "원가 급등 무대응(가격·구성 조정 X)"
+  - 위험 신호: 폐기율 > 10% / 원가율 > 45% / 오전·저녁 피크 외 매출 공백 / 영업이익률 < 7% / (서울 제과점 평균 영업기간 2.9년 — 입지·단골 못 잡으면 위험)
+  - 카피 예: "오늘 갓 구운 빵을 카카오 채널·당근에 한 줄 올려보세요 — '○○빵 나왔어요' 한 마디에 단골이 퇴근길에 들릅니다", "안 팔리는 빵은 17시 이후 묶음·할인으로 폐기 대신 매출로 돌리세요"
+  - 금지: "인스타·체험단에 큰 비용 쓰세요"(동네 빵집은 비용 대비 효과 낮음), "배민 광고비"(동네 빵집은 배달 적합도 낮음 — 식빵·케이크 배송 전문이면 별개)
+
+hero_kpis:
+  - {key: "waste_ratio", label: "폐기율(당일 생산 대비)", unit: "%", good: "≤ 5", warn: "6–10", danger: "> 10", confidence: "estimated", source: "업계 통설 — 손익 절대 변수"}
+  - {key: "loyal_ratio", label: "단골 비중", unit: "%", good: "≥ 60", warn: "40–59", danger: "< 40", confidence: "estimated", source: "업계 추정 — 주거지 입지·반복 구매"}
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "≥ 8,000", warn: "5,000–7,999", danger: "< 5,000", confidence: "estimated", source: "추정 — 빵 2~4개"}
+  - {key: "cost_ratio", label: "원가율(밀가루·버터·설탕)", unit: "% 매출", good: "≤ 38", warn: "39–45", danger: "> 45", confidence: "estimated", source: "추정 — 원자재 가격 급등 직격"}
+
+kpi_thresholds:
+  폐기율_위험: "> 10%"
+  원가율_위험: "> 45%"
+  단골_비중_위험: "< 40%"
+
+risk_signal_weights:   # 주거지 입지·반복 구매 의존 → 유동인구·배후거주 비중↑
+  population_trend: 1.2
+
+subsidy_tags: [digital, store_renovation, education]   # 스마트상점·HACCP·점포환경개선·백년소공인 / 제빵 위생·교육
+
+channels:
+  - {key: "naver_place", name: "네이버 플레이스(동네 검색)", fit: "high", entry_cost_won: 0, primary_metric: "동네 검색·길찾기", roi_note: "무료 등록. '○○동 빵집' 검색 유입", confidence: "measured", source: "네이버"}
+  - {key: "kakao_channel", name: "카카오 채널(오늘 나온 빵 알림)", fit: "high", per_unit_cost_won: 15, primary_metric: "단골 재방문", roi_note: "카카오 채널 텍스트 15원/건(VAT 별도). '오늘 ○○빵 나왔어요' — 퇴근길 단골 유입", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "daangn", name: "당근 비즈프로필(동네 인지도·갓 구운 빵)", fit: "high", entry_cost_won: 0, primary_metric: "동네 노출·후기", roi_note: "무료 — 동네 밀착 채널. 갓 구운 빵 알림", confidence: "hypothesis"}
+  - {key: "instagram", name: "인스타그램(시그니처 제품)", fit: "medium", primary_metric: "도달", roi_note: "시그니처 빵 한정 — 동네 빵집은 비용 대비 효과 보통", confidence: "hypothesis"}
+  - {key: "baemin", name: "배민 광고", fit: "low", primary_metric: "배달 주문", roi_note: "식빵·케이크 배송 전문이면 재검토 — 일반 동네 빵집은 배달 적합도 낮음", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["폐기율", "오늘 나온 빵", "단골 알림", "퇴근길 단골", "원가 관리"]
+  loss_frames: ["폐기율 관리 안 됨(생산량 예측 부정확)", "오늘 나온 빵 알림 채널 없음", "네이버 플레이스 동네 검색 미정비", "원가 급등 무대응"]
+  examples:
+    - "오늘 갓 구운 빵을 카카오 채널·당근에 한 줄 올려보세요 — '○○빵 나왔어요' 한 마디에 단골이 퇴근길에 들릅니다"
+    - "안 팔리는 빵은 17시 이후 묶음·할인으로 폐기 대신 매출로 돌리세요"
+  do: ["네이버 플레이스 동네 검색 정비", "카카오 채널·당근으로 '오늘 나온 빵' 알림", "폐기 임박 빵 마감 할인·묶음"]
+  dont: ["인스타·체험단에 큰 비용 쓰기 (동네 빵집은 비용 대비 효과 낮음)", "배민 광고비 늘리기 (동네 빵집은 배달 적합도 낮음)"]

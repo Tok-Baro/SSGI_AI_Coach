@@ -206,6 +206,23 @@ class ApiClient {
     return this.request("/knowledge/my-pack");
   }
 
+  async updateProfile(data: {
+    industry_slug?: string;
+    business_type?: string;
+    business_start_date?: string;
+  }): Promise<{
+    business_type: string | null;
+    industry_slug: string | null;
+    industry_name: string | null;
+    business_start_date: string | null;
+    message: string;
+  }> {
+    return this.request("/onboarding/profile", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
   // ===== 대시보드 =====
   async getDashboard(): Promise<DashboardData> {
     return this.request("/dashboard");

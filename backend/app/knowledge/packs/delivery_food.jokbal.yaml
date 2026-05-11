@@ -1,0 +1,61 @@
+# delivery_food.jokbal — 족발·보쌈·야식 (배달 야식 중심)
+# 출처: 요기요 데이터(족발·보쌈 5만원+ 고액주문 카테고리 3위, 야식 평균 ~22,000원, 토요일 +93% vs 월요일) + sme-coach. (세부 객단가 공식 통계 미확인 — 추정.)
+id: delivery_food.jokbal
+name: 족발·보쌈·야식
+group: delivery_food
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 요기요 파트너 데이터(족발·보쌈·야식 통계) + 농식품부 외식통계 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 6
+  keywords: [족발, 보쌈, 족발보쌈, 족발전문점, 보쌈전문점, 야식, 야식전문, 곱창배달, 막창배달, 닭발, 안주배달, 안주전문점, 술안주, 마른안주]
+  ksic_codes: ["56194"]   # 김밥 및 기타 간이 음식점 (야식·간이)
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 족발·보쌈·야식 (배달 야식 중심)
+  - Hero KPI: ① 객단가(족발+막국수/쟁반국수/음료 세트 — 원래 고단가, 부착률로 더 끌어올림) ② **야간·심야 매출 비중**(22시~새벽이 본질) ③ 금·토 주말 집중도 ④ 배달앱 별점·리뷰
+  - 객단가: 족발·보쌈 배달 건당 25,000~40,000원(5만원 이상 고액주문 카테고리 3위 — 요기요), 야식 카테고리(자정~새벽) 평균 ~22,000원 (추정)
+  - 운영 리듬: 저녁 18~22시 + 심야 22~02시 피크 / **토요일 족발·보쌈 주문 건수 월요일 대비 +93%, 야식 +73%(요기요)** / 연말·회식 시즌·스포츠 이벤트·장마·한파(집콕) 시↑
+  - Top 채널: ① **배민·요기요·쿠팡이츠(심야 노출·광고가 절대적)** ② 배달앱 리뷰이벤트(서비스 추가·별점) ③ 카카오 친구톡 야식 쿠폰 ④ 전단(원룸·오피스텔 밀집지). 인스타·블로그 효과 낮음. 공공배달앱 병행
+  - 손실 프레임: "심야 시간대 배달앱 노출·운영 미흡(22~02시가 본질인데)", "족발+막국수/음료 세트 부착률 저조", "배달앱 별점·리뷰 관리 안 됨", "원룸·오피스텔 밀집지 타게팅 무대응"
+  - 위험 신호: 야간(22시 이후) 매출 비중 낮음 / 금·토 매출 < 주중 합산 / 별점 < 4.3 / 객단가 < 20,000원 / 돈족·돼지고기 원가율 > 45%
+  - 카피 예: "심야 22~02시가 진짜 장사 시간이에요 — 배달앱 운영시간·광고를 그 시간대에 몰아 두세요. 토요일은 평일보다 주문이 거의 두 배예요", "족발에 막국수·쟁반국수·콜라를 세트로 묶으면 객단가가 5천원 더 올라갑니다"
+  - 금지: "인스타·블로그 마케팅에 큰 비용"(야식은 효과 낮음), "점심 회전율"·"예약 시스템"(심야 배달 위주엔 무관)
+
+hero_kpis:
+  - {key: "night_sales_ratio", label: "야간(22시 이후) 매출 비중", unit: "%", good: "≥ 50", warn: "30–49", danger: "< 30", confidence: "estimated", source: "업계 추정 — 야식은 심야가 본질"}
+  - {key: "avg_ticket", label: "객단가(배달 1건)", unit: "원", good: "≥ 28,000", warn: "20,000–27,999", danger: "< 20,000", confidence: "estimated", source: "추정 — 요기요 5만원+ 고액 카테고리 3위·야식 평균 ~22,000원"}
+  - {key: "weekend_concentration", label: "금·토 매출 집중도", unit: "% (주중 합산 대비)", good: "≥ 100", warn: "70–99", danger: "< 70", confidence: "estimated", source: "요기요 — 토요일 족발·보쌈 +93% vs 월요일"}
+  - {key: "food_cost_ratio", label: "식재료비 비율(돈족·돼지고기·부재료)", unit: "% 매출", good: "≤ 38", warn: "39–45", danger: "> 45", confidence: "estimated", source: "추정 — 돈족 시세 변동"}
+
+kpi_thresholds:
+  야간_매출_비율_위험: "< 30%"
+  객단가_위험: "< 20,000원"
+  별점_위험: "< 4.3"
+
+risk_signal_weights:
+  action_engagement: 1.2
+  population_trend: 0.9
+
+subsidy_tags: [digital, marketing, store_renovation]   # 스마트상점·POS·주방 / 배달앱·배달비 지원·공공배달앱 / 점포환경개선
+
+channels:
+  - {key: "baemin_yogiyo_coupang", name: "배민·요기요·쿠팡이츠(심야 노출·광고 + 공공배달앱)", fit: "high", entry_cost_won: 88000, fee_pct: 9.7, primary_metric: "심야 배달 주문", roi_note: "심야 노출·광고가 절대적. 깃발 88,000원/월·CPC·중개수수료 별도. 운영시간·광고를 22~02시에 집중. 공공배달앱 병행", confidence: "hypothesis", source: "배민/요기요 수수료"}
+  - {key: "review_event", name: "배달앱 리뷰이벤트(서비스 추가·별점)", fit: "high", primary_metric: "별점·리뷰 수", roi_note: "막국수·콜라 서비스·리뷰 약속. 비용 = 서비스 원가", confidence: "hypothesis"}
+  - {key: "kakao_friendtalk", name: "카카오 친구톡(야식 단골 쿠폰)", fit: "medium", per_unit_cost_won: 15, primary_metric: "재주문", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 야식 단골 재주문 쿠폰", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "flyer", name: "전단지(원룸·오피스텔 밀집지)", fit: "low", monthly_budget_min_won: 50000, monthly_budget_max_won: 200000, primary_metric: "배포→첫 주문", roi_note: "원룸·오피스텔 밀집지 외 비추. 반응률 1% 미만 가설", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(등록)", fit: "low", entry_cost_won: 0, primary_metric: "검색", roi_note: "무료 — 포장 손님용 등록 정도", confidence: "measured", source: "네이버"}
+  - {key: "instagram_musinsa", name: "인스타그램·무신사 등", fit: "avoid", primary_metric: "도달", roi_note: "야식은 SNS·패션 채널 효과 낮음 — 비추천", confidence: "hypothesis"}
+
+copy_tone:
+  vocab: ["심야 22~02시", "야식 단골", "세트 부착률", "토요일 폭증", "공공배달앱"]
+  loss_frames: ["심야 시간대 배달앱 노출·운영 미흡", "족발+막국수/음료 세트 부착률 저조", "배달앱 별점·리뷰 관리 안 됨", "원룸·오피스텔 밀집지 타게팅 무대응"]
+  examples:
+    - "심야 22~02시가 진짜 장사 시간이에요 — 배달앱 운영시간·광고를 그 시간대에 몰아 두세요. 토요일은 평일보다 주문이 거의 두 배예요"
+    - "족발에 막국수·쟁반국수·콜라를 세트로 묶으면 객단가가 5천원 더 올라갑니다"
+  do: ["배달앱 운영시간·광고를 22~02시에 집중", "족발+막국수/음료 세트 구성으로 객단가↑", "배달앱 리뷰이벤트 + 공공배달앱 병행", "원룸·오피스텔 밀집지 전단"]
+  dont: ["인스타·블로그에 큰 비용 (야식은 효과 낮음)", "점심 회전율·예약 시스템 신경쓰기 (심야 배달 위주엔 무관)"]

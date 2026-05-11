@@ -1,0 +1,61 @@
+# delivery_food.pizza_burger — 피자·버거·샌드위치 (패스트푸드, 배달·포장 중심)
+# 출처: 요기요 데이터(배달 1회 ~24,674원·2.8인분) + thinkfood 배달 카테고리 + 가맹 정보공개서 + sme-coach. (세부 객단가 공식 통계 미확인 — 추정.)
+id: delivery_food.pizza_burger
+name: 피자·버거·샌드위치
+group: delivery_food
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 요기요 파트너 데이터 + thinkfood 배달 카테고리 + 공정위 가맹 정보공개서 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 6
+  keywords: [피자, 피자전문점, 햄버거, 수제버거, 버거, 패스트푸드, 샌드위치전문점, 토스트전문점, 핫도그, 브리또, 피자배달, 도미노, 피자헛, 미스터피자, 롯데리아, 맘스터치, 버거킹, 노브랜드버거, 써브웨이]
+  ksic_codes: ["56192"]   # 피자·햄버거·샌드위치 및 유사 음식점
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 피자·버거·샌드위치 (패스트푸드, 배달·포장 중심)
+  - Hero KPI: ① 객단가(피자=사이드·콜라 세트, 버거=세트 전환율) ② 배달 비중·시간(피자는 주말 저녁, 버거는 점심·심야) ③ 배달앱 별점·리뷰 ④ 프로모션 의존도(피자는 1+1·할인 민감)
+  - 객단가: 피자 배달 건당 25,000~40,000원(1인 싱글피자 출시로 1.5만원대도), 버거 배달 건당 12,000~20,000원, 샌드위치·토스트 매장 1인 5,000~9,000원 (추정). 배달 전체 1회 평균 ~24,674원(배달료 포함, 2.8인분)
+  - 운영 리듬: 피자 — 금·토·일 저녁, 일요일 가족 모임↑ / 버거 — 점심·심야·평일도 고른 편 / 명절 연휴·시험기간·스포츠 이벤트 스파이크
+  - Top 채널: ① **배민·요기요·쿠팡이츠 광고+쿠폰(피자는 할인 프로모션이 전환 핵심)** ② 네이버 플레이스 ③ 배달앱 리뷰이벤트 ④ 인스타(수제버거·시그니처 한정). 토스트·샌드위치는 오피스가 플레이스+카카오 단골 알림 비중↑. 공공배달앱 병행
+  - 손실 프레임: "(피자) 1+1·할인 프로모션·세트 구성 미흡", "(버거) 세트 전환 유도 약함", "배달앱 별점·리뷰 관리 안 됨", "(토스트·샌드위치) 오피스가 점심 검색·단골 알림 미정비"
+  - 위험 신호: 객단가 < (피자 2만 / 버거 1.2만) / 배달 수수료+배달비 비율 > 20% / 별점 < 4.3 / 프로모션 없으면 주문 급감(피자)
+  - 카피 예: "(피자) 1+1·콜라 세트·사이드 묶음 1~2개만 만들어 배민에 올려도 객단가가 올라가요 — 피자는 할인이 곧 전환이에요", "(토스트·샌드위치) 오피스가라면 네이버 플레이스 점심 검색 + 단골 카톡 적립이 배달앱보다 효율적일 수 있어요"
+  - 금지: 피자/버거/토스트 구분 없이 일반론, "예약 시스템 도입"(패스트푸드엔 무관)
+
+hero_kpis:
+  - {key: "avg_ticket", label: "객단가(배달 1건)", unit: "원", good: "피자 ≥ 28,000 / 버거 ≥ 14,000", warn: "—", danger: "피자 < 20,000 / 버거 < 12,000", confidence: "estimated", source: "추정 — 배달 전체 ~24,674원(2.8인분, 요기요)"}
+  - {key: "set_attach_rate", label: "세트·사이드 부착률", unit: "%", good: "≥ 50", warn: "30–49", danger: "< 30", confidence: "hypothesis", source: "추정 — 피자 사이드·콜라 / 버거 세트"}
+  - {key: "review_rating", label: "배달앱 별점", unit: "점", good: "≥ 4.5", warn: "4.3–4.49", danger: "< 4.3", confidence: "estimated", source: "업계 통설"}
+  - {key: "delivery_cost_ratio", label: "배달 수수료+배달비 비율", unit: "% 배달매출", good: "≤ 12", warn: "13–20", danger: "> 20", confidence: "estimated", source: "추정"}
+
+kpi_thresholds:
+  객단가_위험: "< 20,000원 (피자) / < 12,000원 (버거)"
+  배달_비용_비율_위험: "> 20% (배달매출 대비)"
+  별점_위험: "< 4.3"
+
+risk_signal_weights:
+  action_engagement: 1.2
+  population_trend: 0.9
+
+subsidy_tags: [digital, marketing, store_renovation]   # 스마트상점·POS·키오스크 / 배달앱·배달비 지원·공공배달앱 / 점포환경개선
+
+channels:
+  - {key: "baemin_yogiyo_coupang", name: "배민·요기요·쿠팡이츠 광고+쿠폰(피자 프로모션 + 공공배달앱)", fit: "high", entry_cost_won: 88000, fee_pct: 9.7, primary_metric: "배달 주문·전환", roi_note: "피자는 1+1·할인 쿠폰이 전환 핵심. 깃발 88,000원/월·CPC·중개수수료 별도. 공공배달앱 병행", confidence: "hypothesis", source: "배민/요기요 수수료"}
+  - {key: "naver_place", name: "네이버 플레이스(검색·길찾기)", fit: "high", entry_cost_won: 0, primary_metric: "검색→방문·포장", roi_note: "무료 등록. 토스트·샌드위치는 오피스가 점심 검색에 특히 유효", confidence: "measured", source: "네이버"}
+  - {key: "review_event", name: "배달앱 리뷰이벤트(별점 관리)", fit: "medium", primary_metric: "별점·리뷰 수", roi_note: "사이드 서비스·리뷰 약속. 비용 = 서비스 원가", confidence: "hypothesis"}
+  - {key: "kakao_friendtalk", name: "카카오 친구톡(단골 적립·재주문)", fit: "medium", per_unit_cost_won: 15, primary_metric: "재주문", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 토스트·샌드위치는 오피스 단골 적립 효과 큼", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "instagram", name: "인스타그램(수제버거·시그니처 한정)", fit: "low", primary_metric: "도달", roi_note: "수제버거·시그니처 비주얼 한정 — 프랜차이즈·일반은 효과 낮음", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["1+1·할인 프로모션", "사이드 세트", "세트 전환율", "공공배달앱", "오피스가 점심"]
+  loss_frames: ["(피자) 1+1·할인·세트 구성 미흡", "(버거) 세트 전환 유도 약함", "배달앱 별점·리뷰 관리 안 됨", "(토스트·샌드위치) 오피스가 점심 검색·단골 알림 미정비"]
+  examples:
+    - "(피자) 1+1·콜라 세트·사이드 묶음을 만들어 배민에 올리세요 — 피자는 할인이 곧 전환이에요"
+    - "(토스트·샌드위치) 오피스가라면 네이버 플레이스 점심 검색 + 단골 카톡 적립이 배달앱보다 효율적일 수 있어요"
+  do: ["(피자) 1+1·할인·세트 프로모션", "(버거) 세트 전환 유도", "배달앱 리뷰이벤트 + 공공배달앱 병행", "(토스트·샌드위치) 오피스가 점심 검색·단골 적립"]
+  dont: ["피자/버거/토스트 구분 없이 일반론", "예약 시스템 도입 (패스트푸드엔 무관)"]

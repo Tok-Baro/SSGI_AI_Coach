@@ -1,0 +1,61 @@
+# restaurant.chinese — 중식 (중국집 짜장·짬뽕·탕수육 / 마라탕·양꼬치·중화요리)
+# 출처: 농식품부 외식업체 경영실태조사 2024 + KCD 데이터랩(2024 중식 4Q +4.1%, 4년 누적 +12.2% — 외식 평균보다 부진) + sme-coach.
+id: restaurant.chinese
+name: 중식 (중국집·마라탕·양꼬치)
+group: restaurant
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 농식품부 외식업체 경영실태조사 2024 + 한국신용데이터 데이터랩 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 22
+  keywords: [중식, 중국집, 중국요리, 짜장면, 짬뽕, 탕수육, 중화요리, 마라탕, 마라샹궈, 훠궈, 양꼬치, 양고기, 딤섬, 중화냉면, 중국가정식, 사천요리, 중식당, 차이나타운, 짜장, 마라]
+  ksic_codes: ["56121"]   # 중식 음식점
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 중식 (동네 중국집 / 마라탕 / 양꼬치·중화요리주점)
+  - 동네 중국집(짜장·짬뽕·탕수육): 점심 7,000~10,000원·저녁 12,000~20,000원. Hero KPI = **배달·포장 비중**(세트) + 점심 회전. 원가율 30~38%지만 배달수수료 잠식
+  - 마라탕: 1인 9,000~14,000원(토핑 종량). Hero KPI = 객수·테이크아웃 회전. 10대~20대 방과후·저녁 수요
+  - 양꼬치·중화요리주점: 1인 18,000~30,000원(주류 포함). Hero KPI = 저녁/야간 매출·주류 마진·단체. 금토 야간
+  - 운영 리듬: 중국집은 졸업·입학·이사철(2~3월) 단체배달 피크 / 평일 점심·주말 가족배달 / 마라탕은 방과후·저녁 / 양꼬치는 금토 야간
+  - Top 채널: 동네 중국집 → **배민/요기요(울트라콜) 1순위 + 네이버 플레이스** / 마라탕 → 인스타·당근·플레이스(젊은층) / 양꼬치·중화요리주점 → 네이버 플레이스·인스타(회식·모임)·카카오맵
+  - 손실 프레임: "(중국집) 배달앱 노출·세트 구성 미흡", "(중국집) 배달수수료에 잠식되는 마진(공공배달앱 미활용)", "(마라탕) 인스타·당근 동네 노출 부재", "(양꼬치) 회식·모임 검색 노출 미정비"
+  - 위험 신호: (중국집) 배달수수료+광고비 비율 > 25% / 점심 회전율 < 1.5회 / (마라탕) 평일 객수 저조 / (양꼬치) 야간 매출 비중 < 60%
+  - 카피 예: "(중국집) 짜장·짬뽕·탕수육 세트 1~2개만 만들어 배민에 올려도 객단가가 올라가요. 공공배달앱(땡겨요 등)은 수수료 2%대니 같이 쓰세요", "(마라탕) 신메뉴·매운맛 단계 사진을 인스타·당근에 올리면 동네 10·20대가 찾아옵니다"
+  - 금지: 동네 중국집/마라탕/양꼬치 구분 없이 일반론, "캐치테이블 예약"(동네 중국집엔 무관)
+
+hero_kpis:
+  - {key: "delivery_ratio", label: "배달·포장 비중(동네 중국집)", unit: "%", good: "—", warn: "—", danger: "> 90 (수수료 압박)", confidence: "estimated", source: "업계 추정"}
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "중국집 ≥ 12,000(저녁) / 마라탕 ≥ 10,000 / 양꼬치 ≥ 18,000", warn: "—", danger: "—", confidence: "estimated", source: "추정"}
+  - {key: "delivery_cost_ratio", label: "배달수수료+광고비 비율(중국집)", unit: "% 배달매출", good: "≤ 15", warn: "16–25", danger: "> 25", confidence: "estimated", source: "추정 — 배민/요기요 수수료 + 깃발·CPC"}
+  - {key: "food_cost_ratio", label: "식재료비 비율", unit: "% 매출", good: "≤ 38", warn: "39–42", danger: "> 42", confidence: "estimated", source: "추정 — 동네 중국집은 밀가루·기름 저원가"}
+
+kpi_thresholds:
+  배달_비용_비율_위험: "> 25% (배달매출 대비)"
+  점심_회전율_위험: "< 1.5회"
+  양꼬치_야간_매출_위험: "< 60%"
+
+risk_signal_weights:
+  competition: 1.1
+
+subsidy_tags: [digital, marketing, store_renovation]   # 스마트상점·POS·키오스크 / 배달앱·배달비 지원·공공배달앱 / 점포환경개선
+
+channels:
+  - {key: "baemin_yogiyo", name: "배민·요기요(울트라콜·CPC) + 공공배달앱", fit: "high", entry_cost_won: 88000, fee_pct: 9.7, primary_metric: "배달 주문", roi_note: "동네 중국집은 배달이 핵심. 깃발 88,000원/월·중개수수료 별도. 공공배달앱(땡겨요·배달특급)은 수수료 2%대 — 병행 권장", confidence: "hypothesis", source: "배민/요기요 수수료"}
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고)", fit: "high", entry_cost_won: 0, primary_metric: "검색→방문·픽업", roi_note: "무료 등록. 점심·픽업 검색 유입", confidence: "measured", source: "네이버"}
+  - {key: "instagram_daangn", name: "인스타그램·당근(마라탕·젊은층)", fit: "medium", entry_cost_won: 0, primary_metric: "동네 노출·신메뉴", roi_note: "무료. 마라탕·중화요리주점은 10·20대 타깃 — 매운맛 단계·신메뉴 사진", confidence: "hypothesis"}
+  - {key: "kakaomap", name: "카카오맵(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "위치 검색", roi_note: "무료", confidence: "measured", source: "카카오"}
+  - {key: "kakao_alimtalk", name: "카카오 채널·알림톡(단골 재주문)", fit: "low", per_unit_cost_won: 9, primary_metric: "재주문", roi_note: "건당 8~9원. 단골 재주문 쿠폰", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["배달앱", "세트 구성", "공공배달앱", "단체배달", "매운맛 단계"]
+  loss_frames: ["(중국집) 배달앱 노출·세트 구성 미흡", "(중국집) 배달수수료에 잠식되는 마진", "(마라탕) 동네 노출 부재", "(양꼬치) 회식 검색 노출 미정비"]
+  examples:
+    - "(중국집) 짜장·짬뽕·탕수육 세트 1~2개만 만들어 배민에 올려도 객단가가 올라가요 — 공공배달앱은 수수료 2%대니 같이 쓰세요"
+    - "(마라탕) 신메뉴·매운맛 단계 사진을 인스타·당근에 올리면 동네 10·20대가 찾아옵니다"
+  do: ["(중국집) 배달앱 세트 구성 + 공공배달앱 병행", "(마라탕) 인스타·당근 동네 노출", "(양꼬치) 네이버 플레이스 회식·모임 키워드"]
+  dont: ["동네 중국집/마라탕/양꼬치 구분 없이 일반론", "캐치테이블 예약 권하기 (동네 중국집엔 무관)"]

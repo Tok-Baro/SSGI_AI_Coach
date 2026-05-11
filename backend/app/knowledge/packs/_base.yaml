@@ -36,5 +36,8 @@ kpi_thresholds: {}
 # 자격되기 쉬운 지원사업 카테고리 태그 — 기본은 비어 있음
 subsidy_tags: []
 
+# 공공데이터 해석 주의 — 기본은 비어 있음 (업종 팩이 채움)
+data_caveats: []
+
 # GPT 프롬프트 블록 — 기본은 비어 있음 (업종 미확정 시에는 unknown 팩 사용)
 prompt_block: ""

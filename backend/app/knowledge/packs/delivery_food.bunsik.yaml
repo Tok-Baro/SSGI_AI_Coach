@@ -1,0 +1,61 @@
+# delivery_food.bunsik — 분식 (떡볶이·김밥·라면·튀김·순대 등)
+# 출처: 한국소비자원 배달앱 이용실태 + 농식품부 외식통계 + sme-coach. (분식 단독 객단가 공식 통계 미확인 — 추정.)
+id: delivery_food.bunsik
+name: 분식 (떡볶이·김밥·라면·튀김)
+group: delivery_food
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 한국소비자원 배달앱 이용실태조사 + 농식품부 외식통계 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 6
+  keywords: [분식, 분식집, 떡볶이, 즉석떡볶이, 로제떡볶이, 김밥, 김밥천국, 라면, 라볶이, 튀김, 순대, 어묵, 만두, 떡볶이순대, 분식전문, 김밥전문점, 길거리토스트]
+  ksic_codes: ["56194"]   # 김밥 및 기타 간이 음식점
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 분식 (떡볶이·김밥·라면·튀김·순대)
+  - Hero KPI: ① **객단가**(튀김·순대·음료 사이드 묶음 — 분식은 단가가 낮아 부착률·최소주문 달성이 hero) ② 배달 비중·최소주문금액 달성률 ③ 점심·하교 시간 회전율 ④ 배달앱 별점
+  - 객단가: 매장 1인 5,000~9,000원, 배달은 건당 15,000~22,000원(2~3인분 묶음, 배달팁 별도). 저단가라 배달 수수료 % 부담 큼 (추정)
+  - 운영 리듬: 점심 11~14시 + 하교·학원가 15~19시 피크 / **평일이 주말보다 강함**(학생·직장인 수요) / 겨울철 어묵·떡볶이↑ / 야간 배달 일부
+  - Top 채널: ① **배민·요기요·쿠팡이츠(배달이 핵심 — 최소주문 묶음·세트 구성)** ② 네이버 플레이스(학원가·오피스 검색) ③ 배달앱 리뷰이벤트 ④ 당근(동네 단골). 인스타는 비주얼 메뉴(로제떡볶이 등) 한정. 공공배달앱 병행 권장(저단가라 수수료 절감 효과 큼)
+  - 손실 프레임: "사이드(튀김·순대·음료) 세트·묶음 구성 없어 객단가 낮음", "최소주문금액·배달팁 설정이 비효율", "배달 수수료에 잠식되는 마진(공공배달앱 미활용)", "학원가·하교 시간 타게팅 무대응"
+  - 위험 신호: 객단가 < 12,000원(배달) / 배달 수수료+배달비 비율 > 20% / 점심·하교 시간 외 매출 공백 / 별점 < 4.3
+  - 카피 예: "튀김·순대·음료를 세트로 묶거나 '2인 분식세트'를 만드세요 — 분식은 단가가 낮아서 묶음이 객단가의 전부예요", "공공배달앱(땡겨요 등)은 수수료 2%대니 저단가 메뉴엔 효과가 더 큽니다"
+  - 금지: "인스타·블로그 마케팅에 큰 비용"(분식은 효과 낮음 — 로제떡볶이 등 비주얼 신메뉴 한정), "예약 시스템 도입"
+
+hero_kpis:
+  - {key: "avg_ticket", label: "객단가(배달 1건)", unit: "원", good: "≥ 18,000", warn: "12,000–17,999", danger: "< 12,000", confidence: "estimated", source: "추정 — 2~3인분 묶음"}
+  - {key: "delivery_cost_ratio", label: "배달 수수료+배달비 비율", unit: "% 배달매출", good: "≤ 12", warn: "13–20", danger: "> 20", confidence: "estimated", source: "추정 — 저단가라 % 부담 큼"}
+  - {key: "review_rating", label: "배달앱 별점", unit: "점", good: "≥ 4.5", warn: "4.3–4.49", danger: "< 4.3", confidence: "estimated", source: "업계 통설"}
+  - {key: "food_cost_ratio", label: "식재료비 비율(쌀떡·어묵·채소·기름)", unit: "% 매출", good: "≤ 35", warn: "36–40", danger: "> 40", confidence: "estimated", source: "추정"}
+
+kpi_thresholds:
+  객단가_위험: "< 12,000원 (배달)"
+  배달_비용_비율_위험: "> 20% (배달매출 대비)"
+  별점_위험: "< 4.3"
+
+risk_signal_weights:
+  action_engagement: 1.2
+  population_trend: 0.9
+
+subsidy_tags: [digital, marketing, store_renovation]   # 스마트상점·키오스크·POS / 배달앱·배달비 지원·공공배달앱 / 점포환경개선
+
+channels:
+  - {key: "baemin_yogiyo_coupang", name: "배민·요기요·쿠팡이츠(배달 + 공공배달앱)", fit: "high", entry_cost_won: 88000, fee_pct: 9.7, primary_metric: "배달 주문", roi_note: "배달이 핵심. 최소주문 묶음·세트 구성. 깃발 88,000원/월·중개수수료 별도. 공공배달앱(수수료 2%대) 병행 — 저단가라 절감 효과 큼", confidence: "hypothesis", source: "배민/요기요 수수료"}
+  - {key: "naver_place", name: "네이버 플레이스(학원가·오피스 검색)", fit: "high", entry_cost_won: 0, primary_metric: "검색→방문·포장", roi_note: "무료 등록. '○○ 분식/떡볶이' 검색 + 학원가·오피스 타게팅", confidence: "measured", source: "네이버"}
+  - {key: "review_event", name: "배달앱 리뷰이벤트(별점 관리)", fit: "medium", primary_metric: "별점·리뷰 수", roi_note: "사이드 서비스·리뷰 약속. 비용 = 서비스 원가", confidence: "hypothesis"}
+  - {key: "daangn", name: "당근 비즈프로필", fit: "medium", entry_cost_won: 0, primary_metric: "동네 노출", roi_note: "무료 — 동네 단골", confidence: "hypothesis"}
+  - {key: "instagram", name: "인스타그램(비주얼 신메뉴 한정)", fit: "low", primary_metric: "도달", roi_note: "로제떡볶이 등 비주얼 신메뉴 한정 — 분식 일반은 효과 낮음", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["사이드 묶음", "분식세트", "최소주문금액", "공공배달앱", "학원가·하교 시간"]
+  loss_frames: ["사이드·세트 구성 없어 객단가 낮음", "최소주문금액·배달팁 설정 비효율", "배달 수수료에 잠식되는 마진(공공배달앱 미활용)", "학원가·하교 타게팅 무대응"]
+  examples:
+    - "튀김·순대·음료를 세트로 묶거나 '2인 분식세트'를 만드세요 — 분식은 단가가 낮아서 묶음이 객단가의 전부예요"
+    - "공공배달앱(땡겨요 등)은 수수료 2%대니 저단가 메뉴엔 효과가 더 큽니다"
+  do: ["사이드·음료 세트·'2인 분식세트' 구성으로 객단가↑", "공공배달앱 병행", "네이버 플레이스 학원가·하교 시간 타게팅"]
+  dont: ["인스타·블로그에 큰 비용 (분식 일반은 효과 낮음)", "예약 시스템 도입 (배달·회전형엔 무관)"]

@@ -1,0 +1,61 @@
+# cafe.beverage — 음료 전문 (버블티·과일주스·스무디·생과일 — 비커피)
+# 출처: 식품외식경제·foodbank 업계 분석 + GS25 생과일스무디 매출 사례(2025) + sme-coach. (한국 공식 객단가 통계 미확인 — 추정.)
+id: cafe.beverage
+name: 음료 전문 (버블티·과일주스·스무디)
+group: cafe
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 식품외식경제·foodbank 업계 분석 + GS25 생과일스무디 매출 사례(2025) + sme-coach 플레이북
+    year: 2025
+
+match:
+  priority: 16
+  keywords: [음료전문점, 생과일주스, 과일주스, 주스전문점, 스무디, 버블티, 밀크티, 흑당버블티, 에이드전문, 생과일, 과일청, 주스바, 스무디킹류, 공차류, 생주스]
+  ksic_codes: ["56229"]   # 기타 비알코올 음료점
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 음료 전문 (버블티·과일주스·스무디·생과일 — 비커피)
+  - Hero KPI: ① **여름 성수기 매출 의존도**(7~9월 vs 12~2월 30~40% 감소 — 비수기 대비가 hero) ② 일 판매잔수(박리다매) ③ 재료 폐기율(과일 부패) ④ 인스타 비주얼(버블티·생과일은 비주얼 소비)
+  - 객단가: 1잔 1,500~6,000원(저가 주스 1,000~3,000원, 버블티·프리미엄 스무디 4,000~6,000원). 단체·픽업 주문 시 건당↑ (추정)
+  - 운영 리듬: **여름(6~9월) 폭증, 한겨울 매출 30~40%↓** / 오후 14~18시(간식 시간) / 주말 나들이 상권↑ / 겨울 메뉴 다각화(붕어빵·따뜻한 음료) 필요
+  - Top 채널: ① 인스타그램·틱톡(컬러풀 비주얼·신메뉴) ② 네이버 플레이스 ③ 배민·요기요(여름 한정 배달 — 디저트/음료 카테고리) ④ 카카오 스탬프
+  - 손실 프레임: "겨울 비수기 메뉴·매출 무대응(여름만 바라봄)", "인스타·틱톡 비주얼 콘텐츠 부재", "과일 폐기율 관리 안 됨", "여름 배달(배민 음료 카테고리) 미활용"
+  - 위험 신호: 겨울 매출 < 여름 매출의 50% / 재료 폐기율 과다 / 일 판매잔수 저조 / 영업이익률 한 자릿수 미만
+  - 카피 예: "여름 한 철 장사로 끝내지 마세요 — 겨울엔 따뜻한 음료·붕어빵·호떡 같은 곁들임으로 비수기 매출을 절반은 채울 수 있어요", "신메뉴 음료는 색이 예뻐야 팔려요 — 인스타·틱톡에 컬러풀한 사진/영상을 올리세요"
+  - 금지: "배민 광고비 상시 집행"(여름 시즌 외엔 ROI 낮음), "커피전문점처럼 운영"(비커피는 시즌 의존·박리다매가 본질)
+
+hero_kpis:
+  - {key: "winter_ratio", label: "겨울 매출 (여름 대비)", unit: "%", good: "≥ 60", warn: "50–59", danger: "< 50", confidence: "estimated", source: "업계 — 한겨울 30~40% 감소"}
+  - {key: "avg_ticket", label: "객단가", unit: "원/잔", good: "버블티·스무디 ≥ 4,000 / 저가주스 ≥ 2,000", warn: "—", danger: "—", confidence: "estimated", source: "추정"}
+  - {key: "waste_ratio", label: "재료 폐기율(과일)", unit: "%", good: "≤ 5", warn: "6–10", danger: "> 10", confidence: "estimated", source: "업계 통설 — 과일 부패"}
+  - {key: "food_cost_ratio", label: "재료 원가율", unit: "% 매출", good: "≤ 35", warn: "36–45", danger: "> 45", confidence: "estimated", source: "추정 — 과일 시세 변동·폐기 큼"}
+
+kpi_thresholds:
+  겨울_매출_위험: "< 여름 매출의 50%"
+  폐기율_위험: "> 10%"
+  원가율_위험: "> 45%"
+
+risk_signal_weights:   # 유동·나들이 상권 의존 + 시즌 변동 극심 → 매출 추세·유동인구 비중↑
+  population_trend: 1.2
+  sales_trend: 1.1
+
+subsidy_tags: [digital, store_renovation, marketing]   # 스마트상점·POS·점포환경개선·홍보
+
+channels:
+  - {key: "instagram_tiktok", name: "인스타그램·틱톡(컬러풀 비주얼·신메뉴)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·신규 유입", roi_note: "버블티·생과일은 색감이 곧 마케팅 — 신메뉴 사진/영상. 광고 일 1,000원+", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고)", fit: "high", entry_cost_won: 0, primary_metric: "검색·길찾기", roi_note: "무료 등록 + CPC 광고", confidence: "measured", source: "네이버"}
+  - {key: "baemin_yogiyo", name: "배민·요기요(여름 한정 배달 — 디저트/음료)", fit: "medium", entry_cost_won: 88000, primary_metric: "여름 배달 주문", roi_note: "여름 성수기에만 ROI 높음. 깃발 88,000원/월 — 시즌 집행 권장", confidence: "hypothesis"}
+  - {key: "kakao_stamp", name: "카카오 친구톡·스탬프", fit: "medium", per_unit_cost_won: 15, primary_metric: "재방문", roi_note: "카카오 채널 텍스트 15원/건(VAT 별도). 스탬프 적립", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "kakaomap", name: "카카오맵(등록)", fit: "low", entry_cost_won: 0, primary_metric: "위치 검색", roi_note: "무료", confidence: "measured", source: "카카오"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["여름 성수기", "겨울 비수기", "컬러풀 비주얼", "일 판매잔수", "곁들임 메뉴"]
+  loss_frames: ["겨울 비수기 메뉴·매출 무대응", "인스타·틱톡 비주얼 콘텐츠 부재", "과일 폐기율 관리 안 됨", "여름 배달 미활용"]
+  examples:
+    - "여름 한 철 장사로 끝내지 마세요 — 겨울엔 따뜻한 음료·붕어빵·호떡 같은 곁들임으로 비수기 매출을 절반은 채울 수 있어요"
+    - "신메뉴 음료는 색이 예뻐야 팔려요 — 인스타·틱톡에 컬러풀한 사진/영상을 올리세요"
+  do: ["겨울 메뉴 다각화(따뜻한 음료·붕어빵 등 곁들임)", "인스타·틱톡 신메뉴 비주얼 콘텐츠", "여름 시즌 한정 배민 배달 집행"]
+  dont: ["배민 광고비 상시 집행 (여름 외엔 ROI 낮음)", "커피전문점처럼 운영 (비커피는 시즌 의존·박리다매가 본질)"]

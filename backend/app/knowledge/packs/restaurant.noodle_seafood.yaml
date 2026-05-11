@@ -1,0 +1,62 @@
+# restaurant.noodle_seafood — 한식 면·해산물 (칼국수·냉면·국수 / 횟집·해물탕·물회)
+# ※ 면류는 점심 회전형(저원가), 횟집·해물탕은 고가·예약형(고원가) — prompt에서 어느 쪽인지 확인하도록.
+# 출처: 농식품부 외식업체 경영실태조사 2024 + 한국외식산업연구원 + sme-coach.
+id: restaurant.noodle_seafood
+name: 한식 면·해산물 (칼국수·냉면 / 횟집·해물탕)
+group: restaurant
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 농식품부 외식업체 경영실태조사 2024 + 한국외식산업연구원 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 22
+  keywords: [칼국수, 손칼국수, 바지락칼국수, 수제비, 잔치국수, 막국수, 냉면, 평양냉면, 함흥냉면, 밀면, 콩국수, 횟집, 활어회, 물회, 해물탕, 해물찜, 아구찜, 대게, 킹크랩, 조개구이, 매운탕, 생선구이, 굴요리, 낙지요리, 조개찜, 회센터, 수산]
+  ksic_codes: ["56112", "56114"]   # 한식 면 요리 / 한식 해산물 요리
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 한식 면·해산물 (칼국수·냉면 / 횟집·해물탕)
+  ※ 면류(칼국수·냉면)는 점심 회전형·저원가, 횟집·해물탕은 고가·예약형·고원가 — 사장님 가게가 어느 쪽인지 확인하고 답하세요.
+  - 면류: 객단가 7,000~13,000원, Hero KPI = 점심 회전율·여름 피크(냉면·콩국수). 가을·겨울 칼국수·수제비
+  - 횟집·해물탕: 객단가 1인 25,000~50,000원+ (회+세팅비), Hero KPI = 객단가 + 단체·회식 예약 + 저녁/주말 비중. 원가율 40~50%(활어 원가·로스 큼)
+  - 운영 리듬: 냉면·물회·해산물 6~8월 성수기 / 칼국수·수제비 가을·겨울 / 횟집은 금·토 저녁 + 회식 시즌(12월) 집중·가족외식 주말
+  - Top 채널: 면류 → 네이버 플레이스·카카오맵(점심 검색) / 횟집·해물탕 → **캐치테이블·네이버 예약(단체·회식 예약) + 네이버 플레이스(사진·메뉴·가격) + 회식 키워드 플레이스 광고·블로그**
+  - 손실 프레임: "(횟집) 단체·회식 예약 페이지 없음", "(횟집) 회식 시즌 12월 무대응", "(면류) 점심 검색 노출 미정비", "여름/겨울 시즌 메뉴 전환 없음"
+  - 위험 신호: (횟집) 객단가 < 1.8만원 / 단체예약 비율 < 20% / (면류) 점심 회전율 < 1.5회 / 활어 로스율 과다
+  - 카피 예: "(횟집) 회식 시즌 12월엔 단체 예약이 매출의 절반이에요 — 캐치테이블·네이버 예약에 단체석 페이지부터 만드세요", "(면류) 여름엔 냉면, 겨울엔 칼국수로 메뉴판 앞장을 바꾸세요"
+  - 금지: 면류/횟집 구분 없이 일반론으로 답하기, "배달 비중 늘리세요"(횟집·해물탕은 배달 적합도 낮음)
+
+hero_kpis:
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "면류 ≥ 9,000 / 횟집 ≥ 30,000", warn: "면류 7,000–8,999 / 횟집 18,000–29,999", danger: "면류 < 7,000 / 횟집 < 18,000", confidence: "estimated", source: "추정 — 활어·세팅비 별도"}
+  - {key: "group_reservation_ratio", label: "단체·회식 예약 비율(횟집)", unit: "%", good: "≥ 20", danger: "< 20", confidence: "estimated", source: "업계 추정 — 회식 시즌 12월 집중"}
+  - {key: "lunch_turnover", label: "점심 회전율(면류)", unit: "회", good: "≥ 2.5", warn: "1.5–2.4", danger: "< 1.5", confidence: "estimated", source: "업계 추정"}
+  - {key: "food_cost_ratio", label: "식재료비 비율", unit: "% 매출", good: "면류 ≤ 35 / 횟집 ≤ 45", warn: "면류 36–40 / 횟집 46–50", danger: "면류 > 40 / 횟집 > 50", confidence: "estimated", source: "추정 — 횟집은 활어 원가·로스 큼"}
+
+kpi_thresholds:
+  횟집_객단가_위험: "< 18,000원"
+  단체예약_비율_위험: "< 20%"
+  면류_점심_회전율_위험: "< 1.5회"
+
+risk_signal_weights:
+  competition: 1.1
+
+subsidy_tags: [digital, store_renovation]   # 스마트상점(예약·POS·테이블오더)·HACCP(수산물)·점포환경개선
+
+channels:
+  - {key: "catchtable_naver_reservation", name: "캐치테이블·네이버 예약(횟집 단체·회식)", fit: "high", primary_metric: "단체 예약·노쇼 감소", roi_note: "횟집·해물탕은 회식·가족모임 예약이 매출 핵심 — 단체석 페이지 + 노쇼 보증금. 12월 회식 시즌에 효과 큼", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고)", fit: "high", entry_cost_won: 0, primary_metric: "검색→방문·예약", roi_note: "무료 등록 + CPC 광고. 횟집은 사진·가격, 면류는 점심 검색 키워드", confidence: "measured", source: "네이버"}
+  - {key: "kakaomap", name: "카카오맵(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "위치 검색", roi_note: "무료", confidence: "measured", source: "카카오"}
+  - {key: "blog_review", name: "네이버 블로그·맛집 큐레이션(횟집)", fit: "medium", primary_metric: "회식·모임 검색 노출", roi_note: "'○○ 회식 횟집' 키워드 후기·플레이스 광고", confidence: "hypothesis"}
+  - {key: "baemin", name: "배민 울트라콜", fit: "low", entry_cost_won: 88000, primary_metric: "배달 주문", roi_note: "면류 일부만(칼국수·수제비 배달). 횟집·해물탕은 배달 적합도 낮음", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["회식 예약", "단체석", "여름 냉면", "겨울 칼국수", "활어 로스"]
+  loss_frames: ["(횟집) 단체·회식 예약 페이지 없음", "(횟집) 회식 시즌 12월 무대응", "(면류) 점심 검색 노출 미정비", "시즌 메뉴 전환 없음"]
+  examples:
+    - "(횟집) 회식 시즌 12월엔 단체 예약이 매출의 절반이에요 — 캐치테이블·네이버 예약에 단체석 페이지부터 만드세요"
+    - "(면류) 여름엔 냉면, 겨울엔 칼국수로 메뉴판 앞장을 바꾸세요"
+  do: ["(횟집) 캐치테이블·네이버 예약 단체석 페이지", "(면류) 네이버 플레이스 점심 검색 키워드 정비", "여름/겨울 시즌 메뉴 전면 배치"]
+  dont: ["면류/횟집 구분 없이 일반론으로 답하기", "(횟집·해물탕) 배달 비중 늘리기"]

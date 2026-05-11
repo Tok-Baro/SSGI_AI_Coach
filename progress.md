@@ -467,4 +467,26 @@
 - ④ korean_meat copy_tone override (현재 restaurant "점심" 톤 상속 — prompt_block/hero_kpis 는 이미 고기·구이용)
 - ⑤ 대시보드에도 출처칩 추가(현재 인사이트 페이지만)
 
+---
+
+## 2026-05-11 — 배포 마이그레이션 핫픽스 + 학원 5 leaf + data_caveats + 내 가게 정보 페이지
+
+- **배포 핫픽스 (`8a1ca5d`)**: Render(Docker 빌드)에 마이그레이션 단계 없어서 008/009 미적용 → `users.industry_slug` 없음 → 로그인 전체 500. `backend/Dockerfile` CMD + `railway.toml` startCommand 를 `alembic upgrade head && uvicorn …` 로 변경 → 컨테이너 부팅 시 자동 마이그레이션. ⚠️ Render 배포 로그에서 `Running upgrade … -> 008_industry_slug` 찍히는지 확인 필요. (Render 대시보드에 Start Command override 걸려 있으면 거기도 같이 바꿔야 함.)
+- **학원 5개 leaf 팩** — `academy.exam`(입시·교과) / `academy.coding`(코딩·로봇·SW) / `academy.art`(미술) / `academy.pe`(체육·태권도·발레·수영) / `academy.language`(어학) — group=academy 상속, 특성 다른 것만 override. priority 15 (restaurant 의 "회" 같은 1글자 키워드 오탐 회피 위해 앞쪽). 리서치(통계청 사교육비조사 2024·디지털새싹·태권도장 마케팅 논문 등) 기반 prompt_block·hero_kpis·channels·copy_tone·subsidy_tags·risk_signal_weights. 코딩학원은 정부 디지털교육 지원이 핵심이라 channels 에 "정부 사업 운영" 채널 + subsidy_tags digital 포함. 미술/어학은 입시 vs 취미·아동, 아동 vs 성인 두 갈래 — prompt_block 에 "사장님께 어느 쪽인지 확인" 명시. → 총 **14팩**.
+- **`data_caveats` 스키마 필드** (`list[str]`) — 공공데이터 해석 함정. `academy` 에 4건(추정매출=카드승인일 기준 → 학원은 등록일·자동결제일에 매출 스파이크 → 요일·일자 패턴 곧이곧대로 해석 X / 학기·방학 시작월 결제 폭증 / CMS 자동이체 과소집계 / 추정매출=상권 동종업종 추정치≠실매출). leaf 들이 상속. `industry_prompt_block` 이 `prompt_block` 뒤에 "## 데이터 해석 주의" 섹션으로 자동 부착 → deep-report·menu·marketing·action_generator 프롬프트 전부 받음. shim 에 `industry_data_caveats`·`industry_name` 추가.
+- **내 가게 정보 페이지** (요청: "온보딩 다시할수있는 개인 페이지") — 백엔드 `PATCH /onboarding/profile` (`UpdateProfileRequest/Response`, 사업자번호 재검증 없음, `industry_slug`/`business_type`/`business_start_date` 부분 수정). 프론트 `/profile` 페이지: 상호·주소·현재 업종(플레이북 v_n·검수일) 표시 + 업종 `<select>`(자동감지 + 업종군·세부 들여쓰기 — 학원이면 입시·코딩·미술·체육·어학 leaf 가 뜸) + 저장. 대시보드 헤더에 "내 가게" 링크 추가. `api.updateProfile()`. **DB 마이그레이션 불필요**(기존 컬럼만 사용).
+- **검증**: `validate_packs` ✓ 14팩 / `from app.main import app` ✓ (`/onboarding/profile` 등록) / classify 27케이스(학원 5 leaf 정확 분류 + 타 업종 무영향) ✓ / data_caveats 상속·prompt_block 부착 ✓ / `npx next build` ✓ 16라우트(/profile 포함, 에러 0).
+
+**※ 학원 카카오 카테고리는 가입 시 자동 추정이 부분적임** — 카카오 로컬 검색이 "입시,보습학원/외국어학원/미술학원/컴퓨터학원/태권도장" 식으로 세분돼 있으면 leaf 키워드와 매칭되지만, 그냥 "학원"으로만 등록된 경우 academy 군으로만 잡힘 → 사장님이 온보딩 피커 또는 `/profile` 에서 직접 세부 선택. + leaf 의 `hero_kpis` 가 "사장님께 물어볼 3~4개"(재등록률·정원충족률·월수강료)를 정의 → 추후 인테이크 폼으로 활용 가능.
+
+- **외식 음식점 세부 6 leaf** (group=restaurant) — `restaurant.korean_general`(백반·국밥·찌개 — 점심 회전형) / `restaurant.noodle_seafood`(칼국수·냉면 / 횟집·해물탕 — 면류 점심형 vs 횟집 고가예약형 두 갈래) / `restaurant.chinese`(중국집·마라탕·양꼬치) / `restaurant.japanese`(돈까스·우동 / 초밥·오마카세 / 이자카야) / `restaurant.western_asian`(파스타·스테이크·브런치·쌀국수·아시안) / **`restaurant.pub`(호프·포차·와인바 — 지금까지 unknown 으로 빠지던 업종 신설)**. priority 22(restaurant 30·korean_meat 25 보다 먼저). 리서치(농식품부 외식업체 경영실태조사 2024·KCD 데이터랩) 기반 prompt_block·hero_kpis·channels(6개씩)·copy_tone·subsidy_tags·risk_signal_weights. report_weights 는 restaurant 상속(미오버라이드). + `cafe.yaml` 키워드에서 bare "브런치" 제거(양식 레스토랑과 모호) → "브런치카페" 만. → 총 **20팩** (restaurant 군 아래 leaf 7개).
+- **검증(외식)**: `validate_packs` ✓ 20팩 / classify 17케이스(외식 6 leaf 정확 + 브런치레스토랑→western_asian·브런치카페→cafe + 타 업종 무영향) ✓ / `from app.main import app` ✓.
+
+- **카페 4 leaf** (group=cafe) — `cafe.coffee`(커피전문점 — 저가커피 vs 좌석형) / `cafe.dessert_bakery`(디저트·베이커리 카페·케이크·브런치카페 — 인스타 비주얼·기프트 시즌·폐기율) / `cafe.bakery`(동네 빵집 — 폐기율이 hero·'오늘 나온 빵' 알림) / `cafe.beverage`(버블티·과일주스·스무디 — 여름 성수기 의존·겨울 비수기 대비). priority 16. + cafe 키워드에서 bare "브런치" 제거.
+- **배달 4 leaf** (group=delivery_food) — `delivery_food.chicken`(치킨 — 별점·사이드 부착률·공공배달앱) / `delivery_food.bunsik`(분식 — 저단가라 세트·묶음이 hero) / `delivery_food.pizza_burger`(피자·버거·샌드위치 — 피자는 1+1 프로모션·토스트는 오피스가) / `delivery_food.jokbal`(족발·보쌈·야식 — 심야 22~02시·토요일 +93%). priority 6. 출처: KCD 데이터랩·요기요 데이터·정보공개서.
+- **검증(배치②)**: `validate_packs` ✓ **28팩** / classify 35케이스 ✓ / `from app.main import app` ✓ (`/onboarding/profile` 등록).
+
+**총 28팩** (academy 군+5leaf / restaurant 군+6leaf+korean_meat / cafe 군+4leaf / delivery_food 군+4leaf / retail / fashion / service / unknown).
+**다음 배치(예정)**: ③ 미용·서비스 계열(`service` → hair(미용실)/nail(네일·왁싱)/skincare(피부·에스테틱)/laundry(세탁)/pc_karaoke(PC방·노래방·당구장) — 동물병원·자동차정비·사진관은 별도 검토) ④ 소매(`retail` → cvs/super/food) + 패션(`fashion` → apparel/cosmetics/shoes_bag/optical).
+
 > **마지막 업데이트**: 2026-05-11

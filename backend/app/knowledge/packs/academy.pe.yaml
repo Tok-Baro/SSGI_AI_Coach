@@ -1,0 +1,63 @@
+# academy.pe — 체육·예체능 학원 (태권도장·발레/무용·수영·축구교실 등)
+# 핵심: 이탈률 관리가 운영의 전부 / 셔틀버스 노선 = 사실상 상권 / 발표회·승급심사가 락인 장치.
+# 출처: 태권도장 마케팅믹스 6P 논문(KISTI) + 무도비즈니스 업계 + 통계청 사교육비조사 + sme-coach.
+id: academy.pe
+name: 체육·예체능 학원 (태권도·무용·수영 등)
+group: academy
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 태권도장 마케팅믹스 6P 연구(KISTI) + 무도비즈니스 업계 + 통계청 2024 사교육비조사 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 15
+  keywords: [태권도장, 태권도, 합기도장, 합기도, 검도장, 유도장, 주짓수, 무에타이, 복싱장, 발레학원, 무용학원, 댄스학원, 방송댄스, 수영교실, 축구교실, 축구클럽, 농구교실, 야구교실, 체조학원, 키즈스포츠, 클라이밍, 검도교습소]
+  ksic_codes: ["85504"]   # 기타 교습 학원 (체육·예술)
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 체육·예체능 학원 (태권도장·발레/무용·수영·축구 등)
+  - Hero KPI: **이탈률 관리가 hero** (신규 유입보다 잔존이 핵심 — 학부모 만족도로 전환장벽 높이기). 셔틀 이용률(셔틀 노선 = 곧 상권), 승급심사·발표회·대회 참가율, 정원 충족률
+  - 객단가: 태권도 12~18만(+셔틀 1~3만), 발레·무용 12~25만, 수영 8~15만, 축구 10~18만 (도복·심사비·발표회비 별도). 통계청 예체능 24.3만(참여학생, 2024) 참고
+  - 운영 리듬: 3월 신학기 유입 + 방학(돌봄 수요로 오히려 유지) + 발표회·승급심사·시범단/대회 시즌(상·하반기) + 여름 수영 성수기. 학년 진급기(초→중)에 이탈 급증
+  - Top 채널: **인스타그램·유튜브 강세**(시범·발표회·대회·일상 영상 = 학부모 감정 자극) + 셔틀버스 차량 래핑(이동 광고) + 아파트 단지 현수막·전단 + 맘카페·당근 + 네이버 플레이스. 관장 개인 SNS 영향 큼
+  - 손실 프레임: "이탈 관리 시스템 부재(전환장벽 낮음)", "셔틀 노선 미최적화(상권 좁음)", "발표회·승급심사 미운영(락인 장치 없음)", "발표회·일상 영상 콘텐츠 부재"
+  - 위험 신호: 월 이탈률 > 8% / 정원 충족률 < 50% / 셔틀 미운영(돌봄 대체 수요 못 잡음) / 발표회·승급심사 연 2회 미만
+  - 카피 예: "이번 달 그만둔 8명 중 4명은 발표회 전에 빠졌어요 — 행사 한 달 전 안내가 이탈을 절반으로 줄입니다", "승급심사 영상 1편 인스타에 올리면 형제·이웃 문의가 들어옵니다"
+  - 금지: "배달앱·무신사" 같은 무관 채널, "신규 유입에만 집중"(체육은 이탈 막는 게 먼저)
+
+hero_kpis:
+  - {key: "churn_rate", label: "월 이탈률", unit: "%", good: "≤ 5", warn: "6–8", danger: "> 8", confidence: "estimated", source: "업계 통설 — 체육 학원은 이탈 관리가 운영 핵심"}
+  - {key: "capacity_fill", label: "정원 충족률", unit: "%", good: "≥ 70", warn: "50–69", danger: "< 50", confidence: "estimated", source: "추정"}
+  - {key: "monthly_tuition", label: "학생 1인당 월 수강료", unit: "원", good: "—", confidence: "estimated", source: "태권도 12~18만(+셔틀) / 발레 12~25만 / 수영 8~15만 (추정, 부대비용 별도)"}
+  - {key: "events_per_year", label: "발표회·승급심사 등 행사", unit: "회/년", good: "≥ 4", warn: "2–3", danger: "< 2", confidence: "hypothesis", source: "추정 — 행사가 재등록 락인 장치"}
+
+kpi_thresholds:
+  이탈률_위험: "> 월 8%"
+  정원_충족률_위험: "< 50%"
+  행사_빈도_위험: "< 연 2회"
+
+risk_signal_weights:   # 셔틀 노선이 곧 상권 → 유동인구보다 배후 거주 의존 / 이탈은 코치(운영) 관리 영역
+  population_trend: 0.9
+  action_engagement: 1.1
+
+subsidy_tags: [education, store_renovation]   # 점포환경개선(매트·시설 교체) + 생활체육·스포츠클럽 지자체 사업 일부 + 교육서비스 일반
+
+channels:
+  - {key: "instagram", name: "인스타그램·유튜브(시범·발표회·일상 영상)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·문의·재등록 동기부여", roi_note: "발표회·승급·대회 영상이 학부모 감정을 가장 잘 자극. 관장 개인 SNS 영향 큼. 광고는 일 1,000원+", confidence: "hypothesis"}
+  - {key: "shuttle_wrap", name: "셔틀버스 차량 래핑·노선 노출", fit: "high", primary_metric: "동네 인지·문의", roi_note: "셔틀 노선이 사실상 상권 — 차량 래핑은 매일 동네를 도는 이동 광고. 노선 최적화 자체가 마케팅", confidence: "hypothesis"}
+  - {key: "apt_banner_flyer", name: "아파트 단지 현수막·전단", fit: "high", monthly_budget_min_won: 50000, monthly_budget_max_won: 300000, primary_metric: "배후 단지 노출→문의", roi_note: "배후 거주 단지 대상. 신학기·발표회 시즌에", confidence: "hypothesis"}
+  - {key: "mom_cafe_daangn", name: "맘카페·당근", fit: "medium", entry_cost_won: 0, primary_metric: "동네 학부모 노출·후기", roi_note: "무료", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스", fit: "medium", entry_cost_won: 0, primary_metric: "검색·길찾기·후기", roi_note: "무료 등록", confidence: "measured", source: "네이버"}
+  - {key: "kakao_alimtalk", name: "카카오 알림톡(승급·발표회·재등록 안내)", fit: "high", per_unit_cost_won: 9, primary_metric: "도달 95%+", roi_note: "건당 8~9원. 행사 안내·재등록 리마인드가 이탈 방어에 직결", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "baemin_musinsa", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["이탈", "재등록", "승급심사", "발표회", "셔틀", "정원"]
+  loss_frames: ["이탈 관리 시스템 부재(전환장벽 낮음)", "셔틀 노선 미최적화", "발표회·승급심사 미운영(락인 장치 없음)"]
+  examples:
+    - "이번 달 그만둔 8명 중 4명은 발표회 전에 빠졌어요 — 행사 한 달 전 안내가 이탈을 절반으로 줄입니다"
+    - "승급심사 영상 1편을 인스타에 올리면 형제·이웃 문의가 들어옵니다"
+  do: ["발표회·승급심사·대회 영상 인스타/유튜브 업로드", "행사 한 달 전 재등록·참가 안내(이탈 방어)", "셔틀 노선 최적화 + 차량 래핑"]
+  dont: ["배달앱·무신사 등 무관 채널", "신규 유입에만 집중 (체육은 이탈 막는 게 먼저)"]

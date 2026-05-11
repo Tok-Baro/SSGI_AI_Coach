@@ -1,0 +1,63 @@
+# academy.language — 어학 학원 (영어/중국어/일본어 — 아동~성인 회화)
+# 핵심: 무료 레벨테스트가 표준 전환 장치 / 아동(맘카페·신학기) vs 성인(검색·취업시즌)이 다름.
+# 출처: 통계청 사교육비조사 2024(영어 26.4만, 참여학생) + 어학원 프랜차이즈 정보공개서 + sme-coach.
+id: academy.language
+name: 어학 학원 (영어·중국어·일본어)
+group: academy
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 통계청 2024 초중고 사교육비조사(영어 26.4만, 참여학생) + 어학원 프랜차이즈 정보공개서 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 15
+  keywords: [어학원, 외국어학원, 영어학원, 영어회화학원, 영어교습소, 중국어학원, 일본어학원, 일어학원, 프랑스어학원, 스페인어학원, 토익학원, 토플학원, 어학시험학원, 회화학원, 영어유치원, 키즈영어, 화상영어, 전화영어]
+  ksic_codes: ["85502"]   # 외국어 학원
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 어학 학원 (영어·중국어·일본어, 아동~성인)
+  ※ 아동 어학원과 성인 회화·시험반은 객단가·시즌·채널이 다름 — 사장님께 주 대상층 확인하고 답하세요.
+  - 아동: 객단가 월 25~60만+(영유·국제반 상단), 중고생 단과 15~30만. Hero KPI = 재등록률(레벨업 시스템으로 잔류)·정원 충족률·레벨테스트 후 전환율. 시즌 3월 신학기·방학(어학캠프·해외연수)
+  - 성인(회화·토익·HSK·JLPT): 객단가 회화 10~30만 / 시험·환급반 20~50만. Hero KPI = 신규 유입(취업·이직 시즌 민감)·목표 점수 달성률·환급반 완주율. 시즌 1~2월·하반기 채용시즌, 시험 일정 직전 단기반 폭증, 연초 결심 효과
+  - Top 채널: 아동 = 맘카페·네이버 플레이스·인스타(레벨테스트·공개수업)·전단 / 성인 = 네이버 검색·블로그·유튜브 후기·인스타·당근(직장인 타깃)·환급 이벤트. 어학은 가격·커리큘럼 비교가 많아 검색·후기 채널 비중 큼
+  - 손실 프레임: "무료 레벨테스트 전환 장치 부재", "(아동)레벨업 시스템 없어 재등록 약함", "(성인)취업·시험 시즌 단기반 미운영", "검색·후기 노출 빈약(비교당하기만 함)"
+  - 위험 신호: 재등록률 < 60%(아동) / 레벨테스트→등록 전환율 < 20% / 원어민 강사 이탈 잦음 / 성인반 시험시즌 단기반 미운영
+  - 카피 예: "무료 레벨테스트를 네이버·당근에 상시 노출하세요 — 어학원은 일단 테스트만 받게 하면 절반이 등록합니다", "(성인반) 1~2월·하반기 채용시즌에 토익 단기반 열면 직장인이 몰립니다"
+  - 금지: "배달앱·무신사" 같은 무관 채널, 아동/성인 구분 없이 일반론으로 답하기
+
+hero_kpis:
+  - {key: "reenroll_rate", label: "재등록률(아동)", unit: "%", good: "≥ 75", warn: "55–74", danger: "< 55", confidence: "estimated", source: "업계 통설 — 레벨업 시스템 있으면 잔류↑"}
+  - {key: "leveltest_conversion", label: "레벨테스트→등록 전환율", unit: "%", good: "≥ 40", warn: "20–39", danger: "< 20", confidence: "hypothesis", source: "추정 — 무료 레벨테스트가 핵심 전환 장치"}
+  - {key: "monthly_tuition", label: "학생 1인당 월 수강료", unit: "원", good: "—", confidence: "estimated", source: "아동 25~60만+ / 중고 단과 15~30만 / 성인 회화 10~30만 / 시험·환급반 20~50만 (추정)"}
+  - {key: "native_turnover", label: "원어민 강사 이탈", unit: "—", good: "낮음", danger: "잦음(채용·비자 비용↑)", confidence: "estimated", source: "업계 통설"}
+
+kpi_thresholds:
+  재등록률_위험: "< 55% (아동)"
+  레벨테스트_전환율_위험: "< 20%"
+  강사_이탈_위험: "잦음 (원어민 채용·비자 비용 압박)"
+
+risk_signal_weights:   # 검색·비교가 많은 시장 → 노출(코치 활용도) 비중 ↑ / 성인반은 시즌 변동 큼
+  action_engagement: 1.1
+  competition: 1.1
+
+subsidy_tags: [education, digital, store_renovation]   # 교육서비스 일반 + 디지털(화상영어 등) + 점포환경개선
+
+channels:
+  - {key: "naver_search", name: "네이버 검색·블로그(가격·커리큘럼 비교)", fit: "high", entry_cost_won: 0, primary_metric: "검색 노출·후기 신뢰", roi_note: "무료 등록 + 블로그 후기. 어학은 비교 검색이 많아 검색 노출이 핵심", confidence: "measured", source: "네이버"}
+  - {key: "free_leveltest", name: "무료 레벨테스트(상시 노출)", fit: "high", entry_cost_won: 0, primary_metric: "테스트 신청→등록 전환", roi_note: "어학원 표준 전환 장치 — 네이버·당근·인스타에 상시 노출. 일단 테스트 받으면 등록률 높음", confidence: "hypothesis"}
+  - {key: "mom_cafe", name: "맘카페·지역 학부모 커뮤니티(아동)", fit: "high", entry_cost_won: 0, primary_metric: "동네 학부모 노출·후기", roi_note: "무료. 아동 어학원은 맘카페 입소문이 큼", confidence: "hypothesis"}
+  - {key: "instagram", name: "인스타그램(공개수업·레벨테스트·후기)", fit: "medium", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·문의", roi_note: "공개수업·이벤트 콘텐츠. 광고는 일 1,000원+", confidence: "hypothesis"}
+  - {key: "daangn", name: "당근(성인 직장인 타깃)", fit: "medium", entry_cost_won: 0, primary_metric: "동네 노출", roi_note: "무료. 성인 회화반은 직장인 동네 타깃에 유효", confidence: "hypothesis"}
+  - {key: "kakao_alimtalk", name: "카카오 알림톡(수강·레벨테스트·재등록 안내)", fit: "medium", per_unit_cost_won: 9, primary_metric: "도달 95%+", roi_note: "건당 8~9원", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "baemin_musinsa", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["레벨테스트", "재등록", "레벨업", "취업시즌", "환급반", "원어민"]
+  loss_frames: ["무료 레벨테스트 전환 장치 부재", "(아동) 레벨업 시스템 없어 재등록 약함", "(성인) 취업·시험 시즌 단기반 미운영"]
+  examples:
+    - "무료 레벨테스트를 네이버·당근에 상시 노출하세요 — 일단 테스트만 받게 하면 절반이 등록합니다"
+    - "(성인반) 1~2월·하반기 채용시즌에 토익 단기반 열면 직장인이 몰립니다"
+  do: ["무료 레벨테스트 상시 노출(네이버·당근·인스타)", "(아동) 레벨업 시스템으로 재등록 동기 부여", "(성인) 취업·시험 시즌 단기·환급반 운영"]
+  dont: ["배달앱·무신사 등 무관 채널", "아동/성인 구분 없이 일반론으로 답하기"]

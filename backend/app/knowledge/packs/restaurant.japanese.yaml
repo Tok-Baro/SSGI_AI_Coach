@@ -1,0 +1,61 @@
+# restaurant.japanese — 일식·회 (초밥·일식당 / 돈까스·우동 / 이자카야)
+# 출처: 농식품부 외식업체 경영실태조사 2024 + KCD(2024 일식 4Q +5.5% 회복세) + 캐치테이블 + sme-coach.
+id: restaurant.japanese
+name: 일식·회 (초밥·돈까스·이자카야)
+group: restaurant
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 농식품부 외식업체 경영실태조사 2024 + 한국신용데이터 + 캐치테이블 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 22
+  keywords: [일식, 일식당, 초밥, 스시, 회전초밥, 오마카세, 스시오마카세, 사시미, 일식회, 돈까스, 일본식돈까스, 카츠동, 우동, 소바, 라멘, 규동, 텐동, 가츠, 일본가정식, 이자카야, 일본식주점, 사케, 야키토리, 오코노미야키, 일식라멘, 스시야, 일본라멘]
+  ksic_codes: ["56122"]   # 일식 음식점
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 일식·회 (돈까스·우동 / 초밥·오마카세 / 이자카야)
+  - 돈까스·우동·라멘(저가 회전형): 7,000~13,000원. Hero KPI = 점심 회전율·객수. 평일 점심 중심. 배달도 가능(분식형)
+  - 초밥·스시야·오마카세: 회전초밥 12,000~25,000원 / 스시야 2~5만+ / 오마카세 5~15만+. Hero KPI = **객단가 + 예약 점유율(좌석 회전·노쇼 관리)**. 금토 저녁·기념일·연말 예약 집중. 원가율 40~50%(생선·로스)
+  - 이자카야·일본식주점: 1인 20,000~35,000원(주류 포함). Hero KPI = 저녁/야간 매출·주류 비중·테이블 체류 객단가. 평일 퇴근후~심야·금토 피크
+  - 운영 리듬: 돈까스 평일 점심 / 스시·오마카세 금토 저녁 + 기념일·연말 / 이자카야 평일 퇴근후~심야·금토. 2024 일식 회복세
+  - Top 채널: 돈까스·우동 → 네이버 플레이스·카카오맵·배민(배달) / 스시야·오마카세·고급 일식당 → **캐치테이블 1순위(예약·노쇼 보증금) + 인스타(비주얼) + 네이버 플레이스 광고** / 이자카야 → 인스타·네이버 플레이스·카카오맵(모임 검색)
+  - 손실 프레임: "(스시·오마카세) 예약 시스템 부재(노쇼·공석 방치)", "(오마카세) 기념일·연말 예약 무대응", "(이자카야) 인스타 분위기·안주 콘텐츠 부재", "(돈까스) 점심 검색 노출 미정비"
+  - 위험 신호: (스시·오마카세) 예약 점유율 < 60% / 노쇼율 과다 / 원가(생선) 로스율 과다 / (돈까스) 점심 회전율 < 1.5회 / (이자카야) 야간 매출 비중 < 60%
+  - 카피 예: "(오마카세·스시야) 캐치테이블에 노쇼 보증금을 걸어두세요 — 공석 한 자리가 하루 매출의 10%입니다", "(이자카야) 안주·분위기 사진 1장만 인스타에 올려도 '○○역 이자카야' 검색에서 위로 올라옵니다"
+  - 금지: 돈까스/스시·오마카세/이자카야 구분 없이 일반론, "배달 비중 늘리세요"(오마카세·이자카야엔 무관)
+
+hero_kpis:
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "돈까스 ≥ 9,000 / 회전초밥 ≥ 15,000 / 오마카세 ≥ 50,000 / 이자카야 ≥ 20,000", warn: "—", danger: "—", confidence: "estimated", source: "추정"}
+  - {key: "reservation_fill", label: "예약 점유율(스시·오마카세)", unit: "%", good: "≥ 70", warn: "50–69", danger: "< 50", confidence: "estimated", source: "업계 추정 — 좌석 회전·노쇼 관리 핵심"}
+  - {key: "lunch_turnover", label: "점심 회전율(돈까스·우동)", unit: "회", good: "≥ 2.5", warn: "1.5–2.4", danger: "< 1.5", confidence: "estimated", source: "업계 추정"}
+  - {key: "food_cost_ratio", label: "식재료비 비율", unit: "% 매출", good: "돈까스 ≤ 38 / 스시 ≤ 45", warn: "—", danger: "스시 > 50", confidence: "estimated", source: "추정 — 스시·회는 생선 원가·로스 큼"}
+
+kpi_thresholds:
+  예약_점유율_위험: "< 50% (스시·오마카세)"
+  점심_회전율_위험: "< 1.5회 (돈까스·우동)"
+  이자카야_야간_매출_위험: "< 60%"
+
+risk_signal_weights:
+  competition: 1.1
+
+subsidy_tags: [digital, store_renovation]   # 스마트상점(예약·POS·키오스크)·HACCP(생선회)·점포환경개선·백년가게
+
+channels:
+  - {key: "catchtable", name: "캐치테이블(스시·오마카세·고급 일식 예약)", fit: "high", primary_metric: "예약·노쇼 보증금", roi_note: "스시야·오마카세는 예약·노쇼 관리가 매출 핵심. 보증금 설정으로 공석 손실 방어. 기념일·연말에 효과 큼", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고)", fit: "high", entry_cost_won: 0, primary_metric: "검색→방문·예약", roi_note: "무료 등록 + CPC 광고. 돈까스는 점심 검색, 일식당은 사진·메뉴", confidence: "measured", source: "네이버"}
+  - {key: "instagram", name: "인스타그램(스시·이자카야 비주얼)", fit: "medium", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·문의", roi_note: "오마카세·이자카야는 비주얼·분위기 콘텐츠 효과. 광고는 일 1,000원+", confidence: "hypothesis"}
+  - {key: "kakaomap", name: "카카오맵(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "위치 검색·모임", roi_note: "무료", confidence: "measured", source: "카카오"}
+  - {key: "baemin", name: "배민 울트라콜", fit: "low", entry_cost_won: 88000, primary_metric: "배달 주문", roi_note: "돈까스·우동·라멘 일부만(분식형 배달). 스시·오마카세·이자카야는 배달 적합도 낮음", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["예약 점유율", "노쇼 보증금", "오마카세", "안주·분위기", "점심 회전율"]
+  loss_frames: ["(스시·오마카세) 예약 시스템 부재(노쇼·공석 방치)", "(오마카세) 기념일·연말 예약 무대응", "(이자카야) 인스타 분위기·안주 콘텐츠 부재", "(돈까스) 점심 검색 노출 미정비"]
+  examples:
+    - "(오마카세·스시야) 캐치테이블에 노쇼 보증금을 걸어두세요 — 공석 한 자리가 하루 매출의 10%입니다"
+    - "(이자카야) 안주·분위기 사진 1장만 인스타에 올려도 '○○역 이자카야' 검색에서 위로 올라옵니다"
+  do: ["(스시·오마카세) 캐치테이블 예약·노쇼 보증금", "(이자카야) 인스타 분위기·안주 콘텐츠 + 네이버 플레이스 모임 키워드", "(돈까스) 네이버 플레이스 점심 검색 정비"]
+  dont: ["돈까스/스시·오마카세/이자카야 구분 없이 일반론", "(오마카세·이자카야) 배달 비중 늘리기"]
