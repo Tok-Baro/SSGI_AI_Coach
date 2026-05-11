@@ -33,3 +33,8 @@ out/
 
 # Alembic
 alembic/versions/__pycache__/
+.gstack/
+
+# 덱 렌더 QA 출력 / MS Office 임시파일
+render_out/
+~$*
