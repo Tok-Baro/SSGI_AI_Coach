@@ -90,6 +90,7 @@ class RiskScoreEngine:
         subsidy_matches: Optional[list] = None,
         action_completion_rate: float = 0.0,
         user_created_at: Optional[date] = None,
+        business_start_date: Optional[date] = None,
         previous_scores: Optional[list[float]] = None,
     ) -> RiskScoreResult:
         """복합 위험도 산출.
@@ -212,33 +213,58 @@ class RiskScoreEngine:
                 data_available=False,
             ))
 
-        # 5. 액션 실행률 (낮으면 위험 — 코칭을 무시하고 있다)
-        engagement_score = _clamp(1.0 - action_completion_rate)
-        if action_completion_rate > 0:
-            desc = f"최근 30일 완료율 {action_completion_rate:.0%}"
+        # 5. AI 코치 활용도 (초기 30일은 평가 보류 — 외부 마케팅 무시 방지)
+        # 메모리 룰: 사장님이 인스타·배민·오프라인 등 외부 마케팅 하실 수 있음.
+        # SSGI 액션 실행률만으로 위험 단정 X — "AI 코치 활용도 낮음"으로만 표현.
+        days_since_signup = (date.today() - user_created_at).days if user_created_at else 0
+        if days_since_signup < 30:
+            # 신규 사용자: 데이터 부족으로 평가 보류 (위험 가산 X)
+            factors.append(RiskFactor(
+                name="action_engagement", label="AI 코치 활용도",
+                score=0.0,  # 위험에 가산 X
+                weight=self.WEIGHTS["action_engagement"],
+                description=f"가입 {days_since_signup}일차 — 30일 후 측정",
+                data_available=False,
+            ))
         else:
-            desc = "아직 완료한 액션 없음"
-        factors.append(RiskFactor(
-            name="action_engagement", label="액션 실행률",
-            score=round(engagement_score, 3),
-            weight=self.WEIGHTS["action_engagement"],
-            description=desc, data_available=True,
-        ))
+            engagement_score = _clamp(1.0 - action_completion_rate)
+            if action_completion_rate > 0:
+                desc = f"최근 30일 활용도 {action_completion_rate:.0%}"
+            else:
+                desc = "AI 코치 활용도 낮음 (외부 마케팅은 별도)"
+            factors.append(RiskFactor(
+                name="action_engagement", label="AI 코치 활용도",
+                score=round(engagement_score, 3),
+                weight=self.WEIGHTS["action_engagement"],
+                description=desc, data_available=True,
+            ))
 
-        # 6. 사업 성숙도 (신규 = 약간 높은 위험)
-        if user_created_at:
-            days_on_platform = (date.today() - user_created_at).days
-            # 0일 → 0.8, 90일+ → 0.1
-            score = _clamp(0.8 - (days_on_platform / 90.0) * 0.7)
+        # 6. 사업 성숙도 — 실제 가게 운영 기간 기반 (SSGI 가입일 X)
+        # 신규 사장님 (가게 개점 1년 미만) = 통계적으로 위험 높음 (KOSIS 자영업 폐업률)
+        if business_start_date:
+            operating_months = (date.today() - business_start_date).days / 30.0
+            # 0개월 → 0.7, 12개월 → 0.4, 60개월+ → 0.1
+            if operating_months < 12:
+                score = 0.7 - (operating_months / 12.0) * 0.3
+                desc = f"개점 {operating_months:.0f}개월 (1년 미만 신규)"
+            elif operating_months < 60:
+                score = 0.4 - ((operating_months - 12) / 48.0) * 0.3
+                desc = f"개점 {operating_months/12:.1f}년 (안정기 진입 중)"
+            else:
+                score = 0.1
+                desc = f"개점 {operating_months/12:.1f}년 (안정기)"
+            factors.append(RiskFactor(
+                name="business_maturity", label="가게 운영 기간",
+                score=round(_clamp(score), 3), weight=self.WEIGHTS["business_maturity"],
+                description=desc, data_available=True,
+            ))
         else:
-            score = 0.5
-            days_on_platform = 0
-        factors.append(RiskFactor(
-            name="business_maturity", label="사업 성숙도",
-            score=round(score, 3), weight=self.WEIGHTS["business_maturity"],
-            description=f"서비스 이용 {days_on_platform}일차",
-            data_available=True,
-        ))
+            factors.append(RiskFactor(
+                name="business_maturity", label="가게 운영 기간",
+                score=0.0, weight=self.WEIGHTS["business_maturity"],
+                description="개점일 미입력",
+                data_available=False,
+            ))
 
         # 가중 평균 (데이터 없는 요인 제외 후 재분배)
         available = [f for f in factors if f.data_available]

@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app.config import settings
 from app.models.user import User
 from app.models.daily_action import DailyAction
+from app.utils.industry import industry_prompt_block
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ SYSTEM_PROMPT = """당신은 소상공인 전문 AI 경영코치입니다.
 2. 구체적 행동: 1탭으로 실행 가능한 것
 3. 데이터 기반: 제공된 데이터만 사용
 4. 간결함: 제목 1줄 + 설명 2-3줄
+5. 업종 적합성: 사장님 업종에 맞는 채널·KPI만 권유. 치킨집에 "인스타 사진 톤", 카페에 "배민 광고비" 같은 부적합 권유 금지.
 
 응답 형식 (JSON):
 {
@@ -29,7 +31,20 @@ SYSTEM_PROMPT = """당신은 소상공인 전문 AI 경영코치입니다.
   "cta_type": "create_coupon|apply_subsidy|view_detail",
   "data_source": "데이터 출처"
 }
-주의: risk_score는 별도 알고리즘이 산출합니다. 생성하지 마세요."""
+주의: risk_score는 별도 알고리즘이 산출합니다. 생성하지 마세요.
+
+## 한국어 카피 톤 (필수)
+- 해요체 사용: "~합니다" 대신 "~어요/~예요". (사실 진술만 합니다체 허용)
+- "사장님" 호칭. "고객님께서는", "당사", "본 서비스" 절대 금지.
+- AI-ism 금지: "혁신적", "효율적", "최적의", "포괄적", "다양한 측면에서".
+- "의" 한 문장에 3번 이상 X. 동사로 갈라라.
+- 한자 0개 (유동인구·월·년·만 등 한자 표기 절대 금지).
+- 명령형("~하세요") 대신 "~해 보세요" / "~해 드릴게요".
+
+## 한국식 수치 표기 (필수)
+- 큰 금액: 만/억 단위 자연 표기 ("9억 263만원", "120만원"). raw "902,628,924원" 금지.
+- 변화율: "약 8% 빠졌어요" / "거의 그대로예요" 식.
+- D-day: "이번 주 안에" / "한 달 안에" / "내일까지" 식 자연어."""
 
 WEEKDAY_KR = ["월", "화", "수", "목", "금", "토", "일"]
 
@@ -111,10 +126,14 @@ class ActionGenerator:
             history_context = f"\n## 최근 7일 액션\n" + "\n".join(history_lines)
             history_context += "\n주의: 같은 유형의 액션을 연속 반복하지 마세요."
 
+        industry_block = industry_prompt_block(user.business_type)
+
         user_prompt = f"""## 사장님 정보
 상호: {user.business_name or '미등록'}
 업종: {user.business_type or '미등록'}
 위치: {user.gu_name or ''} {user.dong_name or ''}
+
+{industry_block}
 
 ## 오늘 데이터
 날짜: {today} ({weekday}요일)
@@ -129,6 +148,7 @@ class ActionGenerator:
 
 ## 지시사항
 위 데이터에서 가장 위험한 요인에 초점을 맞춰, 놓치면 안 될 행동 1가지를 JSON으로 생성하세요.
+**업종 분기 가이드의 Top 채널과 위험 신호를 우선 참고**하세요.
 5-차원 진단 약점이 제공된 경우 그 영역을 우선 다루세요.
 데이터 없는 항목은 무시하세요."""
 
@@ -281,10 +301,24 @@ class ActionGenerator:
 3. **지원사업 활용 계획** — 지원금 사용처, 세부 항목별 예산, 추진 일정
 4. **기대 효과** — 매출 개선 목표, 고용 효과, 지역 경제 기여
 5. **사업 추진 일정** — 월별 마일스톤 (3~6개월)
-6. **자부담 계획** — 자부담 비율 및 조달 방법"""
+6. **자부담 계획** — 자부담 비율 및 조달 방법
+
+## 업종별 가점 요소 (심사 위원이 본다)
+- **외식업 (치킨/한식/카페)**: 위치 분석(유동인구·직주비율) + 반경 500m 동종 점포 수 + 메뉴 차별화
+- **소매업 (편의점/잡화)**: 평당 매출 목표 + POS 데이터 활용 + 단골 카톡방 운영
+- **의류/패션**: 인스타 팔로워 증가 KPI + 무신사·29CM 입점 계획
+- **미용/서비스**: 재방문율 KPI + 예약 시스템 도입 + BEFORE/AFTER 콘텐츠
+- **디지털 전환 사업**: 도입 후 KPI(회전율 +20%, 단골 +30%) 정량 명시 + 자부담 30~50%
+
+## 자주 떨어지는 패턴 (피해야 함)
+- "혁신적 서비스 제공"같은 일반론 → 구체적 수치 없으면 0점
+- 매출 목표 없음 → 심사 위원이 가장 먼저 확인
+- 지원금 사용처 모호 → "마케팅 비용 300만원"이 아니라 "배민 광고 80만원, 인스타 광고 50만원..." 식 세부 분배"""
 
         # 사업자번호 PII 마스킹 (외부 LLM에 전송 시)
         masked_biz_num = f"{user.business_number[:3]}-**-*****" if user.business_number else "[사장님 작성 필요]"
+
+        bp_industry_block = industry_prompt_block(user.business_type)
 
         user_prompt = f"""## 사장님 정보
 - 상호: {user.business_name or '[사장님 작성 필요]'}
@@ -292,6 +326,8 @@ class ActionGenerator:
 - 위치: {user.address or '[사장님 작성 필요]'}
 - 사업자번호: {masked_biz_num}
 - 지역: {user.gu_name or ''} {user.dong_name or ''}
+
+{bp_industry_block}
 
 ## 지원사업 정보
 - 사업명: {subsidy.title}
@@ -305,7 +341,8 @@ class ActionGenerator:
 
 위 정보를 바탕으로 사업계획서 초안을 마크다운으로 작성하세요.
 사장님이 직접 수정해야 할 부분은 [사장님 작성 필요]로 표시하세요.
-지원금 활용 계획에는 구체적인 항목과 예상 금액을 반드시 포함하세요."""
+지원금 활용 계획에는 **업종 분기 가이드의 Top 채널과 Hero KPI를 인용**하여 구체적인 항목과 예상 금액을 반드시 포함하세요.
+기대 효과의 정량 KPI는 위 업종별 위험 신호의 반대 방향(예: 미용실은 재방문율 +N%, 카페는 평일 매출 +N만원)으로 작성하세요."""
 
         try:
             response = await self._openai.chat.completions.create(
@@ -354,17 +391,29 @@ class ActionGenerator:
         context_docs: list,
     ) -> str:
         """음성 질의 처리."""
+        voice_industry_block = industry_prompt_block(user.business_type)
+
         system_prompt = f"""당신은 소상공인 AI 경영코치입니다. 음성 질의에 친절하게 답변합니다.
 
 응답 원칙:
-1. 존댓말, 3문장 이내
-2. 구체적 행동 제안 포함
-3. '놓치고 있습니다' 톤
+1. 해요체("~어요/~예요"), 3문장 이내
+2. 구체적 행동 1가지 제안
+3. 손실 프레이밍("놓치고 있어요" 톤)
 4. 제공된 컨텍스트만 사용
+5. **업종 적합한 채널/KPI만 권유** — 치킨집에 인스타 사진 톤, 카페에 배민 광고 같은 부적합 권유 금지
 
 사장님 정보:
 상호: {user.business_name}
-위치: {user.gu_name} {user.dong_name}"""
+업종: {user.business_type or '미등록'}
+위치: {user.gu_name} {user.dong_name}
+
+{voice_industry_block}
+
+## 한국어 카피 톤 (필수)
+- 해요체 사용. "~합니다" 대신 "~어요/~예요".
+- "사장님" 호칭. "고객님", "당사" 절대 금지.
+- AI-ism 금지: "혁신적", "효율적", "최적의", "다양한 측면에서".
+- 한자 0개. 한 문장 50자 이내. 명령형 대신 "~해 보세요"."""
 
         context_str = ""
         if context_docs:

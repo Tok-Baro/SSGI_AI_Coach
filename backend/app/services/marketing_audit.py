@@ -18,6 +18,17 @@ import logging
 from dataclasses import asdict, dataclass
 from typing import Optional
 
+from app.utils.industry import (
+    classify_industry,
+    industry_audit_weights,
+    SLUG_DELIVERY,
+    SLUG_CAFE,
+    SLUG_RESTAURANT,
+    SLUG_RETAIL,
+    SLUG_FASHION,
+    SLUG_SERVICE,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,6 +55,25 @@ def _severity(score: int) -> str:
     if score < 75:
         return "medium"
     return "low"
+
+
+# 업종별 Top 채널 짧은 라벨 (recommendation 후미에 부착)
+_TOP_CHANNEL_LABEL: dict[str, str] = {
+    SLUG_DELIVERY: "배민·카카오 채널",
+    SLUG_CAFE: "인스타·네이버 플레이스",
+    SLUG_RESTAURANT: "네이버 플레이스·카카오맵",
+    SLUG_RETAIL: "카카오 단골방·네이버 플레이스",
+    SLUG_FASHION: "인스타·무신사·카카오 1:1",
+    SLUG_SERVICE: "네이버 플레이스·예약 시스템",
+}
+
+
+def _industry_channel_hint(business_type: Optional[str]) -> str:
+    slug = classify_industry(business_type)
+    label = _TOP_CHANNEL_LABEL.get(slug)
+    if not label:
+        return ""
+    return f" (사장님 업종은 {label} 우선)"
 
 
 # ===== 1. 포지셔닝 명확성 =====
@@ -396,7 +426,11 @@ async def evaluate(
     total_actions_30d: int,
     pending_subsidy_amount: int,
 ) -> dict:
-    """5-차원 병렬 평가 → {dimensions: [...], overall_score: int, weakest: str, summary: str}."""
+    """5-차원 병렬 평가 → {dimensions: [...], overall_score: int, weakest: str, summary: str}.
+
+    overall_score는 업종별 가중치를 적용한 가중 평균.
+    weakest는 가중치 적용 후 점수 기준 (즉, 그 업종에서 진짜 시급한 차원).
+    """
     results = await asyncio.gather(
         _eval_positioning(business_type, coupon_created, radius_summary, competition_data),
         _eval_message_fit(sales_detail, coupons),
@@ -405,8 +439,21 @@ async def evaluate(
         _eval_friction(action_completion_rate, total_actions_30d, pending_subsidy_amount),
     )
 
-    overall = int(sum(r.score for r in results) / len(results))
-    weakest = min(results, key=lambda r: r.score)
+    # 업종별 가중치 적용 (예: 카페는 positioning + social_proof 중요, 미용은 friction 중요)
+    weights = industry_audit_weights(business_type)
+    weighted_sum = sum(r.score * weights.get(r.name, 1.0) for r in results)
+    weight_total = sum(weights.get(r.name, 1.0) for r in results)
+    overall = int(weighted_sum / weight_total) if weight_total else int(sum(r.score for r in results) / len(results))
+
+    # weakest는 가중치 보정 점수 기준 (그 업종에서 점수 낮으면서 비중 높은 차원)
+    weakest = min(results, key=lambda r: r.score / max(weights.get(r.name, 1.0), 0.01))
+
+    # 업종 채널 힌트를 score < 60인 차원의 recommendation 끝에 부착
+    channel_hint = _industry_channel_hint(business_type)
+    if channel_hint:
+        for r in results:
+            if r.score < 60 and channel_hint not in (r.recommendation or ""):
+                r.recommendation = (r.recommendation or "") + channel_hint
 
     return {
         "dimensions": [r.to_dict() for r in results],
@@ -414,6 +461,7 @@ async def evaluate(
         "weakest_dimension": weakest.name,
         "weakest_label": weakest.label,
         "weakest_headline": weakest.headline,
+        "industry_slug": classify_industry(business_type),
         "summary": _build_summary(overall, weakest, results),
     }
 

@@ -41,3 +41,4 @@ class User(Base):
     daily_actions = relationship("DailyAction", back_populates="user", cascade="all, delete-orphan")
     coupon_templates = relationship("CouponTemplate", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("NotificationLog", back_populates="user", cascade="all, delete-orphan")
+    subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")

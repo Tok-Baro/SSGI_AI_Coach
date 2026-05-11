@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
 from app.database import init_db
-from app.routers import auth, onboarding, dashboard, subsidies, actions, coupons, voice, insights, reports
+from app.routers import auth, onboarding, dashboard, subsidies, actions, coupons, voice, insights, reports, payments
 from app.tasks.daily_action_batch import generate_daily_actions_for_all
 from app.tasks.seoul_data_sync import sync_seoul_data
 from app.tasks.subsidy_indexer import reindex_subsidies
@@ -67,6 +67,7 @@ app.include_router(coupons.router, prefix="/coupons", tags=["쿠폰"])
 app.include_router(voice.router, prefix="/voice", tags=["음성 질의"])
 app.include_router(insights.router, prefix="/insights", tags=["경영 인사이트"])
 app.include_router(reports.router, prefix="/reports", tags=["주간 리포트"])
+app.include_router(payments.router, tags=["결제 (카카오페이)"])
 
 
 @app.get("/health")

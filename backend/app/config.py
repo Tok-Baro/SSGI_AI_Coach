@@ -17,10 +17,17 @@ class Settings(BaseSettings):
     # DB
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ai_coach"
 
-    # Kakao
+    # Kakao OAuth
     kakao_rest_api_key: str = ""
     kakao_client_secret: str = ""
     kakao_redirect_uri: str = "http://localhost:3000/auth/kakao/callback"
+
+    # Kakao Pay (테스트 cid: TC0ONETIME / TCSUBSCRIP)
+    kakao_admin_key: str = ""  # 카카오 디벨로퍼스 → 앱 설정 → 일반 → Admin Key
+    kakao_pay_cid: str = "TC0ONETIME"  # 테스트용 일회성 가맹점 코드
+    kakao_pay_approval_url: str = "http://localhost:3000/upgrade/success"
+    kakao_pay_cancel_url: str = "http://localhost:3000/upgrade/cancel"
+    kakao_pay_fail_url: str = "http://localhost:3000/upgrade/fail"
 
     # 국세청
     nts_api_key: str = ""

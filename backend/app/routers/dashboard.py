@@ -165,6 +165,7 @@ async def get_dashboard(
         subsidy_matches=matched,
         action_completion_rate=completion_rate,
         user_created_at=current_user.created_at.date() if current_user.created_at else None,
+        business_start_date=current_user.business_start_date,
         previous_scores=previous_scores,
     )
 

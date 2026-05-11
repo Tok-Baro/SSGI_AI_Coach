@@ -5,8 +5,9 @@ from app.models.coupon import CouponTemplate
 from app.models.notification import NotificationLog
 from app.models.insight_cache import InsightCache
 from app.models.subsidy_interaction import SubsidyInteraction
+from app.models.subscription import Subscription
 
 __all__ = [
     "User", "DailyAction", "Subsidy", "CouponTemplate", "NotificationLog",
-    "InsightCache", "SubsidyInteraction",
+    "InsightCache", "SubsidyInteraction", "Subscription",
 ]

@@ -58,23 +58,50 @@ class SeoulAPIService:
             cls._trdar_mapping = mapping
             logger.info(f"상권-행정동 매핑 로드: {len(mapping)}건")
             return mapping
-    # 사용자 업종 → 서울시 API 업종 매핑
+    # 사용자 업종 → 서울시 우리마을가게 상권분석 API 업종명(SVC_INDUTY_CD_NM) 매핑.
+    # 키는 사용자가 입력할 만한 한글 단어. 값은 서울시 API가 실제 사용하는 업종 코드명.
+    # 매칭은 dict 순서대로 부분 일치 (앞에 있는 키일수록 우선).
+    # 서울시 코드명 출처: 서울 우리마을가게 상권분석 API 매뉴얼.
     BUSINESS_TYPE_MAP = {
-        "치킨": "한식음식점", "한식": "한식음식점", "음식점": "한식음식점",
+        # ── 외식 (각 업종 별도 코드) ──
+        "치킨": "치킨전문점",
+        "분식": "분식전문점", "떡볶이": "분식전문점", "김밥": "분식전문점",
+        "햄버거": "패스트푸드점", "버거": "패스트푸드점",
+        "피자": "패스트푸드점",
+        "한식": "한식음식점", "백반": "한식음식점", "국밥": "한식음식점",
+        "중식": "중식음식점", "짜장": "중식음식점",
+        "일식": "일식음식점", "초밥": "일식음식점", "스시": "일식음식점", "라멘": "일식음식점",
+        "양식": "양식음식점", "파스타": "양식음식점", "스테이크": "양식음식점",
+        "음식점": "한식음식점",  # 일반 표기 fallback (가장 마지막에 두려고 일부러 뒤)
+        # ── 카페·디저트 ──
         "카페": "커피-음료", "커피": "커피-음료", "디저트": "커피-음료",
-        "미용": "미용실", "헤어": "미용실", "네일": "네일숍",
+        "베이커리": "제과점", "빵집": "제과점", "제과": "제과점",
+        # ── 주점 ──
+        "호프": "호프-간이주점", "술집": "호프-간이주점", "주점": "호프-간이주점", "이자카야": "호프-간이주점",
+        # ── 서비스 ──
+        "미용": "미용실", "헤어": "미용실", "미용실": "미용실",
+        "네일": "네일숍",
         "학원": "일반교습학원", "교육": "일반교습학원",
-        "양식": "양식음식점", "파스타": "양식음식점", "피자": "양식음식점",
-        "호프": "호프-간이주점", "술집": "호프-간이주점", "주점": "호프-간이주점",
-        "세탁": "세탁소", "부동산": "부동산중개업",
+        "세탁": "세탁소",
+        "부동산": "부동산중개업",
         "약국": "의약품", "병원": "일반의원", "치과": "치과의원", "한의원": "한의원",
-        "편의점": "전자상거래업", "소매": "전자상거래업",
-        "PC": "PC방", "노래방": "노래방", "당구": "당구장",
+        "편의점": "편의점",  # 서울시 API에 별도 코드 있음 (이전 "전자상거래업" 매핑 오류)
+        "슈퍼": "슈퍼마켓", "마트": "슈퍼마켓",
+        "소매": "전자상거래업",
+        "PC": "PC방", "피시방": "PC방",
+        "노래방": "노래방", "당구": "당구장",
         "골프": "골프연습장", "스포츠": "스포츠 강습", "헬스": "스포츠클럽",
     }
 
     def _map_business_type(self, user_type: str) -> str:
-        """사용자 업종을 서울시 API 업종으로 매핑."""
+        """사용자 업종을 서울시 API 업종으로 매핑.
+
+        부분 일치 + dict 순서 우선. "치킨"이 "한식음식점"보다 앞에 있어
+        "치킨한마리"·"BBQ치킨" 같은 입력도 치킨전문점으로 매칭됨.
+        매칭 실패 시 입력 그대로 반환 (서울시 API에서 매칭되지 않으면 fallback 단계에 의존).
+        """
+        if not user_type:
+            return user_type
         for key, val in self.BUSINESS_TYPE_MAP.items():
             if key in user_type:
                 return val
@@ -637,16 +664,25 @@ class SeoulAPIService:
         if not rows:
             return None
 
-        # 지역 + 업종 필터
+        # 지역 + 업종 필터 — fallback 단계마다 data_scope 라벨링
+        # exact: 동 + 정확한 업종 매칭 (가장 신뢰도 높음)
+        # dong_all_industry: 그 동의 모든 업종 평균 (업종 매핑 실패 시)
+        # seoul_industry: 서울 전체에서 같은 업종 평균 (지역 매핑 실패 시)
         matched = [
             r for r in rows
             if str(r.get("TRDAR_CD", "")) in target_codes
             and r.get("SVC_INDUTY_CD_NM") == mapped_type
         ]
+        data_scope = "exact"
+        scope_note = f"{gu_name} {dong_name} · {mapped_type} 평균"
         if not matched:
             matched = [r for r in rows if str(r.get("TRDAR_CD", "")) in target_codes]
+            data_scope = "dong_all_industry"
+            scope_note = f"{gu_name} {dong_name} 전체 업종 평균 ({mapped_type} 데이터 부족)"
         if not matched:
             matched = [r for r in rows if r.get("SVC_INDUTY_CD_NM") == mapped_type]
+            data_scope = "seoul_industry"
+            scope_note = f"서울 전체 {mapped_type} 평균 (이 동 데이터 부족)"
         if not matched:
             return None
 
@@ -667,6 +703,8 @@ class SeoulAPIService:
 
         return {
             "sample_count": n,
+            "data_scope": data_scope,  # exact | dong_all_industry | seoul_industry
+            "scope_note": scope_note,  # 사람-친화 라벨 (차트/PDF에 노출)
             "note": "상권 내 동종업종 매출 비중 분석 (%)",
             "day_of_week": {
                 "월": _pct("MON_SELNG_AMT"),

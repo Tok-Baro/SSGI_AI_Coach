@@ -221,6 +221,8 @@ async def complete_onboarding(
             sales_data=sales_data if not isinstance(sales_data, Exception) else None,
             population_data=population_data if not isinstance(population_data, Exception) else None,
             subsidy_matches=matched_subsidies,
+            user_created_at=current_user.created_at.date() if current_user.created_at else None,
+            business_start_date=current_user.business_start_date,
         )
         risk_score = risk_result.composite_score
 

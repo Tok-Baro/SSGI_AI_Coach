@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import CouponTemplate, DailyAction, User
+from app.models.insight_cache import InsightCache
 from app.services.rag_service import RAGService
 from app.services.report_generator import assemble_report_data, generate_pdf
 from app.services.risk_score_engine import RiskScoreEngine
@@ -60,6 +61,32 @@ async def get_weekly_report(
         _safe(seoul.get_commercial_change_index(gu, dong)),
     )
 
+    # 집중분석 캐시 조회 (있으면 PDF 뒷부분에 추가 섹션 렌더링)
+    deep_report_data = None
+    try:
+        deep_stmt = (
+            select(InsightCache.data)
+            .where(
+                InsightCache.user_id == current_user.id,
+                InsightCache.insight_type == "deep_report",
+            )
+            .order_by(InsightCache.created_at.desc())
+            .limit(1)
+        )
+        deep_row = (await db.execute(deep_stmt)).scalar_one_or_none()
+        if deep_row and isinstance(deep_row, dict):
+            # report 본문 + data_summary(차트용) 둘 다 살림
+            report_body = deep_row.get("report") or deep_row
+            if isinstance(report_body, dict):
+                deep_report_data = {
+                    **report_body,
+                    "data_summary": deep_row.get("data_summary") or {},
+                }
+            else:
+                deep_report_data = deep_row
+    except Exception as e:
+        logger.warning(f"deep_report cache fetch failed: {e}")
+
     matched = matched or []
     total_amount = sum(s.get("max_amount", 0) for s in matched if s.get("max_amount"))
 
@@ -104,6 +131,7 @@ async def get_weekly_report(
         subsidy_matches=matched,
         action_completion_rate=completion_rate,
         user_created_at=current_user.created_at.date() if current_user.created_at else None,
+        business_start_date=current_user.business_start_date,
         previous_scores=previous_scores,
     )
 
@@ -121,6 +149,7 @@ async def get_weekly_report(
         action_completion_rate=completion_rate,
         risk_score=risk_result.composite_score,
         trend_direction=risk_result.trend_direction,
+        deep_report=deep_report_data,
     )
 
     pdf_bytes = generate_pdf(report)
