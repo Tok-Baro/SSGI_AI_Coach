@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import STTButton from "@/components/common/STTButton";
+import { koreanWon, koreanChange, koreanDDay } from "@/lib/koreanNumber";
 import type { DashboardData, RiskFactor, UpcomingEvent } from "@/types";
 
 export default function DashboardPage() {
@@ -39,29 +40,24 @@ export default function DashboardPage() {
     }
   }, [isLoading, isAuthenticated, user, router]);
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-warn-500" />
       </div>
     );
   }
 
   if (!isAuthenticated) return null;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
-      </div>
-    );
-  }
-
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
-        <p className="text-red-500 mb-4">{error}</p>
-        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-gray-100 rounded-lg">
+      <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-white">
+        <p className="text-base font-semibold text-loss-500 mb-4">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="press-effect px-6 py-3 bg-gray-100 rounded-2xl font-semibold text-gray-900"
+        >
           다시 시도
         </button>
       </div>
@@ -111,13 +107,12 @@ export default function DashboardPage() {
 
   const riskColor = data.risk_score > 0.5 ? "red" : data.risk_score > 0.3 ? "yellow" : "green";
   const riskColorMap = {
-    red: { text: "text-red-500", bg: "bg-red-500", light: "bg-red-50" },
-    yellow: { text: "text-yellow-500", bg: "bg-yellow-400", light: "bg-yellow-50" },
-    green: { text: "text-green-500", bg: "bg-green-500", light: "bg-green-50" },
+    red: { text: "text-loss-500", bg: "bg-loss-500", light: "bg-loss-50" },
+    yellow: { text: "text-warn-600", bg: "bg-warn-500", light: "bg-warn-50" },
+    green: { text: "text-success-600", bg: "bg-success-500", light: "bg-success-50" },
   };
   const colors = riskColorMap[riskColor];
   const trendLabel = { improving: "개선 중", stable: "유지", worsening: "악화 중" };
-  // 위험도 4단계 등급 (점수 의미를 시니어도 직관적으로)
   const riskScore100 = Math.round(data.risk_score * 100);
   const riskGrade =
     data.risk_score > 0.7 ? "위험"
@@ -126,23 +121,29 @@ export default function DashboardPage() {
     : "안전";
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-20">
+    <main className="min-h-screen bg-gray-50 pb-24">
       {/* 헤더 */}
-      <header className="bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-500">안녕하세요, {data.user.nickname}님</p>
-          <h1 className="text-lg font-bold text-gray-900">{data.user.business_name}</h1>
+      <header className="bg-white px-5 py-4 sticky top-0 z-10">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500">
+              안녕하세요, {data.user.nickname}님
+            </p>
+            <h1 className="text-lg font-bold text-gray-900 mt-0.5">
+              {data.user.business_name}
+            </h1>
+          </div>
+          <button
+            onClick={() => { logout(); router.push("/"); }}
+            className="press-effect text-sm font-medium text-gray-500 px-4 py-2 bg-gray-100 rounded-xl hover:bg-gray-200"
+          >
+            로그아웃
+          </button>
         </div>
-        <button
-          onClick={() => { logout(); router.push("/"); }}
-          className="text-xs text-gray-400 hover:text-red-500 px-3 py-1.5 border border-gray-200 rounded-lg"
-        >
-          로그아웃
-        </button>
       </header>
 
-      <div className="px-6 py-4 space-y-4">
-        {/* 잠재 지원금 (정직: 매칭 합계, 가짜 ticker 없음) */}
+      <div className="max-w-md mx-auto px-5 py-5 space-y-3">
+        {/* 잠재 지원금 — Hero */}
         <PotentialSubsidyBadge
           totalAmountWon={(data.total_potential_amount || 0) * 10_000}
           matchCount={data.subsidy_matches?.length || 0}
@@ -155,46 +156,54 @@ export default function DashboardPage() {
         />
 
         {/* 복합 위험도 */}
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-700">경영 위험도</span>
-            <div className="flex items-center gap-2">
-              <DeltaBadge value={data.deltas?.risk_score_delta ?? null} suffix="" inversed scale={100} />
-              {data.trend_direction && (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  data.trend_direction === "worsening" ? "bg-red-50 text-red-500" :
-                  data.trend_direction === "improving" ? "bg-green-50 text-green-500" :
-                  "bg-gray-50 text-gray-400"
-                }`}>
-                  {trendLabel[data.trend_direction] || "유지"}
-                </span>
-              )}
-              <span className={`text-xl font-bold ${colors.text}`}>
+        <div className="bg-white rounded-2xl p-5 shadow-card">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-gray-700">우리 가게 위험도</p>
+                <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">AI 추정</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                서울시 공식 데이터 · 점수가 높을수록 위험해요
+              </p>
+            </div>
+            <div className="text-right">
+              <p className={`text-display-sm tabular-nums ${colors.text}`}>
                 {riskGrade}
-                <span className="ml-1 text-base font-medium text-gray-500">
-                  ({riskScore100}/100)
-                </span>
-              </span>
+              </p>
+              <p className="text-xs text-gray-500 tabular-nums mt-0.5">
+                {riskScore100} / 100
+              </p>
             </div>
           </div>
-          <p className="text-[11px] text-gray-400 mb-2">
-            출처: 서울 열린데이터 (상권매출·유동인구·상권변화) · 점수가 높을수록 위험
-          </p>
+
+          <div className="flex items-center gap-2 mb-3">
+            <DeltaBadge value={data.deltas?.risk_score_delta ?? null} suffix="" inversed scale={100} />
+            {data.trend_direction && (
+              <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${
+                data.trend_direction === "worsening" ? "bg-loss-50 text-loss-600" :
+                data.trend_direction === "improving" ? "bg-success-50 text-success-700" :
+                "bg-gray-100 text-gray-500"
+              }`}>
+                {trendLabel[data.trend_direction] || "유지"}
+              </span>
+            )}
+          </div>
 
           {/* Peer percentile (k≥10일 때만) */}
           {data.peer_percentile !== null && data.peer_percentile !== undefined ? (
-            <p className="text-xs text-gray-500 mb-2">
-              동종업계 <span className="font-semibold text-gray-700">상위 {data.peer_percentile}%</span>
-              <span className="text-gray-400"> · {data.peer_sample}명 비교 (14일 평균)</span>
+            <p className="text-sm text-gray-600 mb-3">
+              같은 업종 안에서 <span className="font-bold text-gray-900">상위 {data.peer_percentile}%</span>
+              <span className="text-gray-400 ml-1">· {data.peer_sample}명과 비교 (최근 14일 평균)</span>
             </p>
           ) : (
-            <p className="text-[11px] text-gray-400 mb-2">
-              동종업계 비교 — 같은 업종 사용자 10명 누적 시 활성화 (k-anonymity)
+            <p className="text-xs text-gray-400 mb-3">
+              같은 업종 사장님 10명이 모이면 비교를 시작해요
             </p>
           )}
 
           {/* 프로그레스 바 */}
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${colors.bg}`}
               style={{ width: `${data.risk_score * 100}%` }}
@@ -203,12 +212,12 @@ export default function DashboardPage() {
 
           {/* 위험도 추이 미니 차트 */}
           {data.risk_trend && data.risk_trend.length > 1 && (
-            <div className="mt-3 flex items-end gap-1 h-10">
+            <div className="mt-4 flex items-end gap-1 h-12">
               {data.risk_trend.slice(-14).map((point, i) => (
                 <div
                   key={i}
-                  className={`flex-1 rounded-t transition-all ${
-                    point.score > 0.5 ? "bg-red-300" : point.score > 0.3 ? "bg-yellow-300" : "bg-green-300"
+                  className={`flex-1 rounded-t-md transition-all ${
+                    point.score > 0.5 ? "bg-loss-500/60" : point.score > 0.3 ? "bg-warn-500/60" : "bg-success-500/60"
                   }`}
                   style={{ height: `${Math.max(point.score * 100, 8)}%` }}
                   title={`${point.date}: ${Math.round(point.score * 100)}점`}
@@ -219,13 +228,13 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setShowFactors(!showFactors)}
-            className="mt-3 text-xs text-gray-400 hover:text-gray-600 w-full text-center"
+            className="mt-4 text-sm font-medium text-gray-500 hover:text-gray-700 w-full text-center"
           >
-            {showFactors ? "요인 분석 접기" : "요인 분석 보기"}
+            {showFactors ? "요인 분석 접기 ▲" : "요인 분석 보기 ▼"}
           </button>
 
           {showFactors && data.risk_factors && (
-            <div className="mt-3 space-y-2.5">
+            <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
               {data.risk_factors.map((factor: RiskFactor) => (
                 <FactorBar key={factor.name} factor={factor} />
               ))}
@@ -236,37 +245,41 @@ export default function DashboardPage() {
         {/* 폐업 위험 진단 (Survival Matrix) */}
         <SurvivalMatrixCard />
 
-        {/* 오늘의 액션 */}
+        {/* 오늘의 액션 — 검정 CTA (1차 액션 명확, Hero 노랑과 분리) */}
         {!data.today_action && (
-          <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
+          <div className="bg-gray-50 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-2.5 py-1 text-xs font-bold bg-gray-900 text-white rounded-lg">
                 오늘의 액션
               </span>
-              <span className="text-[10px] text-yellow-600">매일 오전 7시 자동 생성</span>
+              <span className="text-xs text-gray-500">매일 아침 7시</span>
             </div>
-            <p className="text-sm text-yellow-800 font-medium mt-2">
-              사장님의 첫 액션이 곧 도착합니다
+            <p className="text-base font-bold text-gray-900 mb-1">
+              사장님 첫 액션, 곧 도착해요
             </p>
-            <p className="text-[11px] text-yellow-700/80 mt-1">
-              상권 데이터 분석 후 매일 1개의 액션을 추천합니다
+            <p className="text-sm text-gray-600">
+              우리 동네 상권을 분석한 다음, 매일 한 가지만 알려드려요
             </p>
           </div>
         )}
         {data.today_action && (
-          <div className="bg-white rounded-xl p-4 border border-gray-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
+          <div className="bg-white rounded-2xl p-5 shadow-card">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-2.5 py-1 text-xs font-bold bg-gray-900 text-white rounded-lg">
                 오늘의 액션
               </span>
               <span className="text-xs text-gray-400">{data.today_action.action_type}</span>
             </div>
-            <h3 className="font-semibold text-gray-900 mb-1">{data.today_action.title}</h3>
-            <p className="text-sm text-gray-600 mb-3">{data.today_action.description}</p>
+            <h3 className="font-bold text-gray-900 text-lg mb-2 text-balance">
+              {data.today_action.title}
+            </h3>
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">
+              {data.today_action.description}
+            </p>
             {!data.today_action.is_completed ? (
               <button
                 onClick={handleCompleteAction}
-                className="w-full py-2.5 bg-yellow-400 text-gray-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors"
+                className="press-effect w-full py-[14px] bg-gray-900 text-white font-bold rounded-xl shadow-btn hover:bg-gray-800"
               >
                 {data.today_action.cta_type === "apply_subsidy" ? "지원사업 확인하기" :
                  data.today_action.cta_type === "create_coupon" ? "쿠폰 만들기" :
@@ -274,12 +287,21 @@ export default function DashboardPage() {
               </button>
             ) : (
               <>
-                <p className="text-center text-sm text-green-600 font-medium">완료됨</p>
+                <div className="flex items-center justify-center gap-2 py-3 bg-success-50 rounded-xl">
+                  <span className="text-success-600 font-bold">✓</span>
+                  <p className="text-sm font-bold text-success-700">완료됨</p>
+                </div>
                 {data.next_action_preview && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-1">다음 후보</p>
-                    <p className="text-sm font-semibold text-gray-800">{data.next_action_preview.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{data.next_action_preview.subtitle}</p>
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-400 mb-1">
+                      다음 후보
+                    </p>
+                    <p className="text-base font-bold text-gray-900">
+                      {data.next_action_preview.title}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {data.next_action_preview.subtitle}
+                    </p>
                   </div>
                 )}
               </>
@@ -289,25 +311,32 @@ export default function DashboardPage() {
 
         {/* 지원사업 매칭 */}
         {data.subsidy_matches.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <h3 className="font-semibold text-gray-700 mb-1">매칭 지원사업</h3>
-            <p className="text-sm text-gray-500 mb-1">현재 매칭되는 지원사업이 없습니다</p>
-            <p className="text-[11px] text-gray-400">
-              지역 · 업종 조건에 맞는 사업이 등록되면 자동 표시됩니다
+          <div className="bg-white rounded-2xl p-5 shadow-card">
+            <h3 className="font-bold text-gray-900 mb-1">우리 가게 지원사업</h3>
+            <p className="text-sm text-gray-600 mb-1">
+              지금은 딱 맞는 게 없어요
+            </p>
+            <p className="text-xs text-gray-400 mb-3">
+              새 공고가 올라오면 자동으로 알려드릴게요
             </p>
             <button
               onClick={() => router.push("/subsidies")}
-              className="mt-2 text-xs text-yellow-600 font-medium"
+              className="press-effect w-full py-3 bg-gray-100 text-gray-900 font-semibold rounded-xl text-sm hover:bg-gray-200"
             >
-              전체 지원사업 둘러보기 →
+              그래도 전체 지원사업 보기 →
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-xl p-4 border border-gray-100">
-            <h3 className="font-semibold text-gray-900 mb-3">
-              매칭 지원사업 ({data.subsidy_matches.length}건)
-            </h3>
-            <div className="space-y-3">
+          <div className="bg-white rounded-2xl p-5 shadow-card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900 text-base">
+                매칭 지원사업
+              </h3>
+              <span className="text-sm font-bold text-loss-500 tabular-nums">
+                {data.subsidy_matches.length}건
+              </span>
+            </div>
+            <div className="space-y-2">
               {data.subsidy_matches.map((s) => (
                 <button
                   key={s.id}
@@ -315,26 +344,31 @@ export default function DashboardPage() {
                     api.logSubsidySignal(s.id, "click").catch(() => {});
                     router.push("/subsidies");
                   }}
-                  className="w-full p-3 bg-gray-50 rounded-lg text-left hover:bg-gray-100 transition-colors"
+                  className="press-effect w-full p-4 bg-gray-50 rounded-2xl text-left hover:bg-gray-100"
                 >
-                  <div className="flex justify-between items-start">
-                    <p className="font-medium text-sm text-gray-900">{s.title}</p>
+                  <div className="flex justify-between items-start gap-3">
+                    <p className="font-bold text-sm text-gray-900 flex-1 min-w-0">
+                      {s.title}
+                    </p>
                     {s.max_amount && (
-                      <span className="text-sm font-bold text-red-500 whitespace-nowrap ml-2">
-                        {s.max_amount}만원
+                      <span className="text-base font-extrabold text-loss-500 whitespace-nowrap tabular-nums">
+                        최대 {s.max_amount}만원
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{s.organization}</p>
+                  <p className="text-xs text-gray-500 mt-1.5">{s.organization}</p>
                   {s.days_until_deadline !== null && s.days_until_deadline !== undefined && (
-                    <p className="text-xs text-red-500 mt-1 font-medium">
-                      마감 D-{s.days_until_deadline}
+                    <p className="text-xs font-semibold text-loss-500 mt-1.5">
+                      {koreanDDay(s.days_until_deadline)}
                     </p>
                   )}
                   {s.match_reasons && s.match_reasons.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {s.match_reasons.map((r, i) => (
-                        <span key={i} className="text-[10px] px-1.5 py-0.5 bg-yellow-50 text-yellow-700 rounded font-medium">
+                        <span
+                          key={i}
+                          className="text-xs px-2 py-0.5 bg-warn-50 text-warn-900 rounded-md font-semibold"
+                        >
                           ✓ {r}
                         </span>
                       ))}
@@ -345,7 +379,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={() => router.push("/subsidies")}
-              className="w-full mt-3 py-2 text-sm text-yellow-600 font-medium hover:text-yellow-700"
+              className="press-effect w-full mt-4 py-3 text-sm font-semibold text-warn-600 hover:text-warn-700 bg-warn-50 rounded-xl"
             >
               전체 지원사업 보기
             </button>
@@ -354,65 +388,84 @@ export default function DashboardPage() {
 
         {/* 유동인구 트렌드 */}
         {data.population_trend ? (
-          <div className="bg-white rounded-xl p-4 border border-gray-100">
-            <h3 className="font-semibold text-gray-900 mb-2">유동인구 트렌드</h3>
+          <div className="bg-white rounded-2xl p-5 shadow-card">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+              어제 대비 우리 동네 유동인구
+            </h3>
             <div className="flex items-baseline gap-2">
-              <span className={`text-2xl font-bold ${
-                data.population_trend.change_percent > 0 ? "text-green-600" : "text-red-500"
+              <span className={`text-display-sm tabular-nums ${
+                data.population_trend.change_percent > 0 ? "text-success-600" : "text-loss-500"
               }`}>
                 {data.population_trend.change_percent > 0 ? "+" : ""}
                 {data.population_trend.change_percent}%
               </span>
-              <span className="text-sm text-gray-500">전일 대비</span>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">서울시 생활인구 (행정동 단위 합산)</p>
+            <p className="text-sm font-semibold text-gray-700 mt-1">
+              어제보다 {koreanChange(data.population_trend.change_percent, { up: "더 다녀요", down: "줄었어요" })}
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              서울시 생활인구 자료 · 우리 행정동 기준
+            </p>
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <h3 className="font-semibold text-gray-400 mb-1">유동인구 트렌드</h3>
-            <p className="text-xs text-gray-400">서울 외 지역은 데이터를 제공하지 않습니다</p>
+          <div className="bg-gray-100 rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-gray-500 mb-1">
+              유동인구 트렌드
+            </h3>
+            <p className="text-xs text-gray-400">
+              서울 외 지역은 아직 데이터가 없어요
+            </p>
           </div>
         )}
 
-        {/* 이번주 문화행사 (real Seoul API) */}
+        {/* 이번주 문화행사 */}
         <UpcomingEventsCard events={data.upcoming_events || []} />
 
         {/* 주간 마케팅 리포트 PDF */}
-        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-100">
-          <h3 className="font-semibold text-gray-900 mb-1">주간 마케팅 인사이트 리포트</h3>
-          <p className="text-xs text-gray-600 mb-3">
-            6개 카테고리 점수, 주요 진단, 1주/1~3개월/3~6개월 액션 플랜이 담긴 PDF
+        <div className="rounded-2xl p-5 bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-card">
+          <p className="text-xs font-semibold text-warn-500 mb-2 uppercase tracking-wider">
+            Premium
+          </p>
+          <h3 className="text-lg font-bold mb-1">이번 주 우리 가게 진단서</h3>
+          <p className="text-sm text-gray-300 leading-relaxed mb-4">
+            여섯 가지 항목 점수와 진단, 1주·1~3개월·3~6개월 액션 플랜까지 한 장에
           </p>
           {reportError && (
-            <p className="text-xs text-red-500 mb-2">{reportError}</p>
+            <p className="text-sm font-medium text-loss-500 mb-3">{reportError}</p>
           )}
           <button
             onClick={handleDownloadReport}
             disabled={reportLoading}
-            className="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="press-effect w-full py-3 bg-white text-gray-900 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {reportLoading ? "리포트 생성 중..." : "PDF 다운로드"}
+            {reportLoading ? "리포트 만드는 중..." : "PDF로 받기"}
           </button>
         </div>
 
         {/* 쿠폰 통계 */}
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-gray-900">쿠폰 성과</h3>
+        <div className="bg-white rounded-2xl p-5 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-gray-900 text-base">쿠폰 성과</h3>
             <DeltaBadge value={data.deltas?.coupon_scan_delta_pct ?? null} suffix="%" />
           </div>
-          <div className="flex gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <p className="text-2xl font-bold text-gray-900">{data.coupon_stats.total_created}</p>
-              <p className="text-xs text-gray-500">발행</p>
+              <p className="text-display-sm tabular-nums text-gray-900">
+                {data.coupon_stats.total_created}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">발행</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-yellow-600">{data.coupon_stats.total_scanned}</p>
-              <p className="text-xs text-gray-500">스캔 (누적)</p>
+              <p className="text-display-sm tabular-nums text-warn-600">
+                {data.coupon_stats.total_scanned}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">스캔 누적</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-blue-600">{Math.round(data.action_completion_rate * 100)}%</p>
-              <p className="text-xs text-gray-500">액션 완료율 (30일)</p>
+              <p className="text-display-sm tabular-nums text-success-600">
+                {Math.round(data.action_completion_rate * 100)}%
+              </p>
+              <p className="text-xs text-gray-500 mt-1">액션 완료율</p>
             </div>
           </div>
         </div>
@@ -421,12 +474,12 @@ export default function DashboardPage() {
       <STTButton />
 
       {/* 하단 네비게이션 */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3">
-        <div className="flex justify-around max-w-sm mx-auto">
-          <NavItem label="홈" active={pathname === "/dashboard"} onClick={() => router.push("/dashboard")} />
-          <NavItem label="지원사업" active={pathname === "/subsidies"} onClick={() => router.push("/subsidies")} />
-          <NavItem label="인사이트" active={pathname === "/insights"} onClick={() => router.push("/insights")} />
-          <NavItem label="쿠폰" active={pathname === "/coupons"} onClick={() => router.push("/coupons")} />
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 py-2 safe-bottom">
+        <div className="flex justify-around max-w-md mx-auto">
+          <NavItem icon="🏠" label="홈" active={pathname === "/dashboard"} onClick={() => router.push("/dashboard")} />
+          <NavItem icon="💰" label="지원사업" active={pathname === "/subsidies"} onClick={() => router.push("/subsidies")} />
+          <NavItem icon="📊" label="인사이트" active={pathname === "/insights"} onClick={() => router.push("/insights")} />
+          <NavItem icon="🎟" label="쿠폰" active={pathname === "/coupons"} onClick={() => router.push("/coupons")} />
         </div>
       </nav>
     </main>
@@ -437,7 +490,7 @@ function FactorBar({ factor }: { factor: RiskFactor }) {
   if (!factor.data_available) {
     return (
       <div className="opacity-50">
-        <div className="flex justify-between text-xs mb-1">
+        <div className="flex justify-between text-sm mb-1.5">
           <span className="text-gray-400">{factor.label}</span>
           <span className="text-gray-400">데이터 없음</span>
         </div>
@@ -446,12 +499,12 @@ function FactorBar({ factor }: { factor: RiskFactor }) {
     );
   }
 
-  const barColor = factor.score > 0.6 ? "bg-red-400" : factor.score > 0.3 ? "bg-yellow-400" : "bg-green-400";
+  const barColor = factor.score > 0.6 ? "bg-loss-500" : factor.score > 0.3 ? "bg-warn-500" : "bg-success-500";
 
   return (
     <div>
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-600">{factor.label}</span>
+      <div className="flex justify-between text-sm mb-1.5">
+        <span className="font-semibold text-gray-700">{factor.label}</span>
         <span className="text-gray-500">{factor.description}</span>
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -466,9 +519,6 @@ function FactorBar({ factor }: { factor: RiskFactor }) {
 
 /**
  * 잠재 지원금 카드 — 정직 버전.
- * - 매칭된 지원사업 max_amount 합계 (실제값)
- * - 가짜 실시간 ticker 애니메이션 제거
- * - "추정 ÷ 365일" 같은 단순 환산 라벨 제거
  */
 function PotentialSubsidyBadge({
   totalAmountWon,
@@ -483,47 +533,57 @@ function PotentialSubsidyBadge({
 }) {
   if (totalAmountWon <= 0 || matchCount === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-2">
-          매칭 지원금
+      <div className="bg-white rounded-2xl p-5 shadow-card">
+        <p className="text-sm font-semibold text-gray-700 mb-2">받을 수 있는 지원금</p>
+        <p className="text-base text-gray-900">
+          지금은 딱 맞는 게 없어요
         </p>
-        <p className="text-sm text-gray-600">
-          현재 사장님 업종/지역에 매칭된 지원사업이 없습니다
-        </p>
-        <p className="text-[11px] text-gray-400 mt-1">
-          신규 공고 등록 시 자동 매칭됩니다
+        <p className="text-sm text-gray-400 mt-1">
+          새 공고가 뜨면 자동으로 매칭해 드릴게요
         </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">
-          신청 가능 지원금
-        </span>
-        <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">
-          매칭 {matchCount}건
-        </span>
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-3xl font-extrabold text-amber-700 tabular-nums">
-          {totalAmountWon.toLocaleString()}
-        </span>
-        <span className="text-base font-semibold text-amber-600">원</span>
-      </div>
-      <p className="text-[11px] text-amber-700/80 mt-1.5 leading-relaxed">
-        매칭된 지원사업 최대금액 합계
-        {imminentCount > 0 && (
-          <span className="ml-1 text-red-600 font-semibold">· D-14 임박 {imminentCount}건</span>
-        )}
-      </p>
-      {socialProof && (
-        <div className="mt-3 pt-3 border-t border-amber-100">
-          <p className="text-xs text-amber-700/90">{socialProof}</p>
+    <div className="rounded-2xl p-6 bg-gradient-to-br from-warn-500 via-warn-500 to-warn-600 shadow-card overflow-hidden relative">
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-bold text-gray-900">
+            받을 수 있는 지원금
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold px-2.5 py-1 bg-gray-900/10 text-gray-900 rounded-lg">
+              매칭 {matchCount}건
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-medium">최대 합계 추정</span>
+          </div>
         </div>
-      )}
+        {/* Hero 숫자: 정밀 콤마 표기 (시각 강조) */}
+        <div className="flex items-baseline gap-1 mb-1">
+          <span className="text-display-lg tabular-nums text-gray-900">
+            {totalAmountWon.toLocaleString()}
+          </span>
+          <span className="text-xl font-bold text-gray-900">원</span>
+        </div>
+        {/* 보조 표기: 한국식 만/억 (사람 말투) */}
+        <p className="text-base font-semibold text-gray-900/80 mb-3">
+          한 달이면 받을 수 있는 {koreanWon(totalAmountWon)} 정도예요
+        </p>
+        <p className="text-sm text-gray-800 leading-relaxed">
+          매칭된 지원사업 최대 금액을 다 더한 값이에요
+          {imminentCount > 0 && (
+            <span className="block mt-1 font-bold text-loss-700">
+              ⚠ 2주 안에 마감되는 사업 {imminentCount}건
+            </span>
+          )}
+        </p>
+        {socialProof && (
+          <div className="mt-4 pt-4 border-t border-gray-900/10">
+            <p className="text-sm text-gray-800">{socialProof}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -531,9 +591,11 @@ function PotentialSubsidyBadge({
 function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
   if (!events || events.length === 0) return null;
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100">
-      <h3 className="font-semibold text-gray-900 mb-2">이번 주 우리 동네 이벤트</h3>
-      <p className="text-[10px] text-gray-400 mb-3">서울시 문화행사 정보 (자치구 단위)</p>
+    <div className="bg-white rounded-2xl p-5 shadow-card">
+      <h3 className="font-bold text-gray-900 mb-1">이번 주 우리 동네 이벤트</h3>
+      <p className="text-xs text-gray-400 mb-3">
+        서울시 문화행사 정보 (자치구 단위)
+      </p>
       <div className="space-y-2">
         {events.slice(0, 3).map((e, i) => (
           <a
@@ -541,17 +603,19 @@ function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
             href={e.url || "#"}
             target="_blank"
             rel="noreferrer"
-            className="block p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            className="press-effect block p-3 bg-gray-50 hover:bg-gray-100 rounded-xl"
           >
             <div className="flex items-baseline justify-between gap-2">
-              <p className="font-medium text-sm text-gray-900 truncate">{e.title}</p>
+              <p className="font-semibold text-sm text-gray-900 truncate">
+                {e.title}
+              </p>
               {e.start_date && (
-                <span className="text-[10px] text-gray-500 whitespace-nowrap tabular-nums">
+                <span className="text-xs text-gray-500 whitespace-nowrap tabular-nums">
                   {e.start_date.slice(0, 10)}
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+            <p className="text-xs text-gray-500 mt-0.5 truncate">
               {[e.category, e.place].filter(Boolean).join(" · ")}
             </p>
           </a>
@@ -577,11 +641,11 @@ function DeltaBadge({
   if (display < 0.05) return null;
   const isUp = value > 0;
   const isGood = inversed ? !isUp : isUp;
-  const color = isGood ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+  const color = isGood ? "bg-success-50 text-success-700" : "bg-loss-50 text-loss-600";
   const arrow = isUp ? "▲" : "▼";
   const formatted = scale === 1 ? display.toFixed(1) : Math.round(display).toString();
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${color} tabular-nums`}>
+    <span className={`text-xs px-2 py-1 rounded-lg font-bold ${color} tabular-nums`}>
       {arrow} {formatted}{suffix}
     </span>
   );
@@ -626,31 +690,31 @@ function SurvivalMatrixCard() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl p-4 border border-gray-100">
-        <div className="flex items-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-400" />
-          <span className="text-xs text-gray-500">생존 매트릭스 분석 중...</span>
+      <div className="bg-white rounded-2xl p-5 shadow-card">
+        <div className="flex items-center gap-3">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-200 border-t-warn-500" />
+          <span className="text-sm text-gray-500">우리 가게 진단 보는 중...</span>
         </div>
       </div>
     );
   }
   if (error || !data) {
     return (
-      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <p className="text-xs text-gray-500">생존 진단 데이터를 불러오지 못했습니다</p>
+      <div className="bg-gray-100 rounded-2xl p-5">
+        <p className="text-sm text-gray-500">진단 결과를 불러오지 못했어요</p>
       </div>
     );
   }
 
   const levelStyle = {
-    safe: { bg: "from-green-500 to-emerald-600", text: "text-green-600", chip: "bg-green-100 text-green-700" },
-    watch: { bg: "from-blue-500 to-indigo-600", text: "text-blue-600", chip: "bg-blue-100 text-blue-700" },
-    warning: { bg: "from-orange-500 to-red-500", text: "text-orange-600", chip: "bg-orange-100 text-orange-700" },
-    critical: { bg: "from-red-600 to-red-800", text: "text-red-600", chip: "bg-red-100 text-red-700" },
+    safe: { gradient: "from-success-500 to-success-600", chip: "bg-white/20" },
+    watch: { gradient: "from-gray-700 to-gray-800", chip: "bg-white/20" },
+    warning: { gradient: "from-warn-500 to-loss-500", chip: "bg-white/20" },
+    critical: { gradient: "from-loss-500 to-loss-700", chip: "bg-white/20" },
   }[data.risk_level];
 
   const sevColor = (s: string) =>
-    s === "high" ? "bg-red-500" : s === "medium" ? "bg-yellow-500" : "bg-gray-300";
+    s === "high" ? "bg-loss-500" : s === "medium" ? "bg-warn-500" : "bg-gray-300";
 
   const pos = data.your_position;
   const showPositionBar =
@@ -658,71 +722,78 @@ function SurvivalMatrixCard() {
   const positionPct = pos.operating_percentile !== null ? Math.min(130, pos.operating_percentile) : 0;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className={`bg-gradient-to-r ${levelStyle.bg} px-4 py-3`}>
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-white/90 font-bold uppercase tracking-wider">
-            생존 매트릭스
-          </span>
-          <span className={`text-[10px] px-2 py-0.5 bg-white/20 text-white rounded-full font-bold`}>
+    <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+      <div className={`bg-gradient-to-br ${levelStyle.gradient} px-5 py-5`}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-white/90 uppercase tracking-wider">
+              우리 가게 폐업 위험도
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 bg-white/30 text-white rounded font-medium">AI 추정</span>
+          </div>
+          <span className={`text-xs px-2.5 py-1 ${levelStyle.chip} text-white rounded-lg font-bold`}>
             {data.risk_label}
           </span>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-extrabold text-white tabular-nums">{data.survival_score}</span>
-          <span className="text-sm text-white/80">/ 100</span>
-          <span className="text-xs text-white/70 ml-auto">
-            폐업 패턴 유사도 {data.pattern_similarity_pct}%
+          <span className="text-display-lg tabular-nums text-white">
+            {data.survival_score}
           </span>
+          <span className="text-base font-semibold text-white/80">/ 100</span>
         </div>
+        <p className="text-xs text-white/80 mt-1">
+          비슷하게 폐업한 가게와 패턴 일치율 {data.pattern_similarity_pct}%
+        </p>
       </div>
 
-      <div className="p-4 space-y-3">
-        <p className="text-sm text-gray-800 font-semibold">{data.headline}</p>
+      <div className="p-5 space-y-4">
+        <p className="text-base font-bold text-gray-900 text-balance">
+          {data.headline}
+        </p>
 
         {showPositionBar && (
           <div>
-            <div className="flex justify-between text-[11px] text-gray-500 mb-1">
+            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
               <span>우리 가게 {pos.operating_months}개월</span>
               <span>폐업 평균 {pos.closed_avg_months}개월</span>
             </div>
             <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div className="absolute top-0 bottom-0 bg-red-100" style={{ left: "53%", right: "0%" }} />
+              <div className="absolute top-0 bottom-0 bg-loss-100" style={{ left: "53%", right: "0%" }} />
               <div
                 className={`absolute top-0 bottom-0 w-1 ${
-                  positionPct >= 70 ? "bg-red-500" : "bg-green-500"
+                  positionPct >= 70 ? "bg-loss-500" : "bg-success-500"
                 }`}
                 style={{ left: `${(positionPct / 130) * 100}%` }}
               />
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
-              폐업 평균의 {pos.operating_percentile}% 지점 · 빨간 영역 = 위험 구간
+            <p className="text-xs text-gray-400 mt-1.5">
+              폐업 평균의 {pos.operating_percentile} 지점에 있어요 · 빨간 구간이 위험권이에요
             </p>
           </div>
         )}
 
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">위험 신호</p>
-            <p className="text-[11px] text-gray-500">
-              <span className={`font-bold ${data.triggered_count >= 3 ? "text-red-600" : "text-gray-700"}`}>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-sm font-bold text-gray-700">감지된 위험 신호</p>
+            <p className="text-xs text-gray-500">
+              <span className={`font-bold tabular-nums ${data.triggered_count >= 3 ? "text-loss-600" : "text-gray-700"}`}>
                 {data.triggered_count}
               </span>
-              <span className="text-gray-400"> / {data.total_signals}개 발생</span>
+              <span className="text-gray-400"> / 전체 {data.total_signals}개</span>
             </p>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {data.risk_signals.map((s, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs">
-                <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
+              <div key={i} className="flex items-start gap-2.5 text-sm">
+                <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
                   s.triggered ? sevColor(s.severity) : "bg-gray-200"
                 }`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className={`font-medium ${s.triggered ? "text-gray-900" : "text-gray-400"}`}>
+                    <span className={`font-semibold ${s.triggered ? "text-gray-900" : "text-gray-400"}`}>
                       {s.name}
                     </span>
-                    <span className={`text-[10px] tabular-nums ${s.triggered ? "text-gray-600" : "text-gray-300"}`}>
+                    <span className={`text-xs tabular-nums ${s.triggered ? "text-gray-600" : "text-gray-300"}`}>
                       {s.current}
                     </span>
                   </div>
@@ -732,31 +803,48 @@ function SurvivalMatrixCard() {
           </div>
         </div>
 
-        <div className={`rounded-lg p-3 border ${
+        <div className={`rounded-xl p-4 ${
           data.risk_level === "critical" || data.risk_level === "warning"
-            ? "bg-red-50 border-red-200"
-            : "bg-blue-50 border-blue-200"
+            ? "bg-loss-50"
+            : "bg-success-50"
         }`}>
-          <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${
+          <p className={`text-xs font-bold uppercase tracking-wider mb-1.5 ${
             data.risk_level === "critical" || data.risk_level === "warning"
-              ? "text-red-600" : "text-blue-600"
+              ? "text-loss-600" : "text-success-700"
           }`}>
-            지금 해야 할 단 1가지
+            오늘 사장님이 할 단 한 가지
           </p>
-          <p className="text-sm font-semibold text-gray-900">{data.survival_action}</p>
+          <p className="text-base font-bold text-gray-900 text-balance">
+            {data.survival_action}
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-function NavItem({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+function NavItem({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1">
-      <span className={`text-xs font-medium ${active ? "text-yellow-600" : "text-gray-400"}`}>
+    <button
+      onClick={onClick}
+      className="press-effect flex flex-col items-center gap-0.5 px-3 py-2"
+    >
+      <span className={`text-base ${active ? "" : "grayscale opacity-50"}`}>
+        {icon}
+      </span>
+      <span className={`text-xs font-bold ${active ? "text-gray-900" : "text-gray-400"}`}>
         {label}
       </span>
-      {active && <div className="w-1 h-1 rounded-full bg-yellow-500" />}
     </button>
   );
 }

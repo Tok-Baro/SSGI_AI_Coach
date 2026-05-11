@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
+import { koreanDDay } from "@/lib/koreanNumber";
 import type { SubsidyMatchesResponse, ApplyDraftResponse } from "@/types";
 
 export default function SubsidiesPage() {
@@ -42,29 +43,24 @@ export default function SubsidiesPage() {
     setDraftLoading(false);
   };
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-warn-500" />
       </div>
     );
   }
 
   if (!isAuthenticated) return null;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
-      </div>
-    );
-  }
-
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
-        <p className="text-red-500 mb-4">{error}</p>
-        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-gray-100 rounded-lg">
+      <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-white">
+        <p className="text-base font-semibold text-loss-500 mb-4">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="press-effect px-6 py-3 bg-gray-100 rounded-2xl font-semibold text-gray-900"
+        >
           다시 시도
         </button>
       </div>
@@ -72,42 +68,59 @@ export default function SubsidiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-20">
-      <header className="bg-white px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-gray-500">&larr;</button>
-        <h1 className="text-lg font-bold text-gray-900">지원사업 매칭</h1>
+    <main className="min-h-screen bg-gray-50 pb-24">
+      <header className="bg-white px-5 py-5 sticky top-0 z-10">
+        <div className="max-w-md mx-auto flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="press-effect w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-700 text-lg"
+            aria-label="뒤로"
+          >
+            ←
+          </button>
+          <h1 className="text-display-sm text-gray-900">우리 가게 지원사업</h1>
+        </div>
       </header>
 
-      <div className="px-6 py-4">
-        {data && (
-          <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-4">
-            <p className="text-red-600 font-semibold text-sm">{data.loss_message}</p>
+      <div className="max-w-md mx-auto px-5 py-5">
+        {data && data.loss_message && (
+          <div className="bg-loss-50 rounded-2xl p-4 mb-4">
+            <p className="text-loss-600 font-bold text-sm leading-relaxed">
+              {data.loss_message}
+            </p>
           </div>
         )}
 
         <div className="space-y-3">
           {data?.matches.map((s) => (
-            <div key={s.id} className="bg-white rounded-xl p-4 border border-gray-100">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-semibold text-gray-900 text-sm flex-1">{s.title}</h3>
+            <div key={s.id} className="bg-white rounded-2xl p-5 shadow-card">
+              <div className="flex justify-between items-start gap-3 mb-2">
+                <h3 className="font-bold text-gray-900 text-base flex-1 leading-snug">
+                  {s.title}
+                </h3>
                 {s.max_amount && (
-                  <span className="text-sm font-bold text-red-500 ml-2">{s.max_amount}만원</span>
+                  <span className="text-lg font-extrabold text-loss-500 whitespace-nowrap tabular-nums">
+                    최대 {s.max_amount}만원
+                  </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mb-1">{s.organization}</p>
+              <p className="text-sm text-gray-500 mb-2">{s.organization}</p>
               {s.eligibility_summary && (
-                <p className="text-xs text-gray-600 mb-2">{s.eligibility_summary}</p>
+                <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                  {s.eligibility_summary}
+                </p>
               )}
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
                 {s.days_until_deadline !== null && s.days_until_deadline !== undefined && (
-                  <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full font-medium">
-                    마감 D-{s.days_until_deadline}
+                  <span className="text-xs px-2.5 py-1 bg-loss-100 text-loss-700 rounded-lg font-bold">
+                    {koreanDDay(s.days_until_deadline)}
                   </span>
                 )}
                 {s.social_proof_message && (
                   <span className="text-xs text-gray-400">{s.social_proof_message}</span>
                 )}
               </div>
+              {/* CTA 위계: 신청(1차, flex-1) vs 초안(보조, 좁게) */}
               <div className="flex gap-2">
                 {s.application_url && (
                   <a
@@ -115,16 +128,16 @@ export default function SubsidiesPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => api.logSubsidySignal(s.id, "apply").catch(() => {})}
-                    className="flex-1 py-2 text-center text-sm bg-yellow-400 text-gray-900 font-semibold rounded-lg hover:bg-yellow-500"
+                    className="press-effect flex-1 py-3 text-center text-sm bg-warn-500 text-gray-900 font-bold rounded-xl shadow-btn"
                   >
-                    신청 페이지
+                    신청하기 →
                   </a>
                 )}
                 <button
                   onClick={() => handleGenerateDraft(s.id)}
-                  className="flex-1 py-2 text-center text-sm bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200"
+                  className="press-effect flex-shrink-0 px-4 py-3 text-center text-sm bg-white border border-gray-200 text-gray-700 font-medium rounded-xl"
                 >
-                  사업계획서 초안
+                  초안 받기
                 </button>
               </div>
             </div>
@@ -132,16 +145,20 @@ export default function SubsidiesPage() {
         </div>
 
         {data?.matches.length === 0 && (
-          <div className="bg-white border border-gray-100 rounded-xl p-8 text-center">
-            <p className="text-4xl mb-3">🔍</p>
-            <p className="text-sm font-semibold text-gray-700 mb-1">매칭되는 지원사업이 없습니다</p>
-            <p className="text-xs text-gray-500 leading-relaxed">
-              현재 사장님 업종/지역 조건에 맞는 활성 지원사업이 없습니다.
-              <br />새 지원사업이 등록되면 자동으로 알림을 보내드립니다.
+          <div className="bg-white rounded-2xl p-10 text-center shadow-card">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center text-3xl">
+              🔍
+            </div>
+            <p className="text-base font-bold text-gray-900 mb-2">
+              지금은 딱 맞는 게 없네요
+            </p>
+            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+              사장님 업종·지역에 맞는 사업이 아직 없어요.
+              <br />새 공고가 뜨면 카톡으로 바로 알려드릴게요.
             </p>
             <button
               onClick={() => router.push("/dashboard")}
-              className="mt-4 px-4 py-2 bg-yellow-400 text-gray-900 text-sm font-semibold rounded-lg"
+              className="press-effect w-full py-3 bg-gray-100 text-gray-900 font-bold rounded-xl"
             >
               대시보드로 돌아가기
             </button>
@@ -151,28 +168,46 @@ export default function SubsidiesPage() {
 
       {/* 사업계획서 초안 모달 */}
       {(draft || draftLoading) && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="bg-white w-full max-h-[80vh] rounded-t-2xl p-6 overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold text-lg text-gray-900">
+        <div className="fixed inset-0 bg-gray-900/40 z-50 flex items-end backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md mx-auto max-h-[85vh] rounded-t-3xl p-6 overflow-y-auto">
+            <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            <div className="flex justify-between items-start gap-3 mb-5">
+              <h2 className="text-xl font-bold text-gray-900 flex-1 leading-snug">
                 {draft ? draft.subsidy_title : "생성 중..."}
               </h2>
-              <button onClick={() => { setDraft(null); setDraftLoading(false); setDraftError(null); }} className="text-gray-400 hover:text-gray-600 text-xl">
-                &times;
+              <button
+                onClick={() => {
+                  setDraft(null);
+                  setDraftLoading(false);
+                  setDraftError(null);
+                }}
+                className="press-effect w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 text-lg"
+                aria-label="닫기"
+              >
+                ✕
               </button>
             </div>
             {draftError && (
-              <p className="text-red-500 text-sm mb-3">{draftError}</p>
+              <div className="bg-loss-50 rounded-xl p-3 mb-4">
+                <p className="text-loss-500 text-sm font-medium">{draftError}</p>
+              </div>
             )}
             {draftLoading ? (
-              <div className="flex items-center gap-2 py-8 justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400" />
-                <span className="text-gray-500">GPT-4o가 사업계획서를 작성하고 있어요...</span>
+              <div className="flex flex-col items-center gap-3 py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-warn-500" />
+                <span className="text-sm font-semibold text-gray-700">
+                  사업계획서 초안을 쓰고 있어요
+                </span>
+                <span className="text-xs text-gray-400">10초만 기다려 주세요...</span>
               </div>
             ) : draft ? (
               <div>
-                <p className="text-xs text-green-600 mb-3">절약 시간: {draft.estimated_time_saved}</p>
-                <div className="prose prose-sm max-w-none whitespace-pre-wrap text-gray-700">
+                <div className="inline-block bg-success-50 px-3 py-1.5 rounded-lg mb-4">
+                  <p className="text-xs font-bold text-success-700">
+                    ⏱ 절약 시간 · {draft.estimated_time_saved}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-2xl p-5 whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
                   {draft.draft_text}
                 </div>
               </div>
@@ -182,23 +217,38 @@ export default function SubsidiesPage() {
       )}
 
       {/* 하단 네비게이션 */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3">
-        <div className="flex justify-around max-w-sm mx-auto">
-          <NavItem label="홈" active={pathname === "/dashboard"} onClick={() => router.push("/dashboard")} />
-          <NavItem label="지원사업" active={pathname === "/subsidies"} onClick={() => router.push("/subsidies")} />
-          <NavItem label="인사이트" active={pathname === "/insights"} onClick={() => router.push("/insights")} />
-          <NavItem label="쿠폰" active={pathname === "/coupons"} onClick={() => router.push("/coupons")} />
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 py-2">
+        <div className="flex justify-around max-w-md mx-auto">
+          <NavItem icon="🏠" label="홈" active={pathname === "/dashboard"} onClick={() => router.push("/dashboard")} />
+          <NavItem icon="💰" label="지원사업" active={pathname === "/subsidies"} onClick={() => router.push("/subsidies")} />
+          <NavItem icon="📊" label="인사이트" active={pathname === "/insights"} onClick={() => router.push("/insights")} />
+          <NavItem icon="🎟" label="쿠폰" active={pathname === "/coupons"} onClick={() => router.push("/coupons")} />
         </div>
       </nav>
     </main>
   );
 }
 
-function NavItem({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+function NavItem({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
   return (
-    <button onClick={onClick}
-      className={`text-xs font-medium py-1 ${active ? "text-yellow-600" : "text-gray-400"}`}>
-      {label}
+    <button
+      onClick={onClick}
+      className="press-effect flex flex-col items-center gap-0.5 px-3 py-2"
+    >
+      <span className={`text-base ${active ? "" : "grayscale opacity-50"}`}>{icon}</span>
+      <span className={`text-xs font-bold ${active ? "text-gray-900" : "text-gray-400"}`}>
+        {label}
+      </span>
     </button>
   );
 }

@@ -51,10 +51,15 @@ export default function OnboardingPage() {
         setVerificationToken(res.verification_token);
         setStep("business_search");
       } else {
-        setError(`사업자 상태: ${res.business_status}. 계속사업자만 이용 가능합니다.`);
+        // 사장님 친화 — raw status 노출 안 함 (human-tone 룰)
+        const statusCopy: Record<string, string> = {
+          "폐업자": "폐업으로 등록된 사업자번호예요. 다른 번호로 다시 시도해 주세요.",
+          "휴업자": "휴업 상태예요. 사업자 재개 후 다시 시도해 주세요.",
+        };
+        setError(statusCopy[res.business_status] ?? "이 번호는 지금 이용이 어려워요. 사업자번호를 다시 확인해 주세요.");
       }
     } catch (err: any) {
-      setError(err.message || "검증에 실패했습니다.");
+      setError(err.message || "잠시 통신이 불안정해요. 한 번 더 눌러 주세요.");
     }
   };
 
@@ -126,15 +131,15 @@ export default function OnboardingPage() {
         if (token) api.registerFcmToken(token).catch(() => {});
       }).catch(() => {});
     } catch (err: any) {
-      setError(err.message || "온보딩에 실패했습니다.");
+      setError(err.message || "정보 등록이 잠시 막혔어요. 한 번 더 눌러 주세요.");
       setStep("confirm");
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-warn-500" />
       </div>
     );
   }
@@ -150,157 +155,204 @@ export default function OnboardingPage() {
     : "사업장 정보 확인";
 
   return (
-    <main className="flex flex-col items-center min-h-screen px-6 py-12">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">사업장 등록</h1>
-      <p className="text-sm text-gray-500 mb-4">15초면 끝나요</p>
-      {/* Stepper */}
-      <div className="w-full max-w-sm mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-yellow-600 tabular-nums">
-            {stepIdx} / 3
-          </span>
-          <span className="text-xs text-gray-600">{stepLabel}</span>
-        </div>
-        <div className="flex gap-1.5">
-          {[1, 2, 3].map((n) => (
-            <div
-              key={n}
-              className={`flex-1 h-1.5 rounded-full transition-colors ${
-                n <= stepIdx ? "bg-yellow-400" : "bg-gray-200"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
+    <main className="min-h-screen bg-white">
+      <div className="max-w-md mx-auto px-5 pt-12 pb-8">
+        <h1 className="text-display-sm text-gray-900 mb-2">
+          사장님 가게부터 알려주세요
+        </h1>
+        <p className="text-base text-gray-600 mb-8">15초만 쓰시면 끝나요</p>
 
-      {/* Step 1: 사업자번호 */}
-      {step === "business_number" && (
-        <div className="w-full max-w-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            사업자등록번호
-          </label>
-          <input
-            type="text"
-            maxLength={10}
-            value={businessNumber}
-            onChange={(e) => setBusinessNumber(e.target.value.replace(/\D/g, ""))}
-            placeholder="10자리 숫자 입력"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-lg text-gray-900"
-          />
-          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-          <button
-            onClick={handleVerifyBusiness}
-            disabled={businessNumber.length !== 10}
-            className="w-full mt-4 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl disabled:opacity-50 hover:bg-yellow-500 transition-colors"
-          >
-            확인
-          </button>
-        </div>
-      )}
-
-      {/* Step 2: 상호명 검색 */}
-      {step === "business_search" && (
-        <div className="w-full max-w-sm">
-          <p className="text-sm text-green-600 mb-4">
-            {businessStatus} 확인 완료
-          </p>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            상호명 검색
-          </label>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="가게 이름을 검색하세요"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-gray-900"
-          />
-          <div className="mt-3 space-y-2">
-            {searchResults.map((biz) => (
-              <button
-                key={`${biz.place_name}-${biz.x}-${biz.y}`}
-                onClick={() => handleSelectBusiness(biz)}
-                className="w-full text-left p-3 bg-gray-50 rounded-xl hover:bg-yellow-50 border border-gray-100 transition-colors"
-              >
-                <p className="font-medium text-gray-900">{biz.place_name}</p>
-                <p className="text-xs text-gray-500">{biz.road_address_name || biz.address_name}</p>
-                <p className="text-xs text-gray-400">{biz.category_name}</p>
-              </button>
-            ))}
+        {/* Stepper */}
+        {step !== "loading" && step !== "done" && (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold text-gray-900 tabular-nums">
+                <span className="text-warn-600">{stepIdx}</span>
+                <span className="text-gray-400"> / 3</span>
+              </span>
+              <span className="text-sm font-medium text-gray-600">{stepLabel}</span>
+            </div>
+            <div className="flex gap-1.5">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className={`flex-1 h-1 rounded-full transition-colors ${
+                    n <= stepIdx ? "bg-warn-500" : "bg-gray-200"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Step 3: 확인 */}
-      {step === "confirm" && selectedBusiness && (
-        <div className="w-full max-w-sm">
-          <div className="bg-yellow-50 p-4 rounded-xl mb-4">
-            <p className="font-semibold text-gray-900">{selectedBusiness.place_name}</p>
-            <p className="text-sm text-gray-600">{selectedBusiness.road_address_name || selectedBusiness.address_name}</p>
-            <p className="text-sm text-gray-500">{selectedBusiness.category_name}</p>
-          </div>
-
-          {/* 개점일 입력 (선택) */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
-            <label className="block">
-              <span className="text-sm font-semibold text-gray-900">가게 개점일 (선택)</span>
-              <p className="text-[11px] text-gray-500 mb-2 mt-0.5">
-                생존 매트릭스 · 영업기간 분석 정확도 향상 (입력 안 해도 가입일로 추정)
-              </p>
-              <input
-                type="date"
-                value={businessStartDate}
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => setBusinessStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-yellow-400"
-              />
+        {/* Step 1: 사업자번호 */}
+        {step === "business_number" && (
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">
+              사업자등록번호
             </label>
-          </div>
-
-          {error && <p className="mb-2 text-sm text-red-500">{error}</p>}
-          <button
-            onClick={handleComplete}
-            className="w-full py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-500 transition-colors"
-          >
-            이 가게가 맞아요
-          </button>
-          <button
-            onClick={() => setStep("business_search")}
-            className="w-full mt-2 py-3 text-gray-500 hover:text-gray-700"
-          >
-            다시 검색
-          </button>
-        </div>
-      )}
-
-      {/* Loading */}
-      {step === "loading" && (
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-400 mx-auto mb-4" />
-          <p className="text-gray-500">사장님에게 맞는 지원사업을 찾고 있어요...</p>
-          <p className="text-xs text-gray-400 mt-2">서울시 데이터 분석 중</p>
-        </div>
-      )}
-
-      {/* Done */}
-      {step === "done" && result && (
-        <div className="w-full max-w-sm text-center">
-          <div className="text-4xl mb-4">
-            {result.subsidy_count > 0 ? "!" : ""}
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{result.message}</h2>
-          {result.subsidy_count > 0 && (
-            <p className="text-red-500 font-medium mb-6">
-              지금 확인하지 않으면 놓칠 수 있어요
+            <p className="text-sm text-gray-500 mb-4">
+              하이픈 없이 10자리 숫자만 입력해 주세요
             </p>
-          )}
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="w-full py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-500 transition-colors"
-          >
-            대시보드로 이동
-          </button>
-        </div>
-      )}
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              value={businessNumber}
+              onChange={(e) => setBusinessNumber(e.target.value.replace(/\D/g, ""))}
+              placeholder="0000000000"
+              className="w-full px-4 py-4 bg-gray-50 rounded-2xl text-xl text-gray-900 tabular-nums tracking-wide focus:outline-none focus:ring-2 focus:ring-warn-500 focus:bg-white border-2 border-transparent focus:border-warn-500"
+            />
+            {error && (
+              <p className="mt-3 text-sm font-medium text-loss-500">{error}</p>
+            )}
+            <button
+              onClick={handleVerifyBusiness}
+              disabled={businessNumber.length !== 10}
+              className="press-effect w-full mt-6 py-[18px] bg-warn-500 text-gray-900 font-bold text-base rounded-2xl shadow-btn disabled:opacity-40 disabled:cursor-not-allowed hover:bg-warn-600"
+            >
+              다음
+            </button>
+          </div>
+        )}
+
+        {/* Step 2: 상호명 검색 */}
+        {step === "business_search" && (
+          <div>
+            <div className="flex items-center gap-2 mb-6 px-3 py-2 bg-success-50 rounded-xl">
+              <span className="text-success-600 font-bold">✓</span>
+              <span className="text-sm font-semibold text-success-700">
+                {businessStatus} 확인 완료
+              </span>
+            </div>
+            <label className="block text-base font-bold text-gray-900 mb-2">
+              가게 이름이 어떻게 되세요?
+            </label>
+            <p className="text-sm text-gray-500 mb-4">
+              상호명만 적으시면 카카오맵에서 가게를 찾아드려요
+            </p>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="예: 삼각김밥 카페, 떡볶이"
+              className="w-full px-4 py-4 bg-gray-50 rounded-2xl text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-warn-500 focus:bg-white border-2 border-transparent focus:border-warn-500"
+            />
+            <div className="mt-4 space-y-2">
+              {searchResults.map((biz) => (
+                <button
+                  key={`${biz.place_name}-${biz.x}-${biz.y}`}
+                  onClick={() => handleSelectBusiness(biz)}
+                  className="press-effect w-full text-left p-4 bg-gray-50 rounded-2xl hover:bg-warn-50 transition-colors"
+                >
+                  <p className="font-bold text-gray-900 text-base mb-0.5">{biz.place_name}</p>
+                  <p className="text-sm text-gray-600">
+                    {biz.road_address_name || biz.address_name}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">{biz.category_name}</p>
+                </button>
+              ))}
+              {searchQuery && searchResults.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-8">
+                  검색되는 가게가 없어요. 이름을 다르게 적어 주세요
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: 확인 */}
+        {step === "confirm" && selectedBusiness && (
+          <div>
+            <p className="text-base font-bold text-gray-900 mb-2">
+              이 가게가 맞나요?
+            </p>
+            <p className="text-sm text-gray-500 mb-5">
+              아니면 아래 &lsquo;다시 검색하기&rsquo;로 골라보세요
+            </p>
+
+            <div className="bg-warn-50 p-5 rounded-2xl mb-4">
+              <p className="font-bold text-gray-900 text-lg mb-1">
+                {selectedBusiness.place_name}
+              </p>
+              <p className="text-sm text-gray-700 mb-1">
+                {selectedBusiness.road_address_name || selectedBusiness.address_name}
+              </p>
+              <p className="text-sm text-gray-500">{selectedBusiness.category_name}</p>
+            </div>
+
+            {/* 개점일 입력 (선택) */}
+            <div className="bg-gray-50 rounded-2xl p-5 mb-6">
+              <label className="block">
+                <span className="text-base font-bold text-gray-900">
+                  가게 처음 연 날
+                  <span className="ml-2 text-xs font-medium text-gray-400">선택</span>
+                </span>
+                <p className="text-sm text-gray-500 mt-1 mb-3">
+                  적어주시면 폐업 위험 분석이 더 정확해져요
+                </p>
+                <input
+                  type="date"
+                  value={businessStartDate}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setBusinessStartDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-white rounded-xl text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-warn-500 border-2 border-transparent focus:border-warn-500"
+                />
+              </label>
+            </div>
+
+            {error && (
+              <p className="mb-3 text-sm font-medium text-loss-500">{error}</p>
+            )}
+            <button
+              onClick={handleComplete}
+              className="press-effect w-full py-[18px] bg-warn-500 text-gray-900 font-bold text-base rounded-2xl shadow-btn hover:bg-warn-600"
+            >
+              이 가게가 맞아요
+            </button>
+            <button
+              onClick={() => setStep("business_search")}
+              className="w-full mt-2 py-4 text-sm font-medium text-gray-500 hover:text-gray-700"
+            >
+              다시 검색하기
+            </button>
+          </div>
+        )}
+
+        {/* Loading */}
+        {step === "loading" && (
+          <div className="text-center pt-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-200 border-t-warn-500 mx-auto mb-6" />
+            <p className="text-base font-semibold text-gray-900 mb-1">
+              우리 가게에 맞는 지원사업을 찾고 있어요
+            </p>
+            <p className="text-sm text-gray-500">서울시 데이터 살펴보는 중...</p>
+          </div>
+        )}
+
+        {/* Done */}
+        {step === "done" && result && (
+          <div className="text-center pt-12">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-success-100 flex items-center justify-center">
+              <span className="text-success-600 text-3xl font-bold">✓</span>
+            </div>
+            <h2 className="text-display-sm text-gray-900 mb-3 text-balance">
+              {result.message}
+            </h2>
+            {result.subsidy_count > 0 && (
+              <p className="text-base font-semibold text-loss-500 mb-8">
+                지금 확인하지 않으면 놓칠 수 있어요
+              </p>
+            )}
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="press-effect w-full py-[18px] bg-warn-500 text-gray-900 font-bold text-base rounded-2xl shadow-btn hover:bg-warn-600"
+            >
+              대시보드로 이동
+            </button>
+          </div>
+        )}
+      </div>
     </main>
   );
 }

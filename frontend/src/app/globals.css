@@ -3,31 +3,45 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 25, 31, 40;
+  --background-rgb: 255, 255, 255;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
+html,
 body {
+  background: rgb(var(--background-rgb));
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* iOS 사파리 입력창 글자 16px 강제 (자동 줌 방지) */
+input,
+select,
+textarea {
+  font-size: 16px;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* 숫자 정렬용 (지원금·점수 카드에서 숫자 폭 통일) */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  /* 토스풍 미세 인터랙션 */
+  .press-effect {
+    transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+  }
+  .press-effect:active {
+    transform: scale(0.98);
+    opacity: 0.85;
+  }
+  /* 카드 위 액티브 스케일 (모바일 탭) */
+  .tap-scale:active {
+    transform: scale(0.985);
   }
 }

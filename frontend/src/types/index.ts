@@ -191,4 +191,5 @@ export interface VoiceQueryResponse {
   answer: string;
   intent: string;
   suggestions: string[];
+  route?: string | null;
 }

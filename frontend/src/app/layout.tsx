@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "AI 경영코치 - 소상공인 경영 지원",
@@ -11,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FEE500",
+  themeColor: "#FFFFFF",
   width: "device-width",
   initialScale: 1,
 };
@@ -23,7 +20,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${inter.className} bg-white min-h-screen`}>{children}</body>
+      <head>
+        <link
+          rel="stylesheet"
+          as="style"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
+      </head>
+      <body className="font-sans bg-white text-gray-900 min-h-screen antialiased">
+        {children}
+      </body>
     </html>
   );
 }

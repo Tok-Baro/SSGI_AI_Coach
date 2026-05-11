@@ -2,7 +2,7 @@
  * API 클라이언트 싱글톤.
  * 모든 백엔드 요청을 관리하며, JWT 토큰을 자동 주입합니다.
  * - access token 만료 시 refresh token으로 자동 갱신
- * - 모든 요청에 15초 timeout 적용
+ * - 기본 요청 30초 timeout, GPT 생성 호출은 60~90초로 개별 지정
  */
 
 import type {
@@ -278,12 +278,17 @@ class ApiClient {
   }
 
   async getMarketingStrategy(refresh = false): Promise<any> {
-    return this.request(`/insights/marketing${refresh ? "?refresh=true" : ""}`, {}, true);
+    // GPT-4o + max_tokens=4000 (가장 무거움) → 90초 여유
+    return this.request(
+      `/insights/marketing${refresh ? "?refresh=true" : ""}`,
+      { signal: AbortSignal.timeout(90_000) },
+      true,
+    );
   }
 
   async getDeepReport(refresh = false): Promise<any> {
     return this.request(`/insights/deep-report${refresh ? "?refresh=true" : ""}`, {
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(90_000),
     });
   }
 
@@ -298,11 +303,6 @@ class ApiClient {
       signal: AbortSignal.timeout(45_000),
     });
   }
-
-  async getCompetitionAnalysisRefresh(): Promise<any> {
-    return this.request("/insights/competition?refresh=true");
-  }
-
 
   // ===== 주간 리포트 =====
   async downloadWeeklyReport(): Promise<Blob> {
@@ -327,6 +327,42 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify({ text }),
     });
+  }
+
+  // ===== 결제 (카카오페이) =====
+  async readyKakaoPayment(): Promise<{
+    tid: string;
+    next_redirect_pc_url: string;
+    next_redirect_mobile_url: string;
+    partner_order_id: string;
+  }> {
+    return this.request("/payments/kakao/ready", { method: "POST" });
+  }
+
+  async approveKakaoPayment(body: {
+    tid: string;
+    partner_order_id: string;
+    pg_token: string;
+  }): Promise<{
+    status: string;
+    item_name: string;
+    total_amount: number;
+    approved_at: string;
+    expired_at: string | null;
+  }> {
+    return this.request("/payments/kakao/approve", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async getSubscriptionStatus(): Promise<{
+    is_pro: boolean;
+    status: string;
+    started_at: string | null;
+    expired_at: string | null;
+  }> {
+    return this.request("/payments/subscription");
   }
 }
 

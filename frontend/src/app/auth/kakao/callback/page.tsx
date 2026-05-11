@@ -43,11 +43,15 @@ function KakaoCallbackContent() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
-        <p className="text-red-500 mb-4">{error}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-white">
+        <div className="w-14 h-14 mb-4 rounded-full bg-loss-50 flex items-center justify-center text-2xl">
+          ⚠
+        </div>
+        <p className="text-base font-bold text-gray-900 mb-2 text-center">로그인에 실패했어요</p>
+        <p className="text-sm text-loss-500 mb-6 text-center">{error}</p>
         <button
           onClick={() => router.push("/")}
-          className="px-6 py-2 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200"
+          className="press-effect px-6 py-3 bg-warn-500 text-gray-900 font-bold rounded-2xl shadow-btn"
         >
           다시 시도하기
         </button>
@@ -56,10 +60,11 @@ function KakaoCallbackContent() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen bg-white">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto mb-4" />
-        <p className="text-gray-500">로그인 중...</p>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-warn-500 mx-auto mb-4" />
+        <p className="text-base font-semibold text-gray-700">로그인하고 있어요</p>
+        <p className="text-xs text-gray-400 mt-1">2초만 기다려 주세요</p>
       </div>
     </div>
   );
@@ -69,8 +74,8 @@ export default function KakaoCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+        <div className="flex items-center justify-center min-h-screen bg-white">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-warn-500" />
         </div>
       }
     >

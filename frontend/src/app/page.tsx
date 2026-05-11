@@ -7,14 +7,15 @@ import { useAuth } from "@/hooks/useAuth";
 // OAuth state 파라미터 발급 (CSRF 방어, RFC 6749 §10.12)
 function buildKakaoUrl(): string {
   if (typeof window === "undefined") return "#";
-  // crypto.randomUUID 폴리필 fallback (구형 브라우저 대응)
   const rand =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const clientId = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
+  if (!clientId) return "#"; // silent fail 방지 — 호출 측에서 disabled 처리
   sessionStorage.setItem("oauth_state", rand);
   const params = new URLSearchParams({
-    client_id: process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY || "",
+    client_id: clientId,
     redirect_uri:
       process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI ||
       "http://localhost:3000/auth/kakao/callback",
@@ -47,73 +48,111 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-warn-500" />
       </div>
     );
   }
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen px-6 py-12">
-      {/* 헤더 */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
-          AI 경영코치
-        </h1>
-        <p className="text-lg text-gray-600">
-          사장님이 모르고 놓치는 돈, AI가 찾아줍니다.
+    <main className="min-h-screen bg-white flex flex-col">
+      <div className="flex-1 flex flex-col px-5 pt-16 pb-8 max-w-md mx-auto w-full">
+        {/* 헤더 */}
+        <div className="mb-12">
+          <p className="text-base font-medium text-warn-600 mb-3">
+            AI 경영코치
+          </p>
+          <h1 className="text-display text-gray-900 text-balance">
+            사장님이 모르고
+            <br />
+            놓치는 돈,
+            <br />
+            <span className="text-loss-500">AI가 찾아드려요.</span>
+          </h1>
+          <p className="mt-5 text-base text-gray-600 leading-relaxed">
+            지원금부터 단골 만들기까지,
+            <br />
+            매일 아침 7시, 우리 가게에 맞는 액션 1개를 알려드려요.
+          </p>
+        </div>
+
+        {/* 가치 제안 카드 */}
+        <div className="space-y-3 mb-10">
+          <ValueCard
+            icon="💰"
+            title="지원금 자동 매칭"
+            description="우리 가게에 맞는 사업만 골라서, 자격까지 알아서 확인"
+            highlight="신청 안 하면 내년까지 없어요"
+          />
+          <ValueCard
+            icon="📍"
+            title="유동인구 보고 이벤트 추천"
+            description="손님 몰리는 시간대에 맞춰 QR 쿠폰을 카톡으로 한 번에"
+            highlight="이대로 지나가면 그냥 끝이에요"
+          />
+          <ValueCard
+            icon="👀"
+            title="옆 가게 동향 알림"
+            description="같은 동네에 새 가게가 열리면 바로 알림 + 대응 전략"
+            highlight="옆 가게는 이미 시작했어요"
+          />
+        </div>
+
+        <div className="flex-1" />
+
+        {/* 카카오 로그인 버튼 — client_id 누락 시 disabled (silent fail 방지) */}
+        {kakaoUrl === "#" ? (
+          <button
+            disabled
+            aria-label="카카오 로그인 준비 중"
+            className="w-full flex items-center justify-center gap-2 bg-gray-200 text-gray-500 font-bold text-base py-[18px] rounded-2xl cursor-not-allowed"
+          >
+            <KakaoIcon />
+            잠시 후 다시 시도해 주세요
+          </button>
+        ) : (
+          <a
+            href={kakaoUrl}
+            aria-label="카카오 계정으로 15초 만에 시작하기"
+            className="press-effect w-full flex items-center justify-center gap-2 bg-warn-500 text-gray-900 font-bold text-base py-[18px] rounded-2xl shadow-btn hover:bg-warn-600"
+          >
+            <KakaoIcon />
+            카카오로 15초 만에 시작하기
+          </a>
+        )}
+        <p className="mt-3 text-center text-xs text-gray-400">
+          가입 = 카카오 로그인 + 상호명 입력 (15초 소요)
         </p>
       </div>
-
-      {/* 가치 제안 카드 */}
-      <div className="w-full max-w-sm space-y-4 mb-12">
-        <ValueCard
-          title="지원금 자동 매칭"
-          description="연 400~700만원 지원사업, 자격 자동 판별"
-          highlight="놓치면 내년까지 없어요"
-        />
-        <ValueCard
-          title="유동인구 기반 이벤트"
-          description="QR 쿠폰 1탭 생성 + 카카오톡 발송"
-          highlight="이벤트 없이 지나가고 있어요"
-        />
-        <ValueCard
-          title="경쟁 가게 모니터링"
-          description="같은 동네 개폐업 알림 + AI 대응 전략"
-          highlight="옆 가게는 이미 시작했어요"
-        />
-      </div>
-
-      {/* 카카오 로그인 버튼 */}
-      <a
-        href={kakaoUrl}
-        className="w-full max-w-sm flex items-center justify-center gap-2 bg-[#FEE500] text-[#191919] font-semibold py-4 rounded-xl hover:bg-[#FDD835] transition-colors"
-      >
-        <KakaoIcon />
-        카카오로 15초 만에 시작하기
-      </a>
-
-      <p className="mt-4 text-xs text-gray-400">
-        카카오 로그인 + 상호명 입력 = 15초
-      </p>
     </main>
   );
 }
 
 function ValueCard({
+  icon,
   title,
   description,
   highlight,
 }: {
+  icon: string;
   title: string;
   description: string;
   highlight: string;
 }) {
   return (
-    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-      <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
-      <p className="text-sm text-gray-500 mb-2">{description}</p>
-      <p className="text-sm font-medium text-red-500">{highlight}</p>
+    <div className="bg-gray-50 rounded-2xl p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-xl">
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 text-base mb-1">{title}</h3>
+          <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
+          <p className="mt-2 text-sm font-semibold text-loss-500">
+            {highlight}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

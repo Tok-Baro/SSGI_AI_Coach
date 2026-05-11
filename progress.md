@@ -316,4 +316,34 @@
 3. localStorage JWT — MVP에서는 수용, 프로덕션에서는 httpOnly 쿠키 전환 검토
 4. 서울시 API 호출 제한 — 일일 1,000건, 캐싱으로 대응
 
-> **마지막 업데이트**: 2026-05-04
+## 2026-05-09 — 프론트엔드 토스풍 UIUX 전체 리스킨
+
+**범위**: 7개 페이지 + 컴포넌트 (3470줄)
+**기조**: 행동·로직 100% 보존, 디자인 시스템만 교체
+
+**기반 토큰 (tailwind.config.ts + globals.css)**
+- 폰트: Inter → Pretendard Variable (CDN)
+- 컬러: gray 팔레트 토스 톤(#F9FAFB ~ #191F28)으로 재정의
+- 의미색 3종 신설: `loss-*`(#F04452), `warn-*`(#FEE500 카카오 유지), `success-*`(#00C896)
+- 타이포: `display-sm/display/display-lg` 추가 (큰 숫자 hero용)
+- 그림자: `shadow-card`, `shadow-card-hover`, `shadow-btn` (테두리 → 그림자 전환)
+- 유틸: `press-effect` (모바일 탭 스케일), `tabular-nums`
+
+**리스킨 페이지**
+1. `page.tsx` — 가치제안 카드 + 카카오 CTA (이모지 아이콘)
+2. `onboarding/page.tsx` — 3단계 stepper, bg-gray-50 입력 필드 토스 스타일
+3. `dashboard/page.tsx` — 잠재 지원금 hero 그라디언트 카드(노랑), 카드 그림자 통일, 하단 네비 이모지
+4. `insights/page.tsx` — 헤더 sticky, 탭 인디케이터 검정 line, NavItem 아이콘
+5. `coupons/page.tsx` — 쿠폰 카드 큰 할인율 표시, 모달 drawer 핸들 추가
+6. `subsidies/page.tsx` — 카드별 큰 금액 텍스트, 사업계획서 모달 토스풍
+7. `auth/kakao/callback/page.tsx` + `error.tsx` + `STTButton.tsx` — 스피너·에러·플로팅 버튼 통일
+
+**일괄 치환 (sed, BSD)**
+- yellow-* → warn-*, red-* → loss-*, green-* → success-*
+- 5개 파일 중 1809줄 insights 포함 약 270개 클래스 치환
+
+**검증**
+- `npx next build` ✓ (11/11 정적 페이지, 새 에러 0)
+- `grep '[一-鿿]' src/` → 0건 (한자 메모리 룰 준수)
+
+> **마지막 업데이트**: 2026-05-09
