@@ -1,0 +1,62 @@
+# retail.super — 동네 슈퍼마켓 (개인 슈퍼·식자재마트)
+# 핵심: 편의점·기업형 SSM·온라인 장보기에 밀림 → 신선식품·동네 단골·전화 주문 배송이 차별점.
+# 출처: 업계 통상치 + sme-coach. (개인 슈퍼 단위 통계 미확인 — 추정.)
+id: retail.super
+name: 동네 슈퍼마켓
+group: retail
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 동네 슈퍼·식자재마트 업계 통상치 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 44
+  keywords: [슈퍼마켓, 동네슈퍼, 개인슈퍼, 슈퍼, 식자재마트, 식료품점, 청과종합, 농수산물마트, 마트, 종합마트, 생필품마트]
+  ksic_codes: ["47111", "47112"]   # 슈퍼마켓 / 그 외 음·식료품 위주 종합소매업
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 동네 슈퍼마켓 (개인 슈퍼·식자재마트)
+  ※ 편의점·기업형 SSM·온라인 장보기에 밀리는 구조 — 가격·구색으로 정면승부보다 신선·동네·배송으로 차별화하세요.
+  - Hero KPI: ① **단골 비율(동네 반복 구매가 본질 — 70%+ 목표)** ② 신선식품(채소·과일·정육·반찬) 매출 비중·품질 신뢰 ③ 전화 주문·동네 배송 운영 여부(거동 불편·맞벌이 단골 락인) ④ 평당 매출·재고 회전 ⑤ 마진(신선은 마진·로스 동시 큼)
+  - 객단가/매출: 편의점보다 객단가 큼(장보기 묶음 — 1만~5만+), 마진율은 낮은 편(공산품 박리). (추정)
+  - 운영 리듬: 평일 저녁·주말 장보기 / 명절·김장철·제철 과일 시즌 / 비·한파 시 동네 수요↑(원거리 마트 안 감)
+  - Top 채널: ① **카카오 단골방·문자(오늘 들어온 신선·세일 알림 — 동네 슈퍼의 핵심 무기) + 당근 비즈프로필** ② 네이버 플레이스·카카오맵(동네 검색) ③ 전단·아파트 게시판(반경 좁음) ④ 전화 주문·간단 배송 운영(거동 불편·맞벌이 — 차별화). 인스타·블로그·전국 배달앱 효과 낮음
+  - 손실 프레임: "오늘 들어온 신선·세일 알림 채널(카카오 단골방·당근) 없음", "전화 주문·동네 배송 미운영(편의점·온라인에 손님 다 뺏김)", "신선식품 품질·구색 방치(차별점이 없어짐)", "폐기·로스 관리 안 됨"
+  - 위험 신호: 단골 비율 < 50% / 신선식품 비중 낮음(공산품만 — 편의점과 차별 없음) / 전화 주문·배송 미운영 / 폐기율 과다
+  - 카피 예: "오늘 들어온 채소·과일·정육을 카카오 단골방·당근에 한 줄 올리세요 — '○○ 들어왔어요, 세일'이 동네 슈퍼의 무기예요", "전화 한 통이면 갖다드리는 배송을 시작하세요 — 거동 불편하신 어르신·맞벌이 단골이 편의점·온라인 안 가고 우리만 씁니다"
+  - 금지: "가격으로 대형마트와 경쟁"(질 수밖에 없음 — 신선·동네·배송으로), "인스타에 큰 비용"(동네 슈퍼는 효과 낮음)
+
+hero_kpis:
+  - {key: "loyal_ratio", label: "단골 비율", unit: "%", good: "≥ 70", warn: "50–69", danger: "< 50", confidence: "estimated", source: "업계 추정 — 동네 반복 구매가 본질"}
+  - {key: "fresh_food_ratio", label: "신선식품 매출 비중", unit: "%", good: "≥ 40", warn: "25–39", danger: "< 25", confidence: "estimated", source: "추정 — 신선이 차별점, 공산품만이면 편의점과 차별 없음"}
+  - {key: "sales_per_pyeong", label: "평당 매출", unit: "원/월", good: "≥ 1,000,000", warn: "500,000–999,999", danger: "< 300,000", confidence: "estimated", source: "추정"}
+  - {key: "gross_margin", label: "매출총이익률(마진)", unit: "%", good: "≥ 18", warn: "13–17", danger: "< 13", confidence: "estimated", source: "추정 — 공산품 박리·신선 로스로 낮은 편"}
+
+kpi_thresholds:
+  단골_비율_위험: "< 50%"
+  신선식품_비중_위험: "< 25%"
+  마진율_위험: "< 13%"
+
+risk_signal_weights:
+  population_trend: 1.2
+
+subsidy_tags: [digital, store_renovation, rent_utility]   # POS·스마트상점 / 점포환경개선·냉장설비 / 전기·공공요금
+
+channels:
+  - {key: "kakao_sms", name: "카카오 단골방·문자(오늘 들어온 신선·세일 알림)", fit: "high", per_unit_cost_won: 10, primary_metric: "재방문·당일 매출", roi_note: "동네 슈퍼의 핵심 무기 — '○○ 들어왔어요, 세일' 일일 알림. SMS ~10원·카카오 채널 텍스트 15원", confidence: "measured", source: "카카오 비즈메시지·SMS 단가"}
+  - {key: "daangn", name: "당근 비즈프로필", fit: "high", entry_cost_won: 0, primary_metric: "동네 노출·후기", roi_note: "무료 — 동네 밀착. 세일·신선 입고 알림", confidence: "hypothesis"}
+  - {key: "phone_delivery", name: "전화 주문·동네 배송", fit: "high", primary_metric: "단골 락인·객단가", roi_note: "거동 불편 어르신·맞벌이 단골 락인. 편의점·온라인 못 따라오는 차별점", confidence: "hypothesis"}
+  - {key: "naver_kakaomap", name: "네이버 플레이스·카카오맵(동네 검색)", fit: "medium", entry_cost_won: 0, primary_metric: "위치 검색", roi_note: "무료 등록", confidence: "measured", source: "네이버·카카오"}
+  - {key: "flyer", name: "전단·아파트 게시판", fit: "medium", monthly_budget_min_won: 30000, monthly_budget_max_won: 150000, primary_metric: "배후 단지 노출", roi_note: "반경 좁은 업종 — 주간 세일 전단·게시판", confidence: "hypothesis"}
+  - {key: "instagram_musinsa", name: "인스타그램·무신사 등", fit: "avoid", primary_metric: "—", roi_note: "동네 슈퍼는 SNS·패션 채널 효과 낮음 — 비추천", confidence: "hypothesis"}
+
+copy_tone:
+  vocab: ["동네 단골", "오늘 들어온 신선", "전화 주문 배송", "세일 알림", "신선식품 비중"]
+  loss_frames: ["오늘 들어온 신선·세일 알림 채널 없음", "전화 주문·동네 배송 미운영", "신선식품 품질·구색 방치", "폐기·로스 관리 안 됨"]
+  examples:
+    - "오늘 들어온 채소·과일·정육을 카카오 단골방·당근에 한 줄 올리세요 — '○○ 들어왔어요, 세일'이 동네 슈퍼의 무기예요"
+    - "전화 한 통이면 갖다드리는 배송을 시작하세요 — 거동 불편하신 어르신·맞벌이 단골이 편의점·온라인 안 가고 우리만 씁니다"
+  do: ["카카오 단골방·당근으로 매일 신선·세일 알림", "전화 주문·동네 배송 운영(단골 락인)", "신선식품 구색·품질로 차별화"]
+  dont: ["가격으로 대형마트와 정면 경쟁 (질 수밖에 없음)", "인스타에 큰 비용 (동네 슈퍼는 효과 낮음)"]

@@ -489,7 +489,11 @@
 - **미용·서비스 5 leaf** (group=service) — `service.hair`(미용실 — 재방문율·예약·별점 4.7+·디자이너 인센티브) / `service.nail`(네일·왁싱·속눈썹 — 3~4주 재방문 주기 알림·인스타 디자인 포트폴리오) / `service.skincare`(피부·에스테틱·마사지 — 회원권 갱신율이 hero·광고 규제 주의) / `service.laundry`(세탁·수선·코인빨래방 — 동네 밀착·당근 1순위·일반 vs 무인 구분) / `service.pc_karaoke`(PC방·노래방·당구장 — 시간당 요금×회전율·PC방 먹거리 매출 30~50%, priority 18로 "만화카페·룸카페" 가 cafe 로 안 가게). 출처: KB 자영업 미용실 보고서·이/미용 산업 평균 영업이익률 ~26%·업계 통상치(추정 라벨).
 - **검증(배치③)**: `validate_packs` ✓ **33팩** / classify 42케이스 ✓ / `from app.main import app` ✓.
 
-**총 33팩** (academy 군+5leaf / restaurant 군+6leaf+korean_meat / cafe 군+4leaf / delivery_food 군+4leaf / service 군+5leaf / retail / fashion / unknown).
-**다음 배치(예정)**: ④ 소매(`retail` → cvs(편의점)/super(동네슈퍼)/food(정육·청과·반찬)) + 패션(`fashion` → apparel(의류)/cosmetics(화장품)/shoes_bag(신발·가방)/optical(안경·시계)). (자동차정비·동물병원·사진관 등 추가 서비스업은 그 다음.)
+- **소매 3 leaf** (group=retail) — `retail.cvs`(편의점 — 입지가 절대적·본사 시스템(PB·행사·발주)·24시간 인건비) / `retail.super`(동네 슈퍼 — 편의점·SSM·온라인에 밀림 → 신선식품·당근·전화 주문 배송으로 차별화) / `retail.food`(정육·청과·반찬·떡 — 정육 명절세트·떡 행사예약·반찬 구독·청과 폐기. priority 21 로 "한우정육점"·"수산물판매" 가 식당으로 안 가게)
+- **패션 4 leaf** (group=fashion) — `fashion.apparel`(의류 — 오프라인만으론 한계 → 인스타·무신사·지그재그·에이블리·스마트스토어 병행 필수·단골 1:1 신상알림·시즌 소진율) / `fashion.cosmetics`(화장품·향수·뷰티 편집샵 — 올리브영·다이소·온라인에 밀리는 사양세 → 체험·니치 라인으로 차별화. 광고 규제 주의) / `fashion.shoes_bag`(신발·가방·잡화 — 의류와 유사하나 사이즈 재고·정품 신뢰(운동화 KREAM 등) 추가 변수) / `fashion.optical`(안경원·시계방·금은방 — 안경=검안·렌즈 교체 주기·누진 업셀 vs 예물=결혼시즌·1:1 상담·정품 신뢰)
+- **검증(배치④)**: `validate_packs` ✓ **40팩** / classify 46케이스 ✓ / `from app.main import app` ✓.
+
+**총 40팩** (academy 군+5leaf / restaurant 군+6leaf+korean_meat / cafe 군+4leaf / delivery_food 군+4leaf / service 군+5leaf / retail 군+3leaf / fashion 군+4leaf / unknown). **7개 업종군 전부 세부 분기 완료.**
+**다음(선택)**: 추가 서비스업(자동차정비·동물병원·사진관·인테리어·세무/공인중개 등) leaf / `service.hair` 등 hero_kpis·channels 의 추정값을 1차 출처(KB 자영업·통계청 사교육비·소비자원 참가격 등)로 정밀화 / 진단 카드 UI 에 hero_kpis 노출 / deep-report·menu 프롬프트가 짧은 prompt_block 대신 hero_kpis·channels 도 받게 / korean_meat copy_tone override.
 
 > **마지막 업데이트**: 2026-05-11

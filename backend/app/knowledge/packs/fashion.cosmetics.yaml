@@ -1,0 +1,60 @@
+# fashion.cosmetics — 화장품·향수·뷰티 편집샵 소매
+# ※ 개인 화장품 가게는 올리브영·다이소·온라인에 밀려 사양세 — 남은 건 H&B 가맹·브랜드 로드샵·향수/뷰티 편집샵.
+#    솔직히 표기: 차별화(체험·전문 상담·니치 라인) 없이 가격으로 경쟁하면 어렵다고 안내.
+# 출처: 업계 통상치 + sme-coach. (개인 화장품 소매 단위 통계 미확인 — 추정.)
+id: fashion.cosmetics
+name: 화장품·향수·뷰티 편집샵
+group: fashion
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 화장품·뷰티 소매 업계 통상치 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 38
+  keywords: [화장품매장, 화장품, 코스메틱, 뷰티편집샵, 향수전문점, 향수, 색조전문, 기초화장품매장, 천연화장품, 비건화장품, 네일용품점, 미용재료상]
+  ksic_codes: ["47812"]   # 화장품·방향제 소매업
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 화장품·향수·뷰티 편집샵 소매
+  ※ 개인 화장품 가게는 올리브영·다이소·온라인에 밀려 어려운 구조 — 가격 경쟁이 아니라 체험·전문 상담·니치(니치향수·비건·전문 라인)로 차별화해야 살아남습니다. 그 전제로 답하세요.
+  - Hero KPI: ① **객단가(세트·기획 구성 부착률 — 단품만 팔면 마진이 안 남) + 단골 재구매(소진 주기 재방문 — 기초·향수)** ② 체험·테스터·상담 전환율 ③ 니치/전문 라인 비중(차별화 — 흔한 브랜드만이면 올리브영에 짐) ④ 인스타·후기 노출
+  - 객단가: 1~5만(세트·향수는 더 큼). 마진: 브랜드 직영 로드샵은 낮고(본사 정가), 편집샵·니치향수·전문 라인은 높음. (추정)
+  - 운영 리듬: 발렌타인·화이트데이·어버이날·연말(선물·기획세트 시즌)·환절기(기초 교체) / 신상 출시·SNS 화제 제품 회전
+  - Top 채널: ① **인스타그램(신상·기획세트·발색샷·향 묘사 — 비주얼 + 체험 콘텐츠) + 네이버 플레이스(검색·후기)** ② 카카오 친구톡(소진 주기·신상·세트 알림) ③ 체험단·뷰티 인플루언서(니치 제품 한정) ④ 당근(동네). 배달앱 무관. 가격 정보는 정확히(본사 정책·다이소 비교 노출 주의)
+  - 손실 프레임: "체험·테스터·상담 동선 없음(온라인이랑 차별 없음)", "세트·기획 구성 미운영(단품만 — 마진 안 남음)", "니치/전문 라인 부재(흔한 브랜드만 — 올리브영에 짐)", "단골 소진 주기·신상 알림 채널 없음", "인스타 발색샷·향 콘텐츠 빈약"
+  - 위험 신호: 객단가 < 2만(단품 위주) / 세트·기획 비중 낮음 / 니치/전문 라인 비중 낮음 / 재구매율 낮음
+  - 카피 예: "올리브영에 없는 니치 향수·전문 라인 하나라도 갖추고, 시향·체험 동선을 만드세요 — 그게 우리만의 이유가 됩니다", "기초 화장품 단골은 2~3개월 주기로 떨어져요 — 그 시점에 '신상 + 세트 할인' 카톡을 보내세요"
+  - 금지: "가격으로 올리브영·다이소와 경쟁"(질 수밖에 없음 — 체험·니치로), "배민 입점", 효과 과장 단정(화장품 광고 규제 — '효과·치료' 표현 주의)
+
+hero_kpis:
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "≥ 30,000", warn: "20,000–29,999", danger: "< 20,000", confidence: "estimated", source: "추정 — 세트·기획 부착 시 더 큼"}
+  - {key: "set_attach_rate", label: "세트·기획 구성 부착률", unit: "%", good: "≥ 40", warn: "20–39", danger: "< 20", confidence: "hypothesis", source: "추정 — 단품만 팔면 마진 안 남음"}
+  - {key: "niche_ratio", label: "니치/전문 라인 비중", unit: "%", good: "—", confidence: "estimated", source: "추정 — 흔한 브랜드만이면 올리브영에 밀림. 차별화 지표"}
+  - {key: "repurchase_rate", label: "단골 재구매율", unit: "%", good: "≥ 30", warn: "15–29", danger: "< 15", confidence: "estimated", source: "추정 — 기초·향수 소진 주기 재방문"}
+
+kpi_thresholds:
+  객단가_위험: "< 20,000원 (단품 위주)"
+  세트_부착률_위험: "< 20%"
+  재구매율_위험: "< 15%"
+
+subsidy_tags: [digital, marketing, store_renovation]   # 온라인 입점·e커머스 / 홍보·체험 / 점포환경개선(시향·체험 공간)
+
+channels:
+  - {key: "instagram", name: "인스타그램(신상·기획세트·발색샷·향 콘텐츠)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·DM·방문 유입", roi_note: "비주얼 + 체험 콘텐츠. 발색샷·향 묘사·니치 제품 스토리. 광고 일 1,000원+. (효과 과장 표현 주의)", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(검색·후기)", fit: "high", entry_cost_won: 0, primary_metric: "검색·후기", roi_note: "무료 등록 + CPC 광고. 후기·시향 가능 안내", confidence: "measured", source: "네이버"}
+  - {key: "kakao_friendtalk", name: "카카오 친구톡(소진 주기·신상·세트 알림)", fit: "medium", per_unit_cost_won: 15, primary_metric: "재구매·세트 판매", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 기초 소진 주기(2~3개월)·기획세트 알림", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "influencer", name: "체험단·뷰티 인플루언서(니치 제품)", fit: "medium", monthly_budget_min_won: 100000, monthly_budget_max_won: 500000, primary_metric: "노출·신뢰", roi_note: "니치 향수·전문 라인 한정 — 흔한 제품은 효과 낮음", confidence: "hypothesis"}
+  - {key: "daangn", name: "당근 비즈프로필", fit: "low", entry_cost_won: 0, primary_metric: "동네 노출", roi_note: "무료", confidence: "hypothesis"}
+  - {key: "baemin", name: "배민(배달앱)", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["세트·기획 구성", "체험·시향", "니치 라인", "소진 주기", "발색샷"]
+  loss_frames: ["체험·테스터·상담 동선 없음(온라인이랑 차별 없음)", "세트·기획 구성 미운영(단품만 — 마진 안 남음)", "니치/전문 라인 부재(올리브영에 짐)", "단골 소진 주기·신상 알림 채널 없음", "인스타 발색샷·향 콘텐츠 빈약"]
+  examples:
+    - "올리브영에 없는 니치 향수·전문 라인 하나라도 갖추고, 시향·체험 동선을 만드세요 — 그게 우리만의 이유가 됩니다"
+    - "기초 화장품 단골은 2~3개월 주기로 떨어져요 — 그 시점에 '신상 + 세트 할인' 카톡을 보내세요"
+  do: ["니치/전문 라인 + 시향·체험 동선으로 차별화", "세트·기획 구성으로 객단가↑", "소진 주기 카톡 알림 + 인스타 발색·향 콘텐츠"]
+  dont: ["가격으로 올리브영·다이소와 경쟁 (질 수밖에 없음)", "배민 입점 / 효과·치료 표현 단정 (화장품 광고 규제)"]

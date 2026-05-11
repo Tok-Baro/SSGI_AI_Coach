@@ -1,0 +1,59 @@
+# fashion.shoes_bag — 신발·가방·패션잡화 (구두·운동화·핸드백·모자 등)
+# 핵심: 의류와 유사하나 사이즈·재고 관리 + 정품 신뢰(특히 운동화 리셀·명품 가방)가 추가 변수.
+# 출처: 패션 소매 업계 통상치 + 무신사·KREAM(운동화) + sme-coach. (신발·잡화 소매 단위 통계 미확인 — 추정.)
+id: fashion.shoes_bag
+name: 신발·가방·패션잡화
+group: fashion
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 패션 소매 업계 통상치 + 무신사·KREAM(운동화) + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 38
+  keywords: [신발가게, 구두전문점, 운동화매장, 스니커즈, 슈즈매장, 신발, 가방가게, 핸드백전문점, 백팩전문점, 가방, 모자전문점, 벨트전문점, 패션잡화, 패션잡화점, 패션소품, 양말전문점, 스카프매장]
+  ksic_codes: ["47712"]   # 신발 소매업 (가방·잡화는 47713 등)
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 신발·가방·패션잡화 (구두·운동화·핸드백·모자 등)
+  ※ 의류 매장과 운영 패턴은 비슷하나 ① 사이즈·재고 SKU가 많아 재고 관리가 더 까다롭고 ② 운동화 리셀·명품 가방은 정품 신뢰가 매출에 직결됩니다.
+  - Hero KPI: ① **재구매율·단골 1:1 신상 알림** ② 시즌 소진율(판매율 — 사이즈별 재고 안 남기기) ③ 재고회전율(SKU 많아 운전자본 큼) ④ (운동화·명품 가방) 정품 인증·신뢰(KREAM 등 검수 플랫폼 연동·후기) ⑤ 인스타·온라인 노출
+  - 객단가: 신발 5만~30만+(운동화·구두), 가방 5만~수십만+(브랜드·명품), 잡화 1~5만 (추정). 마진율 40~60%(품목 따라)
+  - 운영 리듬: 환절기 신발 교체(봄·가을)·여름 샌들·겨울 부츠 / 신상·한정판(운동화) 출시 / 연말·졸업·입학 / 명절 선물(가방)
+  - Top 채널: ① **인스타그램(착화샷·코디·한정판 — 비주얼) + 패션 플랫폼 입점(무신사·지그재그·에이블리·스마트스토어) + (운동화) KREAM 등 리셀·검수 플랫폼** ② 카카오·네이버 톡톡 1:1(단골 신상·한정판 알림) ③ 네이버 플레이스(오프라인) ④ 당근(중고 연계). 배달앱 무관
+  - 손실 프레임: "온라인(인스타·플랫폼) 미운영", "사이즈별 재고 처리 안 됨(특정 사이즈만 쌓임)", "단골 1:1 신상·한정판 알림 없음", "(운동화·명품) 정품 신뢰 장치 부재(KREAM 연동·인증 후기 없음)", "착화샷·코디 인스타 콘텐츠 빈약"
+  - 위험 신호: 재구매율 < 20% / 시즌 소진율 < 50% / 재고회전율 < 2회 / (운동화·명품) 정품 의심 후기 / 평당 매출 < 100만
+  - 카피 예: "신상·한정판 입고일 단골 1:1 카톡이 즉시 매출이에요. 운동화면 검수 플랫폼(KREAM 등) 연동과 정품 인증 후기를 노출하세요 — 신뢰가 곧 전환이에요", "안 빠지는 사이즈는 시즌 끝에 묶음·세일로 정리하세요. 재고가 곧 묶인 현금입니다"
+  - 금지: "배민 입점"(무관), "모든 채널 동시 시작"(1~2개부터), 의류 매장과 똑같이 취급(사이즈 재고·정품 신뢰가 추가 변수)
+
+hero_kpis:
+  - {key: "repurchase_rate", label: "재구매율(단골)", unit: "%", good: "≥ 30", warn: "15–29", danger: "< 15", confidence: "estimated", source: "업계 통설"}
+  - {key: "sell_through_rate", label: "시즌 소진율(사이즈별)", unit: "%", good: "≥ 70", warn: "50–69", danger: "< 50", confidence: "estimated", source: "패션업계 통설 — 사이즈별 재고 = 현금"}
+  - {key: "inventory_turnover", label: "재고회전율", unit: "회/년", good: "≥ 4", warn: "2–3.9", danger: "< 2", confidence: "estimated", source: "업계 통설 — SKU 많아 운전자본 큼"}
+  - {key: "operating_margin", label: "영업이익률", unit: "%", good: "≥ 8", warn: "4–7", danger: "< 4", confidence: "estimated", source: "패션 소매 추정 — 영세는 더 낮음"}
+
+kpi_thresholds:
+  재구매율_위험: "< 15%"
+  시즌_소진율_위험: "< 50%"
+  재고회전율_위험: "< 2회/년"
+
+subsidy_tags: [digital, marketing, store_renovation]   # 온라인 입점·e커머스 / 홍보·판로 / 점포환경개선
+
+channels:
+  - {key: "instagram", name: "인스타그램(착화샷·코디·한정판)", fit: "high", monthly_budget_min_won: 50000, monthly_budget_max_won: 500000, primary_metric: "도달·저장·DM·온라인 유입", roi_note: "비주얼 채널 핵심. CPC 100~500원·CPM 5천~1.5만원 입찰제. ROAS는 매장 데이터로만 — 단정 금지", confidence: "hypothesis", source: "인스타 광고 단가 한국 기준"}
+  - {key: "platform", name: "패션 플랫폼 입점(무신사·지그재그·에이블리·스마트스토어) + (운동화) KREAM 등", fit: "high", fee_pct: 12.2, primary_metric: "거래액·노출·정품 신뢰", roi_note: "무신사 ~12.2%(브랜드만)/지그재그 ~4.5%/에이블리 27·18%/스마트스토어 ~2~4%. 운동화는 KREAM 등 검수 플랫폼이 정품 신뢰·노출에 유효. 1~2개부터", confidence: "measured", source: "각 플랫폼 수수료"}
+  - {key: "kakao_naver_talk", name: "카카오 친구톡·네이버 톡톡 1:1(단골 신상·한정판 알림)", fit: "high", per_unit_cost_won: 15, primary_metric: "신상·한정판 알림→즉시 주문", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 입고일 1:1 발송", confidence: "measured", source: "카카오 비즈메시지 단가"}
+  - {key: "naver_place", name: "네이버 플레이스(오프라인 매장)", fit: "medium", entry_cost_won: 0, primary_metric: "검색·길찾기", roi_note: "무료 등록 — 오프라인 매장이면", confidence: "measured", source: "네이버"}
+  - {key: "daangn", name: "당근(중고 연계)", fit: "low", entry_cost_won: 0, primary_metric: "동네 노출", roi_note: "무료. 이월·샘플 중고 처분 연계", confidence: "hypothesis"}
+  - {key: "baemin", name: "배민(배달앱)", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["신상·한정판", "단골 1:1 알림", "사이즈별 재고", "정품 신뢰", "착화샷"]
+  loss_frames: ["온라인(인스타·플랫폼) 미운영", "사이즈별 재고 처리 안 됨", "단골 1:1 신상·한정판 알림 없음", "(운동화·명품) 정품 신뢰 장치 부재", "착화샷·코디 인스타 콘텐츠 빈약"]
+  examples:
+    - "신상·한정판 입고일 단골 1:1 카톡이 즉시 매출이에요. 운동화면 검수 플랫폼(KREAM 등) 연동·정품 인증 후기를 노출하세요 — 신뢰가 곧 전환이에요"
+    - "안 빠지는 사이즈는 시즌 끝에 묶음·세일로 정리하세요. 재고가 곧 묶인 현금입니다"
+  do: ["인스타 착화샷·코디·한정판 + 1~2개 플랫폼(운동화는 KREAM 등) 입점", "단골 1:1 신상·한정판 알림", "사이즈별 재고 시즌 끝 정리 + 정품 신뢰 장치"]
+  dont: ["배민 입점 (무관)", "모든 채널 동시 시작 / 의류 매장과 똑같이 취급 (사이즈 재고·정품 신뢰가 추가 변수)"]
