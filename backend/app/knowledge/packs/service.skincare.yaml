@@ -1,0 +1,61 @@
+# service.skincare — 피부관리·에스테틱·마사지·스파
+# 핵심: 회원권(다회권) 갱신율이 hero / 의료·미용 광고 규제 주의(과장 효과 단정 금지).
+# 출처: 이/미용 산업 평균 데이터 + 네이버 예약 수수료 + sme-coach. (피부관리실 단위 통계 미확인 — 추정.)
+id: service.skincare
+name: 피부관리·에스테틱·마사지
+group: service
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 이/미용 산업 평균 데이터 + 네이버 예약 수수료 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 35
+  keywords: [피부관리실, 피부관리, 에스테틱, 스킨케어, 스킨샵, 마사지샵, 마사지, 테라피, 아로마테라피, 스파, 바디케어, 슬리밍, 발관리, 두피관리, 경락, 타이마사지, 스웨디시, 피부미용]
+  ksic_codes: ["96112"]   # 기타 미용 관련 서비스업 (피부 미용)
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 피부관리·에스테틱·마사지·스파
+  - Hero KPI: ① **회원권(다회권) 갱신율 — 회당 결제보다 다회권 판매·소진·재판매가 매출의 핵심** ② 예약 점유율(베드 가동률) ③ 시술 만족도·후기(재구매·추천 직결) ④ 회당 객단가·다회권 단가
+  - 객단가: 회당 5~15만, 회원권(10회) 50~150만+ (추정). 다회권 비중·갱신 시점 관리가 손익을 좌우
+  - 운영 리듬: 결혼·여행·연말·휴가철 직전 회원권 등록 증가 / 다회권 소진 후 갱신 시점이 매출 변동의 큰 축 / 평일 낮 시간대 공석 관리(직장인 외 주부·시니어 타게팅)
+  - Top 채널: ① **네이버 예약(예약형 — 베드 가동률 관리) + 네이버 플레이스(후기·BEFORE/AFTER 사진)** ② 인스타그램(시술 결과·매장 분위기 — 단, 의료·미용 광고 규제 주의) ③ 카카오 친구톡(회원권 소진·갱신 시점 알림 — 핵심) ④ 친구 추천 보상. 배달·블로그 효과 낮음
+  - 손실 프레임: "회원권 소진·갱신 시점 알림 없음(소진하고 안 옴)", "회당 결제 위주(다회권 판매 안 됨 → 매출 불안정)", "평일 낮 공석 관리 무대응", "네이버 예약 미도입(베드 가동률 안 보임)"
+  - 위험 신호: 회원권 갱신율 < 40% / 다회권 비중 낮음(회당 결제 위주) / 베드 가동률 < 50% / 후기 별점 < 4.5
+  - 카피 예: "회원권 8회 차쯤 '곧 소진되시네요, 갱신하시면 추가 1회 드려요' 카톡을 보내세요 — 그 한 통이 갱신율을 크게 올립니다", "평일 낮은 비어 있죠? 주부·시니어 대상 평일 낮 회원권을 따로 만드세요"
+  - 금지: "배달앱 광고", **시술 효과 과장·치료 표현 단정**(피부·미용 광고 규제 — '깨끗해진다'·'치료된다' 식 금지), 회당 결제만 강조하기
+
+hero_kpis:
+  - {key: "membership_renewal", label: "회원권(다회권) 갱신율", unit: "%", good: "≥ 60", warn: "40–59", danger: "< 40", confidence: "estimated", source: "업계 추정 — 다회권 갱신이 매출 핵심"}
+  - {key: "bed_utilization", label: "베드 가동률", unit: "%", good: "≥ 60", warn: "40–59", danger: "< 40", confidence: "estimated", source: "업계 추정 — 예약 점유율"}
+  - {key: "avg_ticket", label: "객단가(회당)", unit: "원", good: "≥ 80,000", warn: "50,000–79,999", danger: "< 50,000", confidence: "estimated", source: "추정 — 다회권은 회당 환산"}
+  - {key: "review_rating", label: "네이버 후기 별점", unit: "점", good: "≥ 4.7", warn: "4.5–4.69", danger: "< 4.5", confidence: "estimated", source: "업계 통설"}
+
+kpi_thresholds:
+  회원권_갱신율_위험: "< 40%"
+  베드_가동률_위험: "< 40%"
+  별점_위험: "< 4.5"
+
+risk_signal_weights:
+  action_engagement: 1.1
+
+subsidy_tags: [store_renovation, digital, education]   # 인테리어·예약시스템·위생·종사자 교육
+
+channels:
+  - {key: "naver_reservation", name: "네이버 예약", fit: "high", fee_pct: 3.19, primary_metric: "예약·베드 가동률 관리", roi_note: "예약형이라 거의 필수. 예약 무료·페이 결제 시 ~3.19%", confidence: "measured", source: "네이버 예약 수수료"}
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고·후기)", fit: "high", entry_cost_won: 0, primary_metric: "검색·후기", roi_note: "무료 등록 + CPC 광고. 후기·만족도 관리. (효과 과장 표현 주의)", confidence: "measured", source: "네이버"}
+  - {key: "kakao_friendtalk", name: "카카오 친구톡(회원권 소진·갱신 알림)", fit: "high", per_unit_cost_won: 15, primary_metric: "갱신율·재방문", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 8회 차쯤 '곧 소진' 갱신 알림 — 핵심", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "instagram", name: "인스타그램(시술 결과·매장 분위기)", fit: "medium", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·DM", roi_note: "BEFORE/AFTER·분위기 — 단 의료·미용 광고 규제(과장 표현·치료 표현 금지). 광고 일 1,000원+", confidence: "hypothesis"}
+  - {key: "referral_reward", name: "친구 추천 보상", fit: "medium", primary_metric: "신규 유입", roi_note: "양쪽 할인·추가 1회 서비스(호혜성)", confidence: "hypothesis"}
+  - {key: "baemin_musinsa", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["회원권 갱신", "다회권 소진", "베드 가동률", "평일 낮 회원권", "BEFORE/AFTER"]
+  loss_frames: ["회원권 소진·갱신 시점 알림 없음", "회당 결제 위주(다회권 판매 안 됨 → 매출 불안정)", "평일 낮 공석 관리 무대응", "네이버 예약 미도입"]
+  examples:
+    - "회원권 8회 차쯤 '곧 소진되시네요, 갱신하시면 추가 1회 드려요' 카톡을 보내세요 — 그 한 통이 갱신율을 크게 올립니다"
+    - "평일 낮은 비어 있죠? 주부·시니어 대상 평일 낮 회원권을 따로 만드세요"
+  do: ["다회권 소진(8회 차 등) 시점 갱신 카톡 알림", "평일 낮 전용 회원권으로 공석 채우기", "네이버 예약 + 플레이스 후기 관리"]
+  dont: ["배달앱 광고 / 회당 결제만 강조", "시술 효과 과장·치료 표현 단정 (피부·미용 광고 규제)"]

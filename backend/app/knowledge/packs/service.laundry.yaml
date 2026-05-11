@@ -1,0 +1,61 @@
+# service.laundry — 세탁소·수선·코인빨래방
+# 핵심: 동네 밀착 반복 이용 — 단골 비율이 절대적 / 무인 빨래방(코인워시) vs 일반 세탁소 구분.
+# 출처: 업계 통상치 + sme-coach. (세탁업 단위 통계 미확인 — 추정.)
+id: service.laundry
+name: 세탁소·수선·빨래방
+group: service
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: 세탁업 업계 통상치 + sme-coach 플레이북
+    year: 2024
+
+match:
+  priority: 35
+  keywords: [세탁소, 세탁, 빨래방, 코인빨래방, 셀프빨래방, 무인세탁, 드라이클리닝, 빨래대행, 이불세탁, 운동화세탁, 수선집, 옷수선, 의류수선, 명품세탁, 세탁편의점, 워시앤조이류]
+  ksic_codes: ["96911"]   # 세탁업
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 세탁소·수선·코인빨래방
+  ※ 일반 세탁소(드라이·수선·대행 — 단골·서비스 중심) vs 무인 코인빨래방(셀프 — 입지·기기 가동률 중심)이 다름 — 사장님 가게가 어느 쪽인지 확인하고 답하세요.
+  - 일반 세탁소: 객단가 건당 3천~2만(드라이클리닝·이불·수선), 단가 큰 건(명품·가죽·이불) 비중이 매출 변동의 축. Hero KPI = **단골 비율(반복 이용이 본질) + 객단가(고단가 품목 비중) + 빨래 대행·픽업 서비스 운영 여부**
+  - 무인 코인빨래방: 시간/회당 요금(소형 3~5천, 대형·건조기 추가). Hero KPI = **기기 가동률 + 입지(원룸·오피스텔·1인 가구 밀집) + 무인 운영비(전기·세제·CS)**. 객단가 개념 약함, 회전이 전부
+  - 운영 리듬: 환절기(봄·가을 코트·패딩 드라이) 성수기 / 장마철·여름 빨래 대행 수요 / 무인 빨래방은 평일 저녁·주말 종일
+  - Top 채널: ① **당근 비즈프로필(동네 밀착 — 세탁업의 1순위) + 네이버 플레이스(동네 검색·길찾기)** ② 카카오 채널/문자(빨래 완료 알림·픽업 안내·환절기 드라이 안내) ③ 아파트 단지 게시판·전단(반경 좁음) ④ 빨래 대행 앱(런드리고류) 입점(일반 세탁소). 인스타·블로그 효과 낮음
+  - 손실 프레임: "당근 비즈프로필·네이버 플레이스 미정비(동네 검색 누락)", "빨래 완료·픽업 알림 채널 없음", "(일반) 빨래 대행·픽업 서비스 미운영(고객 발길 못 잡음)", "환절기 드라이·이불 세탁 안내 무대응", "(무인) 기기 고장·청결 방치 → 가동률 하락"
+  - 위험 신호: 단골 비율 낮음(일회성 위주) / (무인) 기기 가동률 < 40% / 환절기 매출 스파이크 없음 / 객단가 정체(고단가 품목 안 받음)
+  - 카피 예: "당근 비즈프로필에 '운동화·이불·패딩 세탁 가능' 한 줄만 올려도 동네 손님이 늘어요 — 세탁소는 당근이 1순위 채널이에요", "빨래 다 됐을 때 카톡으로 알려주면 손님이 까먹지 않고 와요. 환절기엔 '코트·패딩 드라이 받습니다' 안내도 같이"
+  - 금지: "인스타·블로그 마케팅에 큰 비용"(세탁업은 효과 낮음), "배달앱 광고"(빨래 대행 앱과 혼동 X — 일반 배달앱은 무관)
+
+hero_kpis:
+  - {key: "loyal_ratio", label: "단골 비율(반복 이용)", unit: "%", good: "≥ 60", warn: "40–59", danger: "< 40", confidence: "estimated", source: "업계 추정 — 동네 밀착 반복 이용이 본질"}
+  - {key: "machine_utilization", label: "기기 가동률(무인 빨래방)", unit: "%", good: "≥ 60", warn: "40–59", danger: "< 40", confidence: "estimated", source: "업계 추정"}
+  - {key: "avg_ticket", label: "객단가(일반 세탁소)", unit: "원", good: "—", confidence: "estimated", source: "추정 — 건당 3천~2만, 고단가 품목(명품·이불·가죽) 비중이 변수"}
+  - {key: "review_rating", label: "당근·네이버 후기", unit: "점", good: "≥ 4.5", warn: "4.0–4.49", danger: "< 4.0", confidence: "estimated", source: "업계 통설"}
+
+kpi_thresholds:
+  단골_비율_위험: "< 40%"
+  기기_가동률_위험: "< 40% (무인 빨래방)"
+
+risk_signal_weights:   # 동네 밀착·반복 이용 → 배후 거주·유동인구 비중↑
+  population_trend: 1.2
+
+subsidy_tags: [digital, store_renovation, rent_utility]   # 무인 키오스크·POS / 점포환경개선 / (무인 빨래방) 전기·공공요금 감면
+
+channels:
+  - {key: "daangn", name: "당근 비즈프로필(동네 밀착)", fit: "high", entry_cost_won: 0, primary_metric: "동네 노출·문의·후기", roi_note: "무료 — 세탁업의 1순위 채널. '운동화·이불·패딩 가능' 등 취급 품목 노출", confidence: "hypothesis", source: "당근"}
+  - {key: "naver_place", name: "네이버 플레이스(동네 검색)", fit: "high", entry_cost_won: 0, primary_metric: "동네 검색·길찾기", roi_note: "무료 등록. '○○동 세탁소/빨래방' 검색", confidence: "measured", source: "네이버"}
+  - {key: "kakao_sms", name: "카카오 채널·문자(완료 알림·픽업·환절기 안내)", fit: "medium", per_unit_cost_won: 10, primary_metric: "재방문·픽업률", roi_note: "빨래 완료·픽업·환절기 드라이 안내. SMS 건당 ~10원·카카오 채널 텍스트 15원", confidence: "measured", source: "카카오 비즈메시지·SMS 단가"}
+  - {key: "apt_board_flyer", name: "아파트 단지 게시판·전단", fit: "medium", monthly_budget_min_won: 30000, monthly_budget_max_won: 150000, primary_metric: "배후 단지 노출", roi_note: "반경 좁은 업종 — 배후 단지 게시판·전단", confidence: "hypothesis"}
+  - {key: "laundry_app", name: "빨래 대행 앱(런드리고류) 입점", fit: "medium", primary_metric: "픽업·배송 주문", roi_note: "일반 세탁소 한정 — 1인 가구·바쁜 직장인 픽업/배송 수요", confidence: "hypothesis"}
+  - {key: "instagram_baemin", name: "인스타그램·배민 등", fit: "avoid", primary_metric: "—", roi_note: "세탁업은 SNS·일반 배달앱 효과 낮음 — 비추천", confidence: "hypothesis"}
+
+copy_tone:
+  vocab: ["동네 단골", "빨래 완료 알림", "픽업 서비스", "환절기 드라이", "기기 가동률"]
+  loss_frames: ["당근·네이버 플레이스 미정비(동네 검색 누락)", "빨래 완료·픽업 알림 채널 없음", "(일반) 빨래 대행·픽업 서비스 미운영", "환절기 드라이·이불 안내 무대응", "(무인) 기기 고장·청결 방치"]
+  examples:
+    - "당근 비즈프로필에 '운동화·이불·패딩 세탁 가능' 한 줄만 올려도 동네 손님이 늘어요 — 세탁소는 당근이 1순위 채널이에요"
+    - "빨래 다 됐을 때 카톡으로 알려주면 손님이 까먹지 않고 와요. 환절기엔 '코트·패딩 드라이 받습니다' 안내도 같이"
+  do: ["당근 비즈프로필 취급 품목 노출 + 네이버 플레이스 동네 검색", "빨래 완료·픽업·환절기 카톡/문자 안내", "(일반) 빨래 대행·픽업 서비스 도입 / (무인) 기기 점검·청결 관리"]
+  dont: ["인스타·블로그에 큰 비용 (세탁업은 효과 낮음)", "배달앱 광고 (일반 배달앱은 무관 — 빨래 대행 앱과 별개)"]

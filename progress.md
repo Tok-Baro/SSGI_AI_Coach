@@ -486,7 +486,10 @@
 - **배달 4 leaf** (group=delivery_food) — `delivery_food.chicken`(치킨 — 별점·사이드 부착률·공공배달앱) / `delivery_food.bunsik`(분식 — 저단가라 세트·묶음이 hero) / `delivery_food.pizza_burger`(피자·버거·샌드위치 — 피자는 1+1 프로모션·토스트는 오피스가) / `delivery_food.jokbal`(족발·보쌈·야식 — 심야 22~02시·토요일 +93%). priority 6. 출처: KCD 데이터랩·요기요 데이터·정보공개서.
 - **검증(배치②)**: `validate_packs` ✓ **28팩** / classify 35케이스 ✓ / `from app.main import app` ✓ (`/onboarding/profile` 등록).
 
-**총 28팩** (academy 군+5leaf / restaurant 군+6leaf+korean_meat / cafe 군+4leaf / delivery_food 군+4leaf / retail / fashion / service / unknown).
-**다음 배치(예정)**: ③ 미용·서비스 계열(`service` → hair(미용실)/nail(네일·왁싱)/skincare(피부·에스테틱)/laundry(세탁)/pc_karaoke(PC방·노래방·당구장) — 동물병원·자동차정비·사진관은 별도 검토) ④ 소매(`retail` → cvs/super/food) + 패션(`fashion` → apparel/cosmetics/shoes_bag/optical).
+- **미용·서비스 5 leaf** (group=service) — `service.hair`(미용실 — 재방문율·예약·별점 4.7+·디자이너 인센티브) / `service.nail`(네일·왁싱·속눈썹 — 3~4주 재방문 주기 알림·인스타 디자인 포트폴리오) / `service.skincare`(피부·에스테틱·마사지 — 회원권 갱신율이 hero·광고 규제 주의) / `service.laundry`(세탁·수선·코인빨래방 — 동네 밀착·당근 1순위·일반 vs 무인 구분) / `service.pc_karaoke`(PC방·노래방·당구장 — 시간당 요금×회전율·PC방 먹거리 매출 30~50%, priority 18로 "만화카페·룸카페" 가 cafe 로 안 가게). 출처: KB 자영업 미용실 보고서·이/미용 산업 평균 영업이익률 ~26%·업계 통상치(추정 라벨).
+- **검증(배치③)**: `validate_packs` ✓ **33팩** / classify 42케이스 ✓ / `from app.main import app` ✓.
+
+**총 33팩** (academy 군+5leaf / restaurant 군+6leaf+korean_meat / cafe 군+4leaf / delivery_food 군+4leaf / service 군+5leaf / retail / fashion / unknown).
+**다음 배치(예정)**: ④ 소매(`retail` → cvs(편의점)/super(동네슈퍼)/food(정육·청과·반찬)) + 패션(`fashion` → apparel(의류)/cosmetics(화장품)/shoes_bag(신발·가방)/optical(안경·시계)). (자동차정비·동물병원·사진관 등 추가 서비스업은 그 다음.)
 
 > **마지막 업데이트**: 2026-05-11
