@@ -25,6 +25,7 @@ from app.services.rag_service import RAGService
 from app.services.action_generator import ActionGenerator
 from app.utils.auth import get_current_user
 from app.utils.business_type import normalize_business_type
+from app.utils.industry import classify_industry, industry_risk_weights
 from app.utils.rate_limit import onboarding_rate
 from app.utils.verification import create_verification_token, verify_verification_token
 from app.models.user import User
@@ -183,6 +184,8 @@ async def complete_onboarding(
         current_user.business_number = req.business_number
         current_user.business_name = req.business_name
         current_user.business_type = canonical_btype
+        # 업종 지식팩 매핑: 피커에서 명시 선택한 industry_slug 가 있으면 우선, 없으면 입력 업종명으로 분류.
+        current_user.industry_slug = classify_industry(req.business_type, req.industry_slug)
         current_user.address = req.address
         current_user.dong_name = req.dong_name
         current_user.gu_name = req.gu_name
@@ -211,6 +214,7 @@ async def complete_onboarding(
             gu_name=req.gu_name or "",
             business_type=canonical_btype,
             top_k=5,
+            industry_slug=current_user.industry_slug,
         )
         subsidy_count = len(matched_subsidies)
 
@@ -223,6 +227,7 @@ async def complete_onboarding(
             subsidy_matches=matched_subsidies,
             user_created_at=current_user.created_at.date() if current_user.created_at else None,
             business_start_date=current_user.business_start_date,
+            industry_signal_weights=industry_risk_weights(current_user.business_type, current_user.industry_slug),
         )
         risk_score = risk_result.composite_score
 

@@ -33,6 +33,7 @@ class CompleteOnboardingRequest(BaseModel):
     verification_token: str = Field(..., description="사업자 검증 시 발급받은 토큰")
     business_name: str = Field(..., min_length=1, max_length=200)
     business_type: str = Field(..., min_length=1, max_length=100)
+    industry_slug: Optional[str] = Field(None, max_length=64, description="업종 지식팩 pack id (피커에서 선택, 없으면 서버가 분류)")
     address: str = Field(..., min_length=1, max_length=500)
     dong_name: str = Field("", max_length=50)
     gu_name: str = Field("", max_length=50)

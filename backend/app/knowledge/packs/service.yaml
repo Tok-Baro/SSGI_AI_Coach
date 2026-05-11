@@ -1,0 +1,72 @@
+# service — 미용/네일/세탁/PC방 등 생활 서비스업
+# 출처: app/utils/industry.py (SLUG_SERVICE) 이관. 콘텐츠 원본은 sme-coach 업종 플레이북.
+id: service
+name: 미용·네일·세탁·PC방
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: sme-coach 업종 플레이북 (통계청 KSIC + 소상공인시장진흥공단 컨설팅 사례 + 서비스업 트렌드)
+    year: 2026
+
+match:
+  priority: 50
+  keywords: [미용, 헤어, 네일, 에스테틱, 마사지, 세탁, 피시방, PC방, 노래방, 스튜디오]
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 미용/네일/세탁/PC방
+  - Hero KPI: 재방문율(70%+) + 예약 비율(50%+)
+  - Top 채널: 네이버 플레이스 + 예약 시스템(필수) > 인스타(BEFORE/AFTER) > 친구 추천 보상
+  - 운영 리듬: 금/토 주말 외출 준비 강세, 결혼·명절 시즌
+  - 손실 프레임: "워크인 손실", "단골 5회 시 VIP 등급 부재"
+  - 위험 신호: 재방문율 < 50% / 예약 비율 < 30% / 후기 별점 < 4.5
+  - 카피 예: "단골 5회 오시면 시술 10% 할인. VIP 등급제 만드시면 재방문율 +15% 통계 있어요"
+  - 금지: "배달앱 광고" (서비스업은 배달앱 무관)
+
+audit_weights:
+  positioning: 1.0
+  message_fit: 1.0
+  timing: 0.9
+  social_proof: 1.2
+  friction: 1.2
+
+report_weights:
+  매출 트렌드: 0.22
+  보조금 활용: 0.22
+  유동인구 활용: 0.18
+  경쟁 포지셔닝: 0.18
+  코치 활용도: 0.10
+  위험도 추세: 0.10
+
+kpi_thresholds:
+  재방문_위험: "< 50%"
+  예약_비율_위험: "< 30%"
+  별점_위험: "< 4.5"
+
+subsidy_tags: [store_renovation, digital, education]   # 인테리어 개선·예약시스템·종사자 교육
+
+hero_kpis:
+  - {key: "revisit_rate", label: "재방문율", unit: "%", good: "≥ 70", warn: "50–69", danger: "< 50", confidence: "estimated", source: "업계 통설 — 미용은 단골 의존도 높음, 시술 만족도가 결정적"}
+  - {key: "booking_ratio", label: "예약 비율", unit: "%", good: "≥ 60 (미용) / ≥ 50 (네일)", warn: "40–59", danger: "< 40", confidence: "estimated", source: "업계 추정 — 워크인 의존 시 비효율"}
+  - {key: "operating_margin", label: "영업이익률", unit: "%", good: "≥ 26", warn: "15–25", danger: "< 15", confidence: "estimated", source: "이/미용 산업 평균 영업이익률 ~26% (1인 매장은 사업주 인건비 인출 보정 필요)"}
+  - {key: "review_rating", label: "후기 별점", unit: "점", good: "≥ 4.7", warn: "4.5–4.69", danger: "< 4.5", confidence: "estimated", source: "업계 통설 — 별점이 네이버 플레이스 노출 순위에 직접"}
+  - {key: "seat_turnover", label: "좌석 회전율", unit: "회/일", good: "≥ 2 (네일) / ≥ 1.5 (미용)", warn: "1–1.9", danger: "< 1", confidence: "estimated", source: "업계 추정"}
+
+channels:
+  - {key: "naver_reservation", name: "네이버 예약", fit: "high", fee_pct: 3.19, primary_metric: "예약 전환·노쇼 감소", roi_note: "예약 무료, 네이버페이 결제 시 약 2%(미용 ~3.19%, +페이 ~3.74%). 워크인 손실 방지 — 미용/뷰티엔 사실상 필수", confidence: "measured", source: "네이버 예약 수수료(대한미용사회)"}
+  - {key: "naver_place", name: "네이버 플레이스(등록·광고)", fit: "high", entry_cost_won: 0, primary_metric: "검색·길찾기·후기", roi_note: "무료 등록 + CPC 광고. 별점 4.7+ 가 사실상 노출 자격", confidence: "measured", source: "네이버"}
+  - {key: "instagram", name: "인스타그램(BEFORE/AFTER)", fit: "high", monthly_budget_min_won: 0, monthly_budget_max_won: 500000, primary_metric: "도달·DM·예약 유입", roi_note: "시술 결과 BEFORE/AFTER 사진이 가장 강력. 광고는 일 1,000~5,000원부터", confidence: "hypothesis", source: "인스타 광고 단가"}
+  - {key: "kakao_friendtalk", name: "카카오 친구톡(VIP·재방문)", fit: "medium", per_unit_cost_won: 15, primary_metric: "재방문·VIP 안내", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). VIP 등급·재방문 쿠폰 안내", confidence: "measured", source: "카카오 비즈메시지 단가"}
+  - {key: "kakao_alimtalk", name: "카카오 알림톡(예약 확인·노쇼 방지)", fit: "medium", per_unit_cost_won: 9, primary_metric: "예약 확인 도달 95%+", roi_note: "건당 8~9원(VAT 별도). 예약 리마인드로 노쇼 감소", confidence: "measured", source: "카카오 비즈메시지 단가"}
+  - {key: "daangn_bizprofile", name: "당근 비즈프로필", fit: "medium", entry_cost_won: 0, primary_metric: "동네 노출·후기", roi_note: "무료 — 세탁·수리 등 동네 밀착 서비스에 특히 유효", confidence: "measured", source: "당근"}
+  - {key: "referral_reward", name: "친구 추천 보상", fit: "medium", primary_metric: "신규 유입·재방문", roi_note: "양쪽에 1만원 할인 등(호혜성). 단골이 데려오는 신규가 가장 충성도 높음", confidence: "hypothesis"}
+  - {key: "baemin", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음 (배달·패션 채널)", confidence: "measured"}
+
+copy_tone:
+  vocab: ["재방문", "VIP 등급", "BEFORE/AFTER", "워크인", "예약", "노쇼"]
+  loss_frames: ["워크인 손실", "VIP 등급제 부재", "예약 시스템 부재(노쇼 방치)"]
+  examples:
+    - "단골 5회 오시면 시술 10% 할인 — VIP 등급제 만드시면 재방문율 +15% 통계가 있어요"
+    - "네이버 예약 도입하면 노쇼가 줄어요. 빈 시간대도 한눈에 보이고요"
+  do: ["네이버 예약 도입(워크인 손실 방지)", "BEFORE/AFTER 시술 사진 인스타", "VIP 등급제(5회→10% 등)"]
+  dont: ["배달앱 광고 (서비스업은 무관)", "점심 회전율 신경쓰기 (예약형 업종엔 무관)"]

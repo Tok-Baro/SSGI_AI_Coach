@@ -193,3 +193,33 @@ export interface VoiceQueryResponse {
   suggestions: string[];
   route?: string | null;
 }
+
+// ===== 업종 지식팩 =====
+export interface IndustryPackInfo {
+  id: string;
+  name: string;
+  group: string | null;       // 부모 pack id (leaf만), 없으면 최상위 업종군
+  keywords: string[];
+  priority: number;            // 자동 분류 검사 순서 (낮을수록 먼저)
+  status: string;
+  version: number;
+  reviewed_date: string | null;
+  source_count: number;
+}
+
+export interface IndustrySource {
+  label: string;
+  url: string | null;
+  year: number | null;
+}
+
+export interface MyIndustryPack {
+  id: string;
+  name: string;
+  group: string | null;
+  version: number;
+  reviewed_date: string | null;   // "YYYY-MM-DD"
+  source_count: number;
+  sources: IndustrySource[];
+  is_unknown: boolean;
+}

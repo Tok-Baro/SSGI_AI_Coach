@@ -1,0 +1,77 @@
+# delivery_food — 치킨/분식/배달전문 (외식 배달 비중 높은 업종군)
+# 출처: app/utils/industry.py (SLUG_DELIVERY) 이관. 콘텐츠 원본은 sme-coach 업종 플레이북.
+id: delivery_food
+name: 치킨·분식·배달전문
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: sme-coach 업종 플레이북 (통계청 KSIC + 소상공인시장진흥공단 컨설팅 사례 + 외식산업 트렌드)
+    year: 2026
+
+match:
+  priority: 10
+  keywords: [치킨, 분식, 떡볶이, 김밥, 햄버거, 피자, 족발, 보쌈, 도시락, 배달]
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 치킨/분식/배달전문
+  - Hero KPI: 객단가(1만~1.8만원) + 배달 비중(60~80%)
+  - Top 채널: 배민(필수) > 카카오 채널(단골 발송) > 네이버 플레이스 > 인스타
+  - 운영 리듬: 17~22시 피크, 금/토 강세, 월요일 약함
+  - 손실 프레임: "배달앱 노출 점수", "야간 단골 카톡"
+  - 위험 신호: 객단가 < 8천원 / 점심 매출 < 30% / 폐업률 > 5%
+  - 카피 예: "오늘 저녁 단골 200명에게 카톡 한 번 보내드릴게요"
+  - 금지: "인스타 사진 톤 통일" 같은 카페형 조언, "예약 시스템" 같은 서비스업 조언
+
+audit_weights:
+  positioning: 0.9
+  message_fit: 1.1
+  timing: 1.2
+  social_proof: 1.0
+  friction: 1.0
+
+report_weights:
+  매출 트렌드: 0.28
+  보조금 활용: 0.18
+  유동인구 활용: 0.12
+  경쟁 포지셔닝: 0.20
+  코치 활용도: 0.12
+  위험도 추세: 0.10
+
+risk_signal_weights:   # 배달 위주는 채널(배달앱·단골 카톡) 운영이 핵심 → 코치 활용도 비중 ↑ / 입지 유동인구 ↓
+  action_engagement: 1.2
+  population_trend: 0.9
+
+kpi_thresholds:
+  객단가_위험: "< 8,000원"
+  배달_비중_위험: "> 80% (수수료 압박)"
+  별점_위험: "< 4.3"
+
+subsidy_tags: [digital, marketing, store_renovation]   # 스마트상점·POS·배달앱 수수료 지원·홍보
+
+hero_kpis:
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "≥ 15,000 (치킨류)", warn: "8,000–14,999", danger: "< 8,000", confidence: "estimated", source: "프랜차이즈 단가 기준 추정 — 정밀 공개통계 없음"}
+  - {key: "delivery_ratio", label: "배달 매출 비중", unit: "%", good: "60–80", warn: "81–90", danger: "> 90 (수수료 압박)", confidence: "estimated", source: "업계 추정"}
+  - {key: "food_cost_ratio", label: "식재료비 비율", unit: "% 매출", good: "≤ 38", warn: "39–45", danger: "> 45", confidence: "estimated", source: "치킨 닭·기름값 변동성 — 외식 평균 44.5%(농식품부 외식업체 경영실태조사 2024)보다 높게 추정"}
+  - {key: "review_rating", label: "배달앱 별점", unit: "점", good: "≥ 4.5", warn: "4.3–4.49", danger: "< 4.3", confidence: "estimated", source: "업계 통설 — 별점이 노출 순위에 직접 영향"}
+  - {key: "operating_margin", label: "영업이익률", unit: "%", good: "≥ 10", warn: "5–9", danger: "< 5", confidence: "estimated", source: "KB 자영업 치킨 보고서 — 점포당 영업이익 지속 하락, 연 약 8천 곳 폐업"}
+
+channels:
+  - {key: "baemin_ultracall", name: "배민 울트라콜(깃발)", fit: "high", entry_cost_won: 88000, monthly_budget_min_won: 88000, monthly_budget_max_won: 500000, primary_metric: "깃발 반경 노출→주문", roi_note: "깃발 1개 88,000원/월(VAT 별도). 깃발 과다 시 ROI 급락 — 1~2개부터", confidence: "hypothesis", source: "배민 광고 단가"}
+  - {key: "baemin_cpc", name: "배민 우리가게클릭(CPC)", fit: "high", monthly_budget_min_won: 50000, monthly_budget_max_won: 3000000, per_unit_cost_won: 400, primary_metric: "클릭→주문 전환", roi_note: "클릭당 200~600원 입찰. 객단가 높은 메뉴일수록 유리. 중개수수료(오픈리스트 6.8%·기본 9.8%)는 별도", confidence: "hypothesis", source: "배민 우리가게클릭"}
+  - {key: "yogiyo", name: "요기요(중개+고정광고)", fit: "medium", entry_cost_won: 39900, fee_pct: 9.7, primary_metric: "주문 전환", roi_note: "고정광고 1개동 39,900원/월. 중개수수료 9.7%(영세 최저 4.8%). 배민 보조 채널", confidence: "measured", source: "요기요 수수료"}
+  - {key: "kakao_alimtalk", name: "카카오 알림톡(주문 확인·재주문)", fit: "medium", per_unit_cost_won: 9, primary_metric: "도달률 95%+", roi_note: "건당 8~9원(VAT 별도). 주문 확인·단골 재주문 유도", confidence: "measured", source: "카카오 비즈메시지 단가"}
+  - {key: "daangn_bizprofile", name: "당근 비즈프로필", fit: "medium", entry_cost_won: 0, primary_metric: "동네 노출·후기", roi_note: "무료 — 미사용 자체가 손실", confidence: "measured", source: "당근"}
+  - {key: "instagram_ads", name: "인스타그램 광고", fit: "low", primary_metric: "도달", roi_note: "치킨·중식 등 배달 위주엔 ROI 낮음 — 디저트·브랜딩 목적이면 재검토", confidence: "hypothesis"}
+  - {key: "naver_place", name: "네이버 플레이스(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "검색 노출", roi_note: "무료 — 픽업·홀 손님 잡으려면 등록", confidence: "measured", source: "네이버"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["야간 단골", "단골 카톡", "배달앱 노출 점수", "깃발", "재주문"]
+  loss_frames: ["배달앱 노출 점수 하락", "야간 단골 카톡 미발송", "배달 수수료에 잠식되는 마진"]
+  examples:
+    - "오늘 저녁 단골 200명에게 카톡 한 번 보내드릴게요"
+    - "주말 매출이 평일보다 40% 높아요. 금·토에 광고를 몰아 보세요"
+    - "배달앱에 사진 5장 추가하면 클릭 +28% 통계가 있어요"
+  do: ["배민 사진 5장 이상·리뷰 답글 관리", "야간 시간대 광고 집중", "단골 SMS/알림톡 재주문 유도"]
+  dont: ["인스타 사진 톤 통일 (카페형 조언)", "예약 시스템 도입 (배달엔 무관)"]

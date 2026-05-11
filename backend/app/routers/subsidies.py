@@ -39,6 +39,7 @@ async def get_subsidy_matches(
         business_type=current_user.business_type or "",
         top_k=10,
         user_id=current_user.id,
+        industry_slug=current_user.industry_slug,
     )
 
     # P1-8: N+1 제거 — for-loop 안에서 동일 동네 count 조회를 N회 반복하던 패턴을

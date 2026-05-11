@@ -16,6 +16,7 @@ from datetime import date, timedelta
 
 from app.database import async_session_factory
 from app.utils.auth import get_current_user
+from app.utils.industry import industry_risk_weights
 from app.models import User, DailyAction, CouponTemplate
 from app.services.rag_service import RAGService
 from app.services.seoul_api_service import SeoulAPIService
@@ -128,6 +129,7 @@ async def get_dashboard(
                 business_type=btype,
                 top_k=3,
                 user_id=current_user.id,
+                industry_slug=current_user.industry_slug,
             )),
             _safe(social.get_message(dong, btype)),
         )
@@ -167,6 +169,7 @@ async def get_dashboard(
         user_created_at=current_user.created_at.date() if current_user.created_at else None,
         business_start_date=current_user.business_start_date,
         previous_scores=previous_scores,
+        industry_signal_weights=industry_risk_weights(current_user.business_type, current_user.industry_slug),
     )
 
     # 누적 손실 카운터

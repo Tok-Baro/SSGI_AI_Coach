@@ -361,6 +361,7 @@ def assemble_report_data(
     risk_score: float,
     trend_direction: Optional[str],
     deep_report: Optional[dict] = None,
+    industry_slug: Optional[str] = None,
 ) -> ReportData:
     """대시보드/인사이트 데이터를 ReportData로 조립."""
     scores = [
@@ -372,7 +373,7 @@ def assemble_report_data(
         _score_risk_trend(trend_direction, risk_score),
     ]
     # 업종별 가중치 재배분 (편의점은 유동인구 ↑, 미용은 보조금 ↑, 치킨은 매출/경쟁 ↑)
-    industry_weights = industry_report_weights(business_type)
+    industry_weights = industry_report_weights(business_type, industry_slug)
     for s in scores:
         if s.name in industry_weights:
             s.weight = industry_weights[s.name]

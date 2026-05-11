@@ -1,0 +1,72 @@
+# fashion — 의류/화장품/패션
+# 출처: app/utils/industry.py (SLUG_FASHION) 이관. 콘텐츠 원본은 sme-coach 업종 플레이북.
+id: fashion
+name: 의류·화장품·패션
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: sme-coach 업종 플레이북 (통계청 KSIC + 소상공인시장진흥공단 컨설팅 사례 + 패션 유통 트렌드)
+    year: 2026
+
+match:
+  priority: 40
+  keywords: [의류, 화장품, 패션, 옷, 쇼핑몰, 악세, 주얼리, 가방, 신발]
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 의류/화장품/패션
+  - Hero KPI: 재구매율(25~40%) + 인스타 팔로워(1000명당 +50만원)
+  - Top 채널: 인스타(필수) > 무신사·29CM 입점 > 네이버 톡톡 1:1 > 카카오 채널
+  - 운영 리듬: 13~16+19~21시, 봄·가을 시즌 신상 + 연말 +25%
+  - 손실 프레임: "온라인 노출 부족", "단골 1:1 신상 알림 없음"
+  - 위험 신호: 인스타 팔로워 < 1000명 / 평당 매출 < 100만원 / 단골 재구매 < 20%
+  - 카피 예: "신상 입고일 단골 카톡 1:1로 30명에게 발송하면 평균 5건 즉시 주문 들어와요"
+  - 금지: "배민 입점" (의류는 배달앱 무관)
+
+audit_weights:
+  positioning: 1.2
+  message_fit: 1.1
+  timing: 0.9
+  social_proof: 1.1
+  friction: 0.9
+
+report_weights:
+  매출 트렌드: 0.25
+  보조금 활용: 0.15
+  유동인구 활용: 0.15
+  경쟁 포지셔닝: 0.25
+  코치 활용도: 0.10
+  위험도 추세: 0.10
+
+kpi_thresholds:
+  인스타_위험: "< 1000명"
+  평당_매출_위험: "< 100만원"
+  재구매_위험: "< 20%"
+
+subsidy_tags: [digital, marketing]   # 온라인 입점·e커머스·라이브커머스·홍보
+
+hero_kpis:
+  - {key: "gross_margin", label: "매출총이익률(마진)", unit: "%", good: "≥ 50", warn: "40–49", danger: "< 40", confidence: "estimated", source: "업계 통설 — 의류 마진 40~60%"}
+  - {key: "operating_margin", label: "영업이익률", unit: "%", good: "≥ 8", warn: "4–7", danger: "< 4", confidence: "estimated", source: "패션 상장사 7.6~8.5% (2024 상반기) — 영세 소매는 더 낮게 추정"}
+  - {key: "inventory_turnover", label: "재고회전율", unit: "회/년", good: "≥ 4", warn: "2–3.9", danger: "< 2", confidence: "estimated", source: "업계 통설"}
+  - {key: "sell_through_rate", label: "시즌 소진율(판매율)", unit: "%", good: "≥ 70", warn: "50–69", danger: "< 50", confidence: "estimated", source: "패션업계 통설"}
+  - {key: "instagram_followers", label: "인스타 팔로워", unit: "명", good: "≥ 1,000", danger: "< 1,000", confidence: "hypothesis", source: "팔로워↔매출 대략 추정 — 1,000명당 월 +50만원 가설"}
+
+channels:
+  - {key: "instagram_ads", name: "인스타그램 광고", fit: "high", monthly_budget_min_won: 50000, monthly_budget_max_won: 500000, primary_metric: "도달·저장·프로필 방문·DM", roi_note: "패션은 비주얼 채널 핵심. CPC 100~500원·CPM 5천~1.5만원 입찰제. ROAS는 매장 데이터로만 — 단정 금지", confidence: "hypothesis", source: "인스타 광고 단가 한국 기준"}
+  - {key: "musinsa", name: "무신사 입점", fit: "high", fee_pct: 12.2, primary_metric: "거래액·노출", roi_note: "브랜드만 입점(개인셀러 X). 평균 실질 수수료 약 12.2%, 추가비용 없음. 남성복 강세", confidence: "measured", source: "무신사 뉴스룸"}
+  - {key: "zigzag_ably", name: "지그재그·에이블리 입점", fit: "medium", fee_pct: 4.5, primary_metric: "거래액", roi_note: "여성 패션·잡화. 지그재그 판매수수료 약 4.5% / 에이블리 패션·뷰티 27%(자체셀러는 3% 모델)", confidence: "measured", source: "지그재그·에이블리 수수료"}
+  - {key: "naver_talktalk_smartstore", name: "네이버 톡톡·스마트스토어", fit: "medium", primary_metric: "1:1 상담·신상 알림", roi_note: "단골 1:1 신상 입고 알림. 스마트스토어 입점·결제 연동", confidence: "hypothesis"}
+  - {key: "kakao_friendtalk", name: "카카오 친구톡(단골 1:1)", fit: "medium", per_unit_cost_won: 15, primary_metric: "신상 알림 도달·전환", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 신상 입고일 단골 발송", confidence: "measured", source: "카카오 비즈메시지 단가"}
+  - {key: "naver_smartplace", name: "네이버 스마트플레이스(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "검색·길찾기", roi_note: "무료 — 오프라인 매장이면 등록", confidence: "measured", source: "네이버"}
+  - {key: "daangn", name: "당근(중고 연계)", fit: "low", entry_cost_won: 0, primary_metric: "동네 노출", roi_note: "무료. 이월·샘플 중고 판매 연계 정도", confidence: "hypothesis"}
+  - {key: "baemin", name: "배민(배달앱)", fit: "avoid", applicable: false, roi_note: "해당 없음 (의류는 배달앱 무관)", confidence: "measured"}
+
+copy_tone:
+  vocab: ["신상 입고", "단골 1:1", "시그니처 아이템", "코디 사진"]
+  loss_frames: ["온라인 노출 부족", "단골 1:1 신상 알림 부재", "시그니처 아이템 부재"]
+  examples:
+    - "신상 입고일 단골 30명에게 카톡 1:1로 보내면 평균 5건 즉시 주문이 들어와요"
+    - "베스트 아이템 1~2개를 정해 인스타 메인에 고정하세요 — 브랜드 정체성이 생겨요"
+  do: ["인스타 코디·모델 컷 정기 업로드", "무신사·지그재그 등 1개 플랫폼 입점", "단골 1:1 신상 알림(카톡·톡톡)"]
+  dont: ["배민 입점 (의류는 배달앱 무관)", "모든 채널 동시 시작 (1~2개부터 단단하게)"]

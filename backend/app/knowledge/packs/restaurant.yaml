@@ -1,0 +1,74 @@
+# restaurant — 한식/중식/일식/양식 일반음식점
+# 출처: app/utils/industry.py (SLUG_RESTAURANT) 이관. 콘텐츠 원본은 sme-coach 업종 플레이북.
+id: restaurant
+name: 한식·중식·일식·양식
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: sme-coach 업종 플레이북 (통계청 KSIC + 소상공인시장진흥공단 컨설팅 사례 + 외식산업 트렌드)
+    year: 2026
+
+match:
+  priority: 30
+  keywords: [한식, 중식, 일식, 양식, 식당, 음식점, 고기, 회, 초밥, 파스타, 스테이크]
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 한식/중식/일식/양식
+  - Hero KPI: 점심 회전율(2회+) + 객단가(1.5만~3만원)
+  - Top 채널: 네이버 플레이스(필수) > 카카오맵 > 캐치테이블/예약
+  - 운영 리듬: 12~13시 점심 + 18~21시 저녁, 직장 상권은 평일 강세
+  - 손실 프레임: "직장인 점심 동선 미확보", "회식 예약 미수신"
+  - 위험 신호: 점심 매출 < 30% / 객단가 < 1.2만원 / 신규 손님 < 20%
+  - 카피 예: "주변 한식집 평균 객단가는 1만 8천원. 우리 가게는 9천원 더 낮아요"
+  - 금지: "배민 의존도 낮추세요" (홀 위주 가게에 배달 비판은 무관)
+
+audit_weights:
+  positioning: 1.0
+  message_fit: 1.1
+  timing: 1.1
+  social_proof: 1.0
+  friction: 1.0
+
+report_weights:
+  매출 트렌드: 0.25
+  보조금 활용: 0.18
+  유동인구 활용: 0.22
+  경쟁 포지셔닝: 0.15
+  코치 활용도: 0.10
+  위험도 추세: 0.10
+
+risk_signal_weights:   # 일반음식점은 상권 내 동종업종 경쟁이 매출에 직접 영향
+  competition: 1.1
+
+kpi_thresholds:
+  점심_매출_위험: "< 30%"
+  객단가_위험: "< 12,000원"
+  신규_비율_위험: "< 20%"
+
+subsidy_tags: [marketing, digital, store_renovation]
+
+hero_kpis:
+  - {key: "lunch_turnover", label: "점심 회전율", unit: "회", good: "≥ 2.5", warn: "1.5–2.4", danger: "< 1.5", confidence: "estimated", source: "업계 추정 — 직장 상권 점심 2회전"}
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "≥ 10,000", warn: "8,000–9,999", danger: "< 8,000", confidence: "estimated", source: "추정 (한식 일반) — 정밀 공개통계 없음"}
+  - {key: "food_cost_ratio", label: "식재료비 비율", unit: "% 매출", good: "≤ 35", warn: "36–42", danger: "> 42", confidence: "estimated", source: "농식품부 외식업체 경영실태조사 2024 — 외식 평균 44.5%"}
+  - {key: "new_customer_ratio", label: "신규 손님 비율", unit: "%", good: "≥ 20", danger: "< 20", confidence: "estimated", source: "업계 추정 — 단골 의존도·노출 부족 신호"}
+  - {key: "operating_margin", label: "영업이익률", unit: "%", good: "≥ 10", warn: "5–9", danger: "< 5", confidence: "estimated", source: "외식업체 평균 8.7% (2024, 농식품부)"}
+
+channels:
+  - {key: "naver_smartplace", name: "네이버 스마트플레이스(등록)", fit: "high", entry_cost_won: 0, primary_metric: "검색 노출·길찾기·리뷰", roi_note: "무료 — 미등록 자체가 손실. 점심 직장상권에서 거의 필수", confidence: "measured", source: "네이버"}
+  - {key: "naver_place_ad", name: "네이버 플레이스 광고(CPC)", fit: "high", monthly_budget_min_won: 10000, monthly_budget_max_won: 600000, primary_metric: "노출→플레이스 클릭→방문", roi_note: "CPC 50~5,000원 입찰제(일 최대 2만원). 점심 맛집·동네 키워드", confidence: "hypothesis", source: "네이버 플레이스 광고 단가"}
+  - {key: "naver_reservation_catchtable", name: "네이버 예약·캐치테이블", fit: "medium", primary_metric: "단체·회식 예약", roi_note: "회식·돌잔치 단체 예약 페이지. 12월 회식 시즌 효과 큼", confidence: "hypothesis"}
+  - {key: "kakaomap", name: "카카오맵(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "위치 검색·길찾기", roi_note: "무료 — 네이버 플레이스와 함께 등록", confidence: "measured", source: "카카오"}
+  - {key: "baemin_ultracall", name: "배민 울트라콜", fit: "medium", entry_cost_won: 88000, primary_metric: "저녁 배달 주문", roi_note: "깃발 88,000원/월. 홀 위주면 저녁 배달 보조 채널로만 — 깃발 1~2개", confidence: "hypothesis", source: "배민 광고 단가"}
+  - {key: "instagram_ads", name: "인스타그램 광고", fit: "low", primary_metric: "도달·저장", roi_note: "한식 일반엔 효과 작음 — 양식·브런치 등 비주얼 강하면 재검토", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["점심 회전율", "직장인 점심", "회식 예약", "단체석", "신규 손님"]
+  loss_frames: ["직장인 점심 동선 미확보", "회식 단체예약 미수신", "신규 손님 유입 부족"]
+  examples:
+    - "주변 한식집 평균 객단가는 1만 8천원이에요. 우리 가게는 9천원 더 낮아요 — 점심 세트로 1만 4천원까지 끌어올려 보세요"
+    - "회식 시즌 12월엔 매출이 평소보다 40% 올라요. 단체예약 페이지부터 만들어 두세요"
+  do: ["네이버 플레이스 리뷰 50개·별점 4.5 목표", "점심 메뉴 빠른 제공·가성비(직장인 핵심)", "단체 예약 페이지(네이버 예약·캐치테이블)"]
+  dont: ["배민 의존도 낮추세요 (홀 위주 가게엔 무관)", "인스타 사진 톤 통일 (한식당엔 효과 작음)"]

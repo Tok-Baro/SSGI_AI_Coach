@@ -1,0 +1,81 @@
+# academy — 학원/교습소 (P1: 기존 service 슬러그에서 독립).
+#   학원은 객단가·리텐션이 과목(입시/예체능/교과)·지역 편차가 극단적 → 별도 팩.
+#   세부 leaf(academy.exam / academy.arts / academy.language) 는 추후 분리 예정.
+# 콘텐츠 출처: 소상공인 KPI 벤치마크 리서치 (BC카드 신금융연구소 학원매출 분석 2023 등) + sme-coach 플레이북.
+# 지원금 태그(P2): education / digital / store_renovation — 교육서비스업, 정책자금 제외업종 아님.
+id: academy
+name: 학원·교습소
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: BC카드 신금융연구소 학원매출 분석 (2023) + 소상공인 업종 KPI 벤치마크 리서치
+    year: 2023
+  - label: sme-coach 업종 플레이북
+    year: 2026
+
+match:
+  priority: 45   # service(50) 보다 먼저 검사 — "○○학원" 이 service 로 빠지지 않게
+  keywords: [학원, 교습소, 보습, 입시, 어학원, 공부방, 과외, 영어학원, 수학학원, 미술학원, 음악학원, 피아노학원, 코딩학원, 논술, 태권도장, 발레학원, 입시학원, 보습학원]
+  ksic_codes: ["85"]   # 교육서비스업 (85501 일반교과 / 85502 외국어 / 85503 컴퓨터 / 85504 기타교습 …)
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 학원/교습소
+  - Hero KPI: 재등록률(80%+) + 정원 충족률(70%+) + 학생 1인당 월 수강료(객단가, 과목·지역 편차 큼)
+  - Top 채널: 당근 비즈프로필·당근 광고(동네 학부모) + 네이버 플레이스(필수) > 전단지(학원가 우편함) > 알림톡(수강·결석 안내) > 인스타
+  - 운영 리듬: 평일 방과후 15~21시 + 주말 보강, 학기 시작(3월·9월)·방학 특강 시즌
+  - 손실 프레임: "재등록 시즌 이탈", "학부모 후기·입소문 부재", "정원 미달 빈 시간대"
+  - 위험 신호: 재등록률 < 60% / 정원 충족률 < 50% / 강사료 비율 > 55% / 영업이익률 < 6%
+  - 카피 예: "재등록 안내 알림톡 한 번 보내면 지난달 이탈 8명 중 평균 3명이 다시 등록해요"
+  - 금지: "배달앱 광고"·"무신사 입점" 같은 무관 채널, "객단가 단정"(과목·학년별 편차가 커서 추정으로만)
+
+audit_weights:
+  positioning: 1.0
+  message_fit: 1.1   # 학부모 타깃 메시지 적합도 중요
+  timing: 0.9
+  social_proof: 1.2  # 후기·입소문 의존 큼
+  friction: 1.1      # 상담·등록 마찰
+
+report_weights:
+  매출 트렌드: 0.24
+  보조금 활용: 0.16
+  유동인구 활용: 0.12   # 목적성 방문 — 유동인구 영향 작음
+  경쟁 포지셔닝: 0.24   # 학군 내 학원 경쟁 치열
+  코치 활용도: 0.10
+  위험도 추세: 0.14
+
+risk_signal_weights:   # 학군 내 학원 경쟁 치열 / 목적성 방문이라 유동인구 영향 작음
+  competition: 1.2
+  population_trend: 0.8
+
+kpi_thresholds:
+  재등록률_위험: "< 60%"
+  정원_충족률_위험: "< 50%"
+  강사료_비율_위험: "> 55%"
+  영업이익률_위험: "< 6%"
+
+subsidy_tags: [education, digital, store_renovation]   # 교육서비스업 — 정책자금 제외업종 아님
+
+hero_kpis:
+  - {key: "reenroll_rate", label: "재등록률", unit: "%", good: "≥ 80", warn: "60–79", danger: "< 60", confidence: "estimated", source: "업계 통설 (BC카드 신금융연구소 학원매출 분석 참고)"}
+  - {key: "capacity_fill", label: "정원 충족률", unit: "%", good: "≥ 70", warn: "50–69", danger: "< 50", confidence: "estimated", source: "추정"}
+  - {key: "instructor_cost_ratio", label: "강사료 비율", unit: "% 매출", good: "≤ 45", warn: "46–55", danger: "> 55", confidence: "estimated", source: "업계 통설 — 강사 인센티브 구조"}
+  - {key: "operating_margin", label: "영업이익률", unit: "%", good: "≥ 12", warn: "6–11", danger: "< 6", confidence: "estimated", source: "대형 입시학원 9.8~16.2%(2023, BC카드) — 영세 교습소는 더 낮게 추정"}
+
+channels:
+  - {key: "daangn_bizprofile", name: "당근 비즈프로필", fit: "high", entry_cost_won: 0, primary_metric: "동네 학부모 노출·후기", roi_note: "무료 — 미사용 자체가 손실", confidence: "measured", source: "당근"}
+  - {key: "daangn_ad", name: "당근 광고(CPC)", fit: "high", monthly_budget_min_won: 300000, monthly_budget_max_won: 1000000, per_unit_cost_won: 100, primary_metric: "지역 클릭→상담", roi_note: "클릭 최소 100원 입찰. 지역 한정 학원에 적합", confidence: "hypothesis", source: "당근 광고"}
+  - {key: "naver_place", name: "네이버 플레이스(+광고)", fit: "high", entry_cost_won: 0, primary_metric: "검색·길찾기·후기", roi_note: "학원명·동네 키워드 검색. 무료 등록 + CPC 광고 옵션", confidence: "hypothesis", source: "네이버"}
+  - {key: "flyer", name: "전단지(학원가 우편함)", fit: "high", monthly_budget_min_won: 50000, monthly_budget_max_won: 300000, primary_metric: "배포→문의", roi_note: "신학기·방학 특강 시즌. 반응률 데이터는 미확인(1% 미만 가설)", confidence: "hypothesis", source: "전단지 인쇄 단가"}
+  - {key: "kakao_alimtalk", name: "카카오 알림톡(수강·결석·재등록 안내)", fit: "medium", per_unit_cost_won: 9, primary_metric: "도달률 95%+", roi_note: "건당 8~9원(VAT 별도). 재등록 시즌 안내에 강함", confidence: "measured", source: "카카오 비즈메시지"}
+  - {key: "instagram", name: "인스타그램", fit: "medium", primary_metric: "브랜딩·후기 노출", roi_note: "예체능 학원은 효과 큼, 입시·교과는 보통", confidence: "hypothesis"}
+  - {key: "baemin_musinsa", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음 (배달·패션 채널)", confidence: "measured"}
+
+copy_tone:
+  vocab: ["재등록", "정원", "학부모", "신학기 특강", "원생"]
+  loss_frames: ["재등록 시즌 이탈", "학부모 후기·입소문 부재", "정원 미달 빈 시간대"]
+  examples:
+    - "재등록 안내 알림톡 한 번 보내면 지난달 이탈 8명 중 평균 3명이 다시 등록해요"
+    - "신학기엔 문의가 평소보다 많아요. 당근 비즈프로필부터 정비하세요"
+  do: ["당근 비즈프로필·네이버 플레이스 후기 관리", "신학기/방학 특강 전단지", "재등록 시즌 알림톡"]
+  dont: ["배달앱 광고 (학원엔 무관)", "객단가 단정 (과목·학년별 편차가 커서 추정으로만)"]

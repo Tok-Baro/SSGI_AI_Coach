@@ -21,12 +21,7 @@ from typing import Optional
 from app.utils.industry import (
     classify_industry,
     industry_audit_weights,
-    SLUG_DELIVERY,
-    SLUG_CAFE,
-    SLUG_RESTAURANT,
-    SLUG_RETAIL,
-    SLUG_FASHION,
-    SLUG_SERVICE,
+    industry_top_channel,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,20 +52,9 @@ def _severity(score: int) -> str:
     return "low"
 
 
-# 업종별 Top 채널 짧은 라벨 (recommendation 후미에 부착)
-_TOP_CHANNEL_LABEL: dict[str, str] = {
-    SLUG_DELIVERY: "배민·카카오 채널",
-    SLUG_CAFE: "인스타·네이버 플레이스",
-    SLUG_RESTAURANT: "네이버 플레이스·카카오맵",
-    SLUG_RETAIL: "카카오 단골방·네이버 플레이스",
-    SLUG_FASHION: "인스타·무신사·카카오 1:1",
-    SLUG_SERVICE: "네이버 플레이스·예약 시스템",
-}
-
-
-def _industry_channel_hint(business_type: Optional[str]) -> str:
-    slug = classify_industry(business_type)
-    label = _TOP_CHANNEL_LABEL.get(slug)
+def _industry_channel_hint(business_type: Optional[str], industry_slug: Optional[str] = None) -> str:
+    """recommendation 후미에 붙일 '업종 1순위 채널' 힌트 — 업종팩 channels(fit==high)에서 도출."""
+    label = industry_top_channel(business_type, industry_slug)
     if not label:
         return ""
     return f" (사장님 업종은 {label} 우선)"
@@ -425,6 +409,7 @@ async def evaluate(
     action_completion_rate: float,
     total_actions_30d: int,
     pending_subsidy_amount: int,
+    industry_slug: Optional[str] = None,
 ) -> dict:
     """5-차원 병렬 평가 → {dimensions: [...], overall_score: int, weakest: str, summary: str}.
 
@@ -440,7 +425,7 @@ async def evaluate(
     )
 
     # 업종별 가중치 적용 (예: 카페는 positioning + social_proof 중요, 미용은 friction 중요)
-    weights = industry_audit_weights(business_type)
+    weights = industry_audit_weights(business_type, industry_slug)
     weighted_sum = sum(r.score * weights.get(r.name, 1.0) for r in results)
     weight_total = sum(weights.get(r.name, 1.0) for r in results)
     overall = int(weighted_sum / weight_total) if weight_total else int(sum(r.score for r in results) / len(results))
@@ -449,7 +434,7 @@ async def evaluate(
     weakest = min(results, key=lambda r: r.score / max(weights.get(r.name, 1.0), 0.01))
 
     # 업종 채널 힌트를 score < 60인 차원의 recommendation 끝에 부착
-    channel_hint = _industry_channel_hint(business_type)
+    channel_hint = _industry_channel_hint(business_type, industry_slug)
     if channel_hint:
         for r in results:
             if r.score < 60 and channel_hint not in (r.recommendation or ""):
@@ -461,7 +446,7 @@ async def evaluate(
         "weakest_dimension": weakest.name,
         "weakest_label": weakest.label,
         "weakest_headline": weakest.headline,
-        "industry_slug": classify_industry(business_type),
+        "industry_slug": classify_industry(business_type, industry_slug),
         "summary": _build_summary(overall, weakest, results),
     }
 

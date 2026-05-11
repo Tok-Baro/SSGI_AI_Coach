@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
+import IndustryPackChip from "@/components/common/IndustryPackChip";
 
 interface CompetitionData {
   sales_data: any;
@@ -303,6 +304,7 @@ export default function InsightsPage() {
       </div>
 
       <div className="max-w-md mx-auto px-5 py-5 space-y-3">
+        <IndustryPackChip />
         {tab === "competition" && comp && (
           <>
             {/* 데이터 안내 — 페이지 최상단 한 번 */}

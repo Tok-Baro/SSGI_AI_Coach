@@ -1,0 +1,40 @@
+# _base — 모든 업종 팩이 상속하는 공통 기본값.
+# (이 파일 자체는 IndustryPack 으로 만들어지지 않음. 머지 시 가장 아래 깔리는 디폴트.)
+id: _base
+name: 공통 기본값
+
+# marketing_audit 5 차원 — 기본 배율 1.0 (업종 팩이 차원별로 덮어씀)
+audit_weights:
+  positioning: 1.0
+  message_fit: 1.0
+  timing: 1.0
+  social_proof: 1.0
+  friction: 1.0
+
+# PDF 리포트 6 카테고리 — 표준 분포 (합 1.0). 업종 팩이 전부 덮어씀.
+report_weights:
+  매출 트렌드: 0.25
+  보조금 활용: 0.20
+  유동인구 활용: 0.20
+  경쟁 포지셔닝: 0.15
+  코치 활용도: 0.10
+  위험도 추세: 0.10
+
+# risk_score_engine 7 시그널 — 기본 배율 1.0 (업종 팩이 시그널별로 덮어씀, 합 제약 없음)
+risk_signal_weights:
+  sales_trend: 1.0
+  competition: 1.0
+  commercial_vitality: 1.0
+  subsidy_urgency: 1.0
+  population_trend: 1.0
+  action_engagement: 1.0
+  business_maturity: 1.0
+
+# 업종별 위험 임계값 — 기본은 비어 있음
+kpi_thresholds: {}
+
+# 자격되기 쉬운 지원사업 카테고리 태그 — 기본은 비어 있음
+subsidy_tags: []
+
+# GPT 프롬프트 블록 — 기본은 비어 있음 (업종 미확정 시에는 unknown 팩 사용)
+prompt_block: ""

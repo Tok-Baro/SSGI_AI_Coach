@@ -17,6 +17,9 @@ class Subsidy(Base):
     max_amount = Column(Integer, nullable=True)  # 만원 단위
     target_business_types = Column(ARRAY(Text), nullable=True)
     target_regions = Column(ARRAY(Text), nullable=True)
+    # 지원사업 카테고리 태그 (app/utils/subsidy_tags.SUBSIDY_CATEGORY_TAGS). 업종팩 subsidy_tags 와
+    # 교집합이 크면 RAG 매칭에서 점수 부스트. 적재 시 infer_subsidy_category_tags() 로 추론.
+    category_tags = Column(ARRAY(Text), nullable=True)
     eligibility_summary = Column(Text, nullable=True)
     description = Column(Text, nullable=False)
     application_url = Column(String(500), nullable=True)

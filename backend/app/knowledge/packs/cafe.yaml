@@ -1,0 +1,78 @@
+# cafe — 카페/베이커리
+# 출처: app/utils/industry.py (SLUG_CAFE) 이관. 콘텐츠 원본은 sme-coach 업종 플레이북.
+id: cafe
+name: 카페·베이커리
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: sme-coach 업종 플레이북 (통계청 KSIC + 소상공인시장진흥공단 컨설팅 사례 + 외식산업 트렌드)
+    year: 2026
+
+match:
+  priority: 20
+  keywords: [카페, 커피, 베이커리, 빵, 디저트, 제과, 케이크, 브런치]
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 카페/베이커리
+  - Hero KPI: 재방문율(60~70%) + 평일 매출(직장인 점심)
+  - Top 채널: 인스타(필수) > 네이버 플레이스 > 카카오 채널(스탬프)
+  - 운영 리듬: 카페 11~15시, 베이커리 8~10+16~19시
+  - 손실 프레임: "단골 락인 부재", "시그니처 사진 부재"
+  - 위험 신호: 일 손님 < 30명 / 객단가 < 5천원 / 평일 매출 < 주말 60%
+  - 카피 예: "신메뉴 사진 1장만 인스타에 올려도 단골 평균 +12명 늘어요"
+  - 금지: "배민 광고비 늘리세요" (카페는 배달 적합도 낮음)
+
+audit_weights:
+  positioning: 1.2
+  message_fit: 1.0
+  timing: 0.9
+  social_proof: 1.2
+  friction: 0.9
+
+report_weights:
+  매출 트렌드: 0.22
+  보조금 활용: 0.15
+  유동인구 활용: 0.25
+  경쟁 포지셔닝: 0.20
+  코치 활용도: 0.08
+  위험도 추세: 0.10
+
+risk_signal_weights:   # 카페는 도보 유동인구 의존 큼 / 외부 SNS 마케팅 비중 커서 코치 활용도 비중 ↓
+  population_trend: 1.1
+  action_engagement: 0.9
+
+kpi_thresholds:
+  일_손님_위험: "< 30명"
+  객단가_위험: "< 5,000원"
+  평일_매출_위험: "< 주말 60%"
+
+subsidy_tags: [digital, store_renovation, marketing]   # 스마트상점·온라인판로·점포환경개선·홍보물
+
+# 구조화 KPI (kpi_thresholds 의 상위 호환 — 점진 대체). good/warn/danger 는 사람-친화 문자열.
+hero_kpis:
+  - {key: "avg_ticket", label: "객단가", unit: "원", good: "≥ 5,000", warn: "4,000–4,999", danger: "< 4,000", confidence: "estimated", source: "업계 분석 — 커피 1잔 평균 약 4,300원"}
+  - {key: "seat_occupancy_min", label: "테이블 점유시간", unit: "분", good: "≤ 100", warn: "101–150", danger: "> 150", confidence: "estimated", source: "캐시노트 손익분기 분석 — 월 916만원 기준 102분"}
+  - {key: "revisit_rate", label: "재방문율", unit: "%", good: "≥ 40", warn: "25–39", danger: "< 25", confidence: "estimated", source: "업계 통설 — 단골 매출 60~70%"}
+  - {key: "weekday_ratio", label: "평일 매출 비중", unit: "% (주말 대비)", good: "≥ 60", danger: "< 60", confidence: "estimated", source: "업계 통설 — 직장인 동선"}
+  - {key: "cost_ratio", label: "원가율", unit: "% 매출", good: "≤ 25", warn: "26–32", danger: "> 32", confidence: "estimated", source: "업계 통설"}
+
+# 마케팅 채널 적합도/비용/지표. ROI/ROAS 배수는 전부 가설 — GPT는 이 표 밖 ROI 숫자 생성 금지.
+channels:
+  - {key: "naver_smartplace", name: "네이버 스마트플레이스(등록)", fit: "high", entry_cost_won: 0, primary_metric: "검색 노출·길찾기·리뷰", roi_note: "무료 — 미등록 자체가 손실", confidence: "measured", source: "네이버"}
+  - {key: "instagram_ads", name: "인스타그램 광고", fit: "high", monthly_budget_min_won: 50000, monthly_budget_max_won: 500000, primary_metric: "도달·저장·프로필 방문", roi_note: "비주얼 강한 카페에 효과 큼. CPC 100~500원·CPM 5천~1.5만원 입찰제. ROAS는 매장 데이터로만 산출 — 단정 금지", confidence: "hypothesis", source: "인스타 광고 단가 한국 기준"}
+  - {key: "naver_place_ad", name: "네이버 플레이스 광고(CPC)", fit: "high", monthly_budget_min_won: 10000, monthly_budget_max_won: 600000, primary_metric: "노출→플레이스 클릭→방문", roi_note: "CPC 50~5,000원 입찰제(일 최대 2만원). 도보권 카페에 적합", confidence: "hypothesis", source: "네이버 플레이스 광고 단가"}
+  - {key: "kakao_friendtalk", name: "카카오 친구톡(단골 발송)", fit: "medium", per_unit_cost_won: 15, primary_metric: "오픈율·재방문", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 스탬프 단골 재방문 유도 — 주 1회 이내", confidence: "measured", source: "카카오 비즈메시지 단가"}
+  - {key: "blog_review", name: "네이버 블로그·체험단", fit: "medium", monthly_budget_min_won: 300000, monthly_budget_max_won: 1000000, primary_metric: "검색 노출·리뷰 콘텐츠 축적", roi_note: "신메뉴·오픈 초기에. 단기 매출보다 장기 신뢰 효과", confidence: "hypothesis", source: "체험단 단가"}
+  - {key: "baemin_ads", name: "배민 광고", fit: "low", primary_metric: "배달 주문", roi_note: "카페는 배달 비중 낮아 ROI 낮음 — 디저트 배달 전문이면 재검토", confidence: "hypothesis"}
+  - {key: "flyer", name: "전단지", fit: "low", primary_metric: "배포→방문", roi_note: "반응률 1% 미만 가설. 오픈 초기 외 비추", confidence: "hypothesis"}
+  - {key: "musinsa", name: "무신사·패션 입점", fit: "avoid", applicable: false, roi_note: "해당 없음 (패션 채널)", confidence: "measured"}
+
+copy_tone:
+  vocab: ["단골 락인", "시그니처 메뉴", "오전 단골", "스탬프", "평일 직장인"]
+  loss_frames: ["단골 락인 부재", "시그니처 사진 부재", "평일 직장인 동선 미확보"]
+  examples:
+    - "신메뉴 사진 1장만 인스타에 올려도 단골 평균 +12명 늘어요"
+    - "오전 1잔 무료 쿠폰 만들어 보세요. 5천원 한 잔이 회당 1만 5천원으로 회수됩니다"
+  do: ["인스타 사진 톤·각도·라이팅 통일", "네이버 플레이스 리뷰 50개 목표", "5회 방문 1잔 무료 스탬프"]
+  dont: ["배민 광고비 늘리세요 (카페는 배달 적합도 낮음)", "예약 시스템 도입 (회전형 카페엔 불필요)"]

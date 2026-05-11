@@ -16,6 +16,7 @@ from sqlalchemy import select
 from app.database import engine, async_session_factory as AsyncSessionLocal, init_db
 from app.models.subsidy import Subsidy
 from app.services.rag_service import RAGService
+from app.utils.subsidy_tags import infer_subsidy_category_tags
 
 # 서울시 소상공인 대상 실제/유사 보조금 시드 데이터 (15건)
 SEED_SUBSIDIES = [
@@ -296,6 +297,10 @@ async def seed():
         # 시드 데이터 삽입
         subsidies = []
         for data in SEED_SUBSIDIES:
+            # 카테고리 태그는 제목+설명에서 추론 (업종팩 매칭 부스트용)
+            data["category_tags"] = infer_subsidy_category_tags(
+                f"{data.get('title', '')} {data.get('description', '')}"
+            ) or None
             subsidy = Subsidy(**data)
             db.add(subsidy)
             subsidies.append(subsidy)

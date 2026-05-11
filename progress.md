@@ -346,4 +346,125 @@
 - `npx next build` ✓ (11/11 정적 페이지, 새 에러 0)
 - `grep '[一-鿿]' src/` → 0건 (한자 메모리 룰 준수)
 
-> **마지막 업데이트**: 2026-05-09
+---
+
+## 2026-05-11 — 상세기획서 덱: 음성·PDF·사업계획서·결제 화면 반영 (19→20장)
+
+**파일**: `scripts/build_planning_doc.py` → `SSGI_상세기획서_심사위원용.pptx`
+
+**추가 캡처 6종** (repo 루트 `KakaoTalk_Photo_2026-05-11-19-43-*.png`) → `SHOTS` 딕셔너리 키 신설
+- `voice` 홈 AI 음성 질문("마케팅") 처리 중 / `pdf` PREMIUM PDF 진단서(67점·등급 C) / `bizplan` AI 사업계획서 초안(빈칸 자동 채움)
+- `paywall` 인사이트>메뉴 Pro 전용 / `pay_up` SSGI Pro 업그레이드(혜택 5종·9,900원) / `pay_done` 결제 완료(테스트·만료일)
+
+**슬라이드 매핑**
+- 기능 ③(지원금 매칭) 2폰 → 3폰: `02·04·bizplan`, 제목 "사업계획서 초안까지"로 교체
+- 기능 ⑤(AI 종합진단) 2폰 → 3폰: `08·03·pdf`
+- 기능 ⑧(음성 질문) `03` → `voice·03` (실제 음성 창)
+- **신규 기능 ⑨ — 카카오페이 결제 + Pro 업그레이드** (3폰 `paywall·pay_up·pay_done`, deck 16쪽). "결제 모듈 연동 완료·테스트 환경, 정식 결제 사업자 가맹 후 2026 Q3" 정직 표기 유지
+- 갤러리 8폰 중 일부 교체(bizplan/voice/pdf/pay_done 노출), 표지 LIVE FEATURES 9→10, 개요 4번째 그룹 "접근·증빙·결제"
+
+**리넘버**: 흐름도 16→17 / 갤러리 17→18 / UI·UX 18→19 / 백업 19→20, 푸터 "/19"→"/20", 목차 2열×10행 재배치(+⑨ 항목)
+
+**검증**: `python3 scripts/build_planning_doc.py` ✓ 20장 / `bash scripts/render_pptx.sh` → s01~s20.png 전수 시각 확인 ✓ (겹침·넘침 0)
+> ⚠️ `pdf` 캡처에 기존 데이터 글리치("237,517% 증가") 텍스트 포함 — 슬라이드 썸네일 크기에선 판독 불가하나 추후 백엔드 수정 시 재캡처 권장
+
+**폰트 스케일 업 (ir-deck-visual 타이포 위계 적용)**: 전 슬라이드 글자 크기 비례 확대
+- 헬퍼 기본값: eyebrow 9.5→11 / subtitle 11.5→13 / footer 8→9.5 / card body 10→12.5·title 13→15·num 26→32 / bignum number 38→46·label 9→11·caption 9.5→11.5 / rubric_badge 8.5→10
+- feature_slide: section_title 23→26 / sub 10.5→12.5 / card body 9.5→12·title 12.5→14.5 / caption 9→11 (1폰 h 716→700, 카드 그리드 y0=358 footer 라인과 정확히 맞물림 — 변경 금지)
+- 표지 SSGI 64→72·슬로건 32→35 / 목차 번호 12.5→14.5·항목 10.5→11.5(badge 영역과 겹치지 않게 title_w 동적 430/720) / 본문 슬라이드 03~07·17·19·20 카드·표·블록 일괄 +2~3pt
+- 긴 본문 1건만 트림(기능 ⑨ "무엇을" ~130→~95자) — 박스 오버플로 방지
+
+---
+
+## 2026-05-11 — 업종 지식팩 아키텍처 P0 (industry.py → 데이터 외부화, 무중단 리팩터)
+
+배경: 업종별 도메인 지식(KPI·채널·카피·가중치)을 "스킬처럼" 데이터 파일로 쌓아 웹에서 쓰는 아키텍처. 설계는 4단계(P0 무중단 리팩터 / P1 16업종군+학원 독립+온보딩 피커 / P2 risk_engine 업종화·insights 중복표 제거·subsidy 태그 / P3 출처칩·상권유형 override). 도메인 리서치 6건(업종분류체계 KSIC/서울상권 100업종 · 손익·KPI 벤치마크 · 마케팅채널 ROI · 폐업·행동경제학 논문 · 서울 공공데이터 · 지원사업 landscape) 수행 → P1~P2 콘텐츠 시드로 사용.
+
+**P0 구현 (이번 단계 — 동작 변화 0):**
+- `backend/app/knowledge/` 신설 — `schema.py`(Pydantic v2 `IndustryPack`: id/name/group/status/version/reviewed_date/sources/match{priority,keywords,...}/prompt_block/audit_weights/report_weights/kpi_thresholds, report_weights 합=1.0 검증), `registry.py`(packs/*.yaml 부팅 1회 로드 → `_base`→group→leaf deep-merge → `lru_cache`, `resolve()/classify()/get()/all_packs()`. classify 는 match.priority 오름차순 검사 = 기존 `_KEYWORDS` 순서 재현).
+- `backend/app/knowledge/packs/` — `_base.yaml`(공통 디폴트: audit 전부 1.0, report 표준분포, kpi {} ) + `unknown.yaml` + 6개 군 YAML(`delivery_food`/`cafe`/`restaurant`/`fashion`/`service`/`retail` — 기존 `industry.py` 의 `_PROMPT_BLOCKS`·`_AUDIT_WEIGHTS`·`_REPORT_WEIGHTS`·`_KPI_THRESHOLDS`·키워드 **그대로 이관**, priority 10/20/30/40/50/60 = 옛 리스트 순서).
+- `backend/app/utils/industry.py` → **얇은 shim**(레지스트리 호출). 기존 export 전부 유지: `SLUG_*` 7개 + `classify_industry`/`industry_prompt_block`/`industry_audit_weights`/`industry_report_weights`/`industry_kpi_thresholds`. 호출부(insights.py·action_generator.py·marketing_audit.py·report_generator.py) 무수정.
+- `backend/scripts/validate_packs.py` — `python -m scripts.validate_packs` (group 존재·순환·스키마·report 합·sources 경고).
+- `backend/requirements.txt` — `PyYAML>=6.0` 추가 (지식팩 로드용; .venv 엔 이미 설치돼 있었음).
+
+**검증**: `python -m scripts.validate_packs` ✓ 7팩 통과 / `from app.main import app` ✓ / 구 하드코딩 기대값 대조 테스트(분류 14케이스 + prompt_block 내용 + audit/report/kpi 값 + 순서규칙 "치킨카페"→delivery_food) ✓ — **동작 동일 확인**.
+
+### P1 — 세부 업종 분기 시작 + DB 컬럼 (이번 단계, 백엔드)
+
+- **새 팩 2개**
+  - `academy.yaml` (top-level) — 학원/교습소를 `service` 에서 독립. 자체 prompt_block·KPI 임계값(재등록률<60%·정원충족률<50%·강사료비율>55%·영업이익률<6%, BC카드 학원매출 2023 출처)·audit/report 가중치. 키워드 [학원/교습소/보습/입시/어학원/공부방/과외/…/태권도장/발레학원/코딩학원] priority 45 (service 50 보다 먼저). ksic ["85"]. (이전엔 "○○학원"→unknown 이었음 → 개선)
+  - `restaurant.korean_meat.yaml` (leaf, `group: restaurant`) — 삼겹살/갈비/곱창/숯불구이/무한리필. group 상속 + prompt_block·테이블단가/회전율/단체예약 임계값·timing 1.2·social_proof 1.1 만 override (report_weights 는 합 1.0 제약상 부분 override 금지 → 상속). 키워드 priority 25. ksic ["56113"]. → leaf/group 상속 + leaf-priority 패턴 검증 완료.
+  - `retail.yaml` 키워드 `소매업`/`소매` 추가 (백필 시 canonical "소매업" → retail 매칭).
+  - ※ 나머지 ~10개 업종군(food.korean_general/chinese/japanese/…/beauty 등)은 "조언이 실제 갈리는 곳만" 원칙 — 의도적으로 미생성, 필요 시 점진 추가 (데이터 파일이라 코드 수정 없음).
+- **API**: `GET /knowledge/industries` (`app/routers/knowledge.py`, main 에 등록) — 팩 목록(id/name/group/keywords/status/reviewed_date) → 온보딩 업종 피커·출처칩용.
+- **DB**: `User.industry_slug` (String(64), nullable, index) 컬럼 + 마이그레이션 `008_add_industry_slug.py` (down=7314edff5bc1) + 백필 스크립트 `scripts/backfill_industry.py` (`classify_industry(business_type)` 로 기존 행 채움). `onboarding.complete_onboarding` 에서 **raw** 입력값(`req.business_type`, 정규화 전 — "편의점"→retail 더 정확)으로 `industry_slug` 저장.
+- **검증**: `python -m scripts.validate_packs` ✓ 9팩 / `from app.main import app` ✓ (`/knowledge/industries` 등록) / 마이그레이션 008 import ✓ / classify 15케이스 ✓ (학원→academy, 삼겹살집/고깃집→restaurant.korean_meat, 한식당→restaurant 불변, 치킨/편의점/미용실/의류 불변, 소매업→retail 신규) / leaf 상속·partial override 머지 ✓ / `/knowledge/industries` 8팩 ✓.
+- **⚠️ 실행 필요(DB 있는 환경에서)**: `alembic upgrade head` → `python -m scripts.backfill_industry`.
+
+### P1c — `industry_slug` 소비 wiring + 온보딩 업종 피커 (이번 단계)
+
+- **레지스트리**: `registry.resolve_for(slug, business_type)` — slug 우선, 비었거나 무효(없는 pack)면 business_type 분류로 폴백.
+- **shim 오버로드** (`app/utils/industry.py`): `classify_industry`/`industry_prompt_block`/`industry_audit_weights`/`industry_report_weights`/`industry_kpi_thresholds` 모두 선택 2번째 인자 `industry_slug=None` 추가 (없으면 기존 동작 그대로 — 하위호환).
+- **다운스트림 wiring** (모두 `user.industry_slug` 전달):
+  - `insights.py` menu-strategy: `industry_prompt_block(current_user.business_type, current_user.industry_slug)`
+  - `action_generator.py` ×3 (daily / BP / voice): `industry_prompt_block(user.business_type, user.industry_slug)`
+  - `marketing_audit.evaluate(...)`: `industry_slug` 키워드 파라미터 추가 → `industry_audit_weights`·`_industry_channel_hint`·반환 `industry_slug` 에 전달. 호출부 `insights.py` 마케팅 엔드포인트가 `industry_slug=user.industry_slug` 전달.
+  - `report_generator.assemble_report_data(...)`: `industry_slug` 파라미터 추가 → `industry_report_weights` 에 전달. 호출부 `reports.py` 가 `current_user.industry_slug` 전달.
+- **온보딩**: `CompleteOnboardingRequest.industry_slug` (Optional, ≤64자) 추가. `complete_onboarding` 이 `classify_industry(req.business_type, req.industry_slug)` 로 저장 (피커 선택 우선).
+- **`/knowledge/industries`** 응답에 `priority` 필드 추가 (프론트가 백엔드 분류 순서 미러용).
+- **프론트** (`onboarding/page.tsx`): 마운트 시 `api.getIndustries()` → 가게 선택 시 카테고리/업종명을 keywords 와 priority 순으로 매칭해 기본 업종 추정(`guessIndustrySlug`) → "이 가게가 맞나요?" 화면에 `<select>`("자동 감지" + 업종군·세부 들여쓰기 목록)로 노출/수정 가능 → 완료 시 `industry_slug` 전송. `api.ts` `getIndustries()` + `completeOnboarding` 타입에 `industry_slug?`, `types/index.ts` `IndustryPackInfo` 추가.
+- **검증**: `validate_packs` ✓ 9팩 / `from app.main import app` ✓ / wiring sanity(resolve_for slug우선/폴백, shim 오버로드, evaluate·assemble_report_data 시그니처에 industry_slug, 스키마 필드) ✓ / `/knowledge/industries` priority 포함 8팩 ✓ / `npx next build` ✓ 15/15 페이지(에러 0).
+
+→ **P1 (P1a+b+c) 완료.**
+
+### P2a — risk_score_engine 업종화 + 팩 콘텐츠 확장 + deep-report 업종표 외부화 (이번 단계)
+
+- **스키마 확장** (`schema.py`): `IndustryPack` 에 `risk_signal_weights`(dict, 7시그널 배율 — `RISK_KEYS` 검증) + `subsidy_tags`(list[str]) 추가. `_base.yaml` 에 `risk_signal_weights` 7키 전부 1.0 + `subsidy_tags: []`.
+- **팩 콘텐츠** — `risk_signal_weights` 부분 override + `subsidy_tags`:
+  - cafe: population_trend 1.1·action_engagement 0.9 / `[digital, store_renovation, marketing]`
+  - delivery_food: action_engagement 1.2·population_trend 0.9 / `[digital, marketing, store_renovation]`
+  - restaurant: competition 1.1 / `[marketing, digital, store_renovation]`  (leaf restaurant.korean_meat 상속)
+  - retail: population_trend 1.2 / `[digital, store_renovation, rent_utility]`
+  - fashion: `[digital, marketing]`  / service: `[store_renovation, digital, education]`  / academy: competition 1.2·population_trend 0.8 / `[education, digital, store_renovation]`
+- **risk_score_engine** (`compute(...)`): `industry_signal_weights: Optional[dict]=None` 파라미터 추가 → factor 빌드 후 `f.weight *= w.get(f.name, 1.0)` 보정(재분배 단계에서 정규화되므로 안전, all-1.0 이면 무변화). shim 에 `industry_risk_weights(business_type, industry_slug)` + `industry_subsidy_tags(...)` 추가. **4개 호출부 wiring**: onboarding / dashboard / reports / action_generator 가 `industry_signal_weights=industry_risk_weights(user.business_type, user.industry_slug)` 전달.
+- **deep-report 프롬프트** (`insights.py` `get_deep_report`): 하드코딩 6업종 분기표(KPI/채널/손실프레임/객단가임계 + 외식업 손익임계) 삭제 → `{INDUSTRY_BLOCK}` placeholder → `system_prompt.replace("{INDUSTRY_BLOCK}", industry_prompt_block(current_user.business_type, current_user.industry_slug))` (system_prompt 가 `{X}` 예시 다수 포함한 plain string 이라 `.format()` 대신 `.replace()`). 상권유형/상권변화지표/HHI/채널룰#1 등 generic 부분은 유지.
+- **검증**: `validate_packs` ✓ 9팩 / `from app.main import app` ✓ / `{INDUSTRY_BLOCK}` 잔재 없음(placeholder+replace 2회만) / risk_signal_weights 팩 반영·leaf 상속·shim·`compute` 가중치 곱·정규화 후 cafe-weighted > base / subsidy_tags ✓.
+
+### P2b — 구조화 콘텐츠(hero_kpis·channels·copy_tone) + marketing-strategy 프롬프트 외부화 (이번 단계)
+
+- **스키마** (`schema.py`): `KPI`/`Channel`/`CopyTone` Pydantic 모델 + `FIT_VALUES`(high|medium|low|avoid)·`CONFIDENCE_VALUES`(measured|estimated|hypothesis). `IndustryPack` 에 `hero_kpis: list[KPI]` / `channels: list[Channel]`(applicable·fit·entry_cost_won·monthly_budget_min/max_won·fee_pct·per_unit_cost_won·primary_metric·roi_note·confidence·source) / `copy_tone: CopyTone`(vocab·loss_frames·examples·do·dont) 추가. 전부 Optional/빈 디폴트 → 기존 6+leaf+unknown 팩 무영향.
+- **콘텐츠** — 리서치 벤치마크로 3개 팩 채움: `cafe`(hero_kpis 5: 객단가/테이블점유시간/재방문율/평일매출비중/원가율 + channels 8: 네이버스마트플레이스·인스타광고·네이버플레이스CPC·카카오친구톡·블로그체험단·배민(low)·전단지(low)·무신사(avoid) + copy_tone) / `delivery_food`(hero_kpis 5: 객단가/배달비중/식재료비율/별점/영업이익률 + channels 8: 배민울트라콜·배민CPC·요기요·알림톡·당근·인스타(low)·네이버플레이스·무신사(avoid) + copy_tone) / `academy`(hero_kpis 4: 재등록률/정원충족률/강사료비율/영업이익률 + channels 7: 당근비즈프로필·당근광고·네이버플레이스·전단지·알림톡·인스타·배민무신사(avoid) + copy_tone). 모든 ROAS/ROI 는 `confidence: hypothesis`, 출처 있는 비용만 `measured`.
+- **shim**: `industry_channels_block(business_type, industry_slug)` — `pack.channels` 를 "## 업종 채널 근거표 — 이 표 밖 ROI/ROAS 생성 금지" 마크다운으로 렌더 (applicable=False 채널은 생략, fit 한글화).
+- **insights.py marketing-strategy 프롬프트** (`get_marketing_strategy`): 하드코딩 6업종 채널 우선순위표 + 채널별 비용/ROI 핵심 + 손익 임계 삭제 → `{INDUSTRY_BLOCK}` + `{CHANNELS_BLOCK}` placeholder → `system_prompt.replace("{INDUSTRY_BLOCK}", industry_prompt_block(...)).replace("{CHANNELS_BLOCK}", industry_channels_block(...))`.
+- **검증**: `validate_packs` ✓ 9팩 / `from app.main import app` ✓ / cafe/delivery 5+8·academy 4+7 로드·leaf 빈 상속·타 팩 무영향 ✓ / placeholder 잔재 0(전부 replace 처리) / `industry_channels_block` 렌더 출력 확인 ✓.
+
+### P2c — 지원사업 카테고리 태그 + RAG 매칭 부스트 (이번 단계)
+
+- **태그 유틸** (`app/utils/subsidy_tags.py`): `SUBSIDY_CATEGORY_TAGS` 14종(policy_loan/credit_guarantee/consulting/digital/store_renovation/education/restart_exit/employment/marketing/rnd/rent_utility/commercial_district/voucher/tax_relief — 업종팩 `subsidy_tags` 와 동일 체계) + `_TAG_KEYWORDS` + `infer_subsidy_category_tags(text)` (제목+설명 소문자 부분일치로 추론).
+- **DB**: `Subsidy.category_tags`(ARRAY(Text), nullable) 컬럼 + 마이그레이션 `009_add_subsidy_category_tags.py`(down=`008_industry_slug`). `seed_subsidies.py` 가 적재 시 `infer_subsidy_category_tags(title+description)` 로 자동 채움.
+- **shim**: `industry_subsidy_tags(business_type, industry_slug)` (P2a 에 추가됨) 사용.
+- **rag_service** (`search_subsidies_filtered`): `industry_slug: Optional[str]=None` 파라미터 추가. 후보 풀 `max(top_k*4, 12)` 로 확장 → 각 공고의 `category_tags`(없으면 `infer_…` 폴백) ∩ 사용자 업종팩 `subsidy_tags` 교집합 1개당 +0.12(최대 +0.3) 부스트 → `relevance_score = 1.0+boost`, `category_tags`·`tag_match` 키 추가 → `(relevance_score desc, deadline asc)` 정렬 → ICP 재순위 → `[:top_k]`. **6개 호출부 wiring**: onboarding/dashboard/subsidies/reports/insights×2 가 `industry_slug=current_user.industry_slug` 전달.
+- **검증**: `validate_packs` ✓ 9팩 / `from app.main import app` ✓ (순환 import 없음) / `seed_subsidies` import ✓ / 마이그레이션 009 import ✓ / `infer_subsidy_category_tags` 7샘플 → 전부 표준 14종 내 / `industry_subsidy_tags` ✓ / 부스트 산식 시뮬(카페×디지털전환공고 overlap 3 → relevance 1.3) ✓.
+- **⚠️ DB 환경에서**: `alembic upgrade head` → `python -m scripts.seed_subsidies` (재적재해야 `category_tags` 채워짐).
+
+### P3a/b — 나머지 4팩 콘텐츠 채우기 + marketing_audit 채널 힌트 도출 (이번 단계)
+
+- **콘텐츠** — `restaurant`/`retail`/`fashion`/`service` 4팩에 `hero_kpis`(각 5)·`channels`(7~8, fit·비용·지표·roi_note·confidence·source·applicable)·`copy_tone`(vocab·loss_frames·examples·do·dont) 추가. 리서치 벤치마크(농식품부 외식업체 경영실태조사·KB 자영업·업계 통설 등) 기반, ROAS/ROI 는 전부 `confidence: hypothesis`. + `restaurant.korean_meat` 에 자체 `hero_kpis`(테이블단가/회전율/단체예약비율/영업이익률 — group 의 "점심 회전율" 대신) override (channels/copy_tone 은 restaurant 상속). → **9팩(7군 + academy + korean_meat leaf) 전부 prompt_block·5종 가중치·hero_kpis·channels·copy_tone·subsidy_tags 보유.**
+- **shim**: `industry_top_channel(business_type, industry_slug)` — `pack.channels` 중 `fit=='high'` 인 첫 채널명 반환.
+- **marketing_audit**: 하드코딩 `_TOP_CHANNEL_LABEL` 딕셔너리 + `SLUG_*` 임포트 제거 → `_industry_channel_hint` 가 `industry_top_channel(...)` 사용.
+- **검증**: `validate_packs` ✓ 9팩 / `from app.main import app` ✓ / 4팩 hero_kpis 5·channels 7~8·copy_tone / korean_meat hero_kpis 4(override)·channels 7(상속) / `industry_top_channel`(cafe→네이버스마트플레이스, delivery→배민울트라콜, service→네이버예약, unknown→None) / `_industry_channel_hint` ✓.
+
+### P3c — 프론트 출처칩 (이번 단계)
+
+- **백엔드** (`routers/knowledge.py`): `GET /knowledge/my-pack`(auth) — 로그인 사용자에게 적용 중인 팩(`resolve_for(industry_slug, business_type)`) → `{id, name, group, version, reviewed_date, source_count, sources:[{label,url,year}], is_unknown}`. `/knowledge/industries` 에도 `version`·`source_count` 추가.
+- **프론트**: `MyIndustryPack`·`IndustrySource` 타입 + `api.getMyIndustryPack()`. 컴포넌트 `components/common/IndustryPackChip.tsx` — 마운트 시 `/my-pack` fetch → "이 진단은 [업종명] 플레이북 v_n · 검수 YYYY.MM.DD 기준 · 출처 N건" 칩 렌더, 클릭 시 sources 목록 + "업종 평균·벤치마크 추정값 포함, 실제와 다를 수 있음" 안내 펼침. 미등록(`is_unknown`)이거나 조회 실패 시 아무것도 렌더 안 함. **인사이트 페이지** 콘텐츠 영역 최상단(전 탭 공통)에 배치.
+- **검증**: `validate_packs` ✓ 9팩 / `from app.main import app` ✓ (`/knowledge/my-pack`·`/industries` 등록) / `my_pack` 로직(cafe→"카페·베이커리 v1 검수 2026-05-11 출처 1건", slug 없으면 business_type 분류("치킨집"→delivery_food), 미등록→is_unknown) ✓ / `npx next build` ✓ 15라우트(에러 0, /insights 18.5kB). ⚠️ 실제 화면 렌더는 dev 서버·브라우저 없어 미확인 — 빌드·타입체크만 통과.
+
+**남은 것 (P3 잔여)**:
+- ① `match.seoul_business_codes`·`ksic_codes` 정밀화 — 서울 OA-15577 점포-상권 코드명세 + KSIC 10차 세세분류표 **다운로드 필요**
+- ② 스키마 `seasonal_calendar`·`commercial_zone_fit`·`zone_overrides` + menu-strategy/location 활용 + `Store.commercial_zone_type` 저장·백필
+- ③ subsidy 메타스키마 더 확장(eligible/excluded_ksic·revenue_ceiling·biz_age·owner_age — 하드 자격 필터링)
+- ④ korean_meat copy_tone override (현재 restaurant "점심" 톤 상속 — prompt_block/hero_kpis 는 이미 고기·구이용)
+- ⑤ 대시보드에도 출처칩 추가(현재 인사이트 페이지만)
+
+> **마지막 업데이트**: 2026-05-11

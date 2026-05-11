@@ -25,7 +25,7 @@ from app.services.risk_score_engine import RiskScoreEngine
 from app.services.weather_service import WeatherService
 from app.services.location_analyzer import analyze_location, format_location_analysis
 from app.services import marketing_audit
-from app.utils.industry import industry_prompt_block
+from app.utils.industry import industry_prompt_block, industry_channels_block
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -250,7 +250,7 @@ async def get_deep_report(
     # Phase A2: RAG + DB stats (short session)
     async with async_session_factory() as db:
         subsidies = await _safe(rag.search_subsidies_filtered(
-            db=db, gu_name=gu, business_type=btype, top_k=5, user_id=current_user.id,
+            db=db, gu_name=gu, business_type=btype, top_k=5, user_id=current_user.id, industry_slug=current_user.industry_slug,
         ))
         coupon_row = (await db.execute(
             select(
@@ -473,22 +473,7 @@ async def get_deep_report(
 7. **사용자 학습 프로필 (ICP)**: 누적 신호로 학습된 선호 기관/금액대/키워드
    → 보조금/마케팅 추천 시 학습된 선호를 우선 반영하세요.
 
-## 업종 분기 가이드 (필수 — sme-coach 도메인 지식)
-
-### 업종군별 핵심 KPI / Top 채널 / 손실 프레임
-| 업종 | Hero KPI | Top 채널 | 핵심 손실 프레임 | 객단가 임계 |
-|---|---|---|---|---|
-| 치킨/분식/배달 | 객단가 + 배달 비중 | 배민 | 배달앱 노출 점수 | < 8천원 위험 |
-| 카페/베이커리 | 재방문율 + 평일 매출 | 인스타 | 단골 락인 부재 | < 5천원 위험 |
-| 한식/중식/일식/양식 | 점심 회전율 + 객단가 | 네이버 플레이스 | 직장인 점심 동선 | < 1.2만원 위험 |
-| 편의점/슈퍼/잡화 | 평당 매출 + 단골 비율 | 카카오 단골방 | 동네 인지도 | 평당 < 100만원 위험 |
-| 의류/뷰티 | 재구매율 + 인스타 팔로워 | 인스타 + 무신사 | 온라인 노출 | 인스타 팔로워 < 1000명 위험 |
-| 미용/네일/세탁/PC방 | 재방문율 + 예약 비율 | 네이버 + 예약 | 워크인 손실 | 재방문율 < 50% 위험 |
-
-### 외식업 손익 임계 (월 매출 기준)
-- 임대료 비중 15% 초과: 위험 / 객단가 1.2만 미만 (한식): 마진 부족
-- 카페 일 평균 손님 30 미만: BEP 미달
-- 미용 재방문율 50% 미만: 시술 만족도 점검
+{INDUSTRY_BLOCK}
 
 ### 서울 상권 유형 매핑
 - CBD (광화문/시청/명동): 평일 점심 강세, 야간 약함 → 회식 메뉴 X
@@ -630,6 +615,12 @@ async def get_deep_report(
 ## 기타 원칙
 - 업종 특성을 고려한 맞춤 분석
 - 한국어, 해요체 우선"""
+
+    # 업종 분기 가이드: 하드코딩 표 대신 사장님 업종 지식팩(app/knowledge)에서 주입
+    system_prompt = system_prompt.replace(
+        "{INDUSTRY_BLOCK}",
+        industry_prompt_block(current_user.business_type, current_user.industry_slug),
+    )
 
     user_prompt = f"""아래는 서울시 빅데이터 플랫폼에서 수집한 소상공인의 실제 경영 데이터입니다.
 이 데이터를 전문 경영 컨설턴트 관점에서 종합 분석하여 5만원 가치의 리포트를 JSON으로 작성하세요.
@@ -785,6 +776,7 @@ async def _compute_audit_and_icp(
 
     audit = await marketing_audit.evaluate(
         business_type=btype,
+        industry_slug=user.industry_slug,
         sales_detail=sales_detail,
         competition_data=competition,
         floating_population=floating_pop,
@@ -877,7 +869,7 @@ async def get_marketing_strategy(
     # Phase A2: RAG + coupon stats (DB short session)
     async with async_session_factory() as db:
         subsidies = await _safe(rag.search_subsidies_filtered(
-            db=db, gu_name=gu, business_type=btype, top_k=3, user_id=current_user.id,
+            db=db, gu_name=gu, business_type=btype, top_k=3, user_id=current_user.id, industry_slug=current_user.industry_slug,
         ))
         coupon_row = (await db.execute(
             select(
@@ -1016,28 +1008,9 @@ async def get_marketing_strategy(
 - 시간대/요일별 프로모션 최적화
 - 업종 트렌드 분석 + 경쟁 차별화 포지셔닝
 
-## 업종 분기 가이드 (sme-coach 도메인 지식 — 필수)
+{INDUSTRY_BLOCK}
 
-### 업종 → 추천 채널 우선순위 (모든 채널 동시 시작 금지)
-- 치킨/분식/배달: 배민 우선 → 카카오 채널 → 인스타
-- 카페/베이커리: 인스타 우선 → 네이버 플레이스 → 카카오 스탬프
-- 한식/일반음식점: 네이버 플레이스 우선 → 카카오맵 → 인스타
-- 편의점/슈퍼: 네이버 플레이스 → 카카오 단골방 → 오프라인
-- 의류/뷰티: 인스타 우선 → 무신사·29CM → 네이버 톡톡
-- 미용/네일/세탁: 네이버 플레이스 + 예약시스템 → 인스타 (BEFORE/AFTER) → 친구 추천 보상
-
-### 채널별 비용 / ROI 핵심
-- 배민: 수수료 6.8% + 울트라콜 8.8만원/월. 사진 5장+ → 클릭 +28%
-- 인스타: 무료 + 광고 1만원/일~. 사진 톤 통일 결정적
-- 네이버 플레이스: 리뷰 50개 + 별점 4.5 = 상위 노출 자격
-- 카카오 채널: 발송 건당 15원, 주 1회 이내, 단골 락인 강함
-- 오프라인 전단: 1000장 5만원, 반응율 0.5~2% → 신규 오픈 외 비추
-
-### 손익 임계
-- 외식업 임대료 비중 > 15%: 위험
-- 카페 일 평균 손님 < 30: BEP 미달
-- 의류 평당 매출 < 100만원: 압박
-- 미용 재방문율 < 50%: 시술 만족도 점검
+{CHANNELS_BLOCK}
 
 ## 응답 원칙
 1. **손실 프레이밍**: "추천합니다"가 아니라 "놓치고 있습니다"
@@ -1197,6 +1170,15 @@ async def get_marketing_strategy(
 - **D-day**: 일수 대신 자연어. "이번 주 안에" / "2주 안에" / "한 달 안에" / "내일까지"
 - **시간**: "잠시" 대신 "10초", "1분 만에", "3분이면"
 - **카피 변형 안 금액**: SMS/POP에서는 만원 단위 ("3만 5천원 할인", "5만원 사용 시"). 백 원 단위 X."""
+
+    # 업종 분기 가이드 + 채널 근거표: 하드코딩 대신 사장님 업종 지식팩(app/knowledge)에서 주입
+    system_prompt = system_prompt.replace(
+        "{INDUSTRY_BLOCK}",
+        industry_prompt_block(current_user.business_type, current_user.industry_slug),
+    ).replace(
+        "{CHANNELS_BLOCK}",
+        industry_channels_block(current_user.business_type, current_user.industry_slug),
+    )
 
     user_prompt = f"""## 사장님 정보
 상호: {current_user.business_name}
@@ -1446,7 +1428,7 @@ async def get_menu_strategy(
 - D-day: "이번 주 안에" / "한 달 안에" 식 자연어.
 - 시간: "잠시" 대신 "1분 만에", "3분이면"."""
 
-    menu_industry_block = industry_prompt_block(current_user.business_type)
+    menu_industry_block = industry_prompt_block(current_user.business_type, current_user.industry_slug)
 
     user_prompt = f"""## 사장님 정보
 상호: {current_user.business_name}

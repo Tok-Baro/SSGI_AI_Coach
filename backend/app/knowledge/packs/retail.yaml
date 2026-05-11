@@ -1,0 +1,74 @@
+# retail — 편의점/슈퍼/잡화 (생활밀착 소매)
+# 출처: app/utils/industry.py (SLUG_RETAIL) 이관. 콘텐츠 원본은 sme-coach 업종 플레이북.
+id: retail
+name: 편의점·슈퍼·잡화
+status: active
+version: 1
+reviewed_date: 2026-05-11
+sources:
+  - label: sme-coach 업종 플레이북 (통계청 KSIC + 소상공인시장진흥공단 컨설팅 사례 + 유통 트렌드)
+    year: 2026
+
+match:
+  priority: 60
+  keywords: [편의점, 슈퍼, 마트, 잡화, 문구, 철물, 꽃집, 약국, 소매업, 소매]
+
+prompt_block: |-
+  ## 업종 분기 가이드 — 편의점/슈퍼/잡화
+  - Hero KPI: 평당 매출(월 100만+) + 단골 비율(70%+)
+  - Top 채널: 네이버 플레이스 > 카카오 채널(단골방) > 카카오맵 > 오프라인(전단)
+  - 운영 리듬: 18~21시 퇴근 피크, 금/토 +30%
+  - 손실 프레임: "동네 인지도 부족", "매대 입구 30cm 황금 구역 미활용"
+  - 위험 신호: 평당 매출 < 30만원 / 단골 비율 < 50% / 폐기율 > 5%
+  - 카피 예: "동네 단골 카톡방 만드시면 신상 알림 한 번에 30명 받아요"
+  - 금지: "인스타 사진 톤 통일" (편의점은 SNS 효과 낮음)
+
+audit_weights:
+  positioning: 1.0
+  message_fit: 0.9
+  timing: 1.0
+  social_proof: 1.1
+  friction: 1.1
+
+report_weights:
+  매출 트렌드: 0.25
+  보조금 활용: 0.18
+  유동인구 활용: 0.30
+  경쟁 포지셔닝: 0.10
+  코치 활용도: 0.07
+  위험도 추세: 0.10
+
+risk_signal_weights:   # 편의점·동네슈퍼는 입지(배후 거주·유동인구)가 거의 절대적
+  population_trend: 1.2
+
+kpi_thresholds:
+  평당_매출_위험: "< 30만원"
+  단골_비율_위험: "< 50%"
+  폐기율_위험: "> 5%"
+
+subsidy_tags: [digital, store_renovation, rent_utility]   # 스마트상점·간판개선·공공요금 감면
+
+hero_kpis:
+  - {key: "daily_sales", label: "일 매출", unit: "원", good: "≥ 1,800,000", warn: "1,300,000–1,799,999", danger: "< 1,300,000", confidence: "estimated", source: "업계 — 편의점 월 4,000~6,000만원"}
+  - {key: "gross_margin", label: "매출총이익률(마진)", unit: "%", good: "25–30", warn: "22–24", danger: "< 22", confidence: "estimated", source: "업계 — 상품원가 70~75%"}
+  - {key: "sales_per_pyeong", label: "평당 매출", unit: "원/월", good: "≥ 1,000,000", warn: "500,000–999,999", danger: "< 300,000", confidence: "estimated", source: "업계 통설"}
+  - {key: "loyal_ratio", label: "단골 비율", unit: "%", good: "≥ 70", warn: "50–69", danger: "< 50", confidence: "estimated", source: "업계 통설 — 위치 종속"}
+  - {key: "waste_ratio", label: "폐기율", unit: "%", good: "≤ 3", warn: "4–5", danger: "> 5", confidence: "estimated", source: "업계 통설 — 발주 패턴 점검 신호"}
+
+channels:
+  - {key: "naver_smartplace", name: "네이버 스마트플레이스(등록)", fit: "high", entry_cost_won: 0, primary_metric: "동네 키워드 검색·길찾기", roi_note: "무료 — 미등록 자체가 손실", confidence: "measured", source: "네이버"}
+  - {key: "kakao_friendtalk", name: "카카오 친구톡·단골방", fit: "high", per_unit_cost_won: 15, primary_metric: "신상·할인 알림 도달", roi_note: "텍스트 15원/이미지 18원/건(VAT 별도). 동네 단골 카톡방 — 신상 알림 한 번에 수십 명", confidence: "measured", source: "카카오 비즈메시지 단가"}
+  - {key: "kakaomap", name: "카카오맵(등록)", fit: "medium", entry_cost_won: 0, primary_metric: "위치 검색", roi_note: "무료", confidence: "measured", source: "카카오"}
+  - {key: "daangn_bizprofile", name: "당근 비즈프로필", fit: "medium", entry_cost_won: 0, primary_metric: "동네 노출·후기", roi_note: "무료 — 동네 밀착 채널", confidence: "measured", source: "당근"}
+  - {key: "flyer", name: "전단지", fit: "low", monthly_budget_min_won: 50000, monthly_budget_max_won: 200000, primary_metric: "배포→방문", roi_note: "신규 오픈·할인 행사 외 비추. 반응률 1% 미만 가설", confidence: "hypothesis", source: "전단지 인쇄 단가"}
+  - {key: "instagram_ads", name: "인스타그램 광고", fit: "avoid", primary_metric: "도달", roi_note: "편의점·동네슈퍼는 SNS 효과 낮음 — 비추천", confidence: "hypothesis"}
+  - {key: "baemin", name: "배민·무신사 등", fit: "avoid", applicable: false, roi_note: "해당 없음", confidence: "measured"}
+
+copy_tone:
+  vocab: ["동네 단골", "단골방", "매대 입구 황금구역", "평당 매출", "회전 빠른 상품"]
+  loss_frames: ["동네 인지도 부족", "매대 입구 30cm 황금구역 미활용", "단골 카톡방 부재"]
+  examples:
+    - "동네 단골 카톡방 만드시면 신상 알림 한 번에 30명이 받아요"
+    - "매대 입구 30cm가 전체 매출의 40%예요 — 회전 빠른 상품을 거기 두세요"
+  do: ["POS 상위 10% SKU 재고 우선 관리", "매대 입구에 회전 빠른 상품 배치", "카카오 단골방으로 신상·할인 공유"]
+  dont: ["인스타 사진 톤 통일 (편의점은 SNS 효과 낮음)", "배달앱 광고 (해당 없음)"]

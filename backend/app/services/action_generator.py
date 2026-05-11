@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app.config import settings
 from app.models.user import User
 from app.models.daily_action import DailyAction
-from app.utils.industry import industry_prompt_block
+from app.utils.industry import industry_prompt_block, industry_risk_weights
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +126,7 @@ class ActionGenerator:
             history_context = f"\n## 최근 7일 액션\n" + "\n".join(history_lines)
             history_context += "\n주의: 같은 유형의 액션을 연속 반복하지 마세요."
 
-        industry_block = industry_prompt_block(user.business_type)
+        industry_block = industry_prompt_block(user.business_type, user.industry_slug)
 
         user_prompt = f"""## 사장님 정보
 상호: {user.business_name or '미등록'}
@@ -244,6 +244,7 @@ class ActionGenerator:
             population_data=population_data,
             subsidy_matches=matched_subsidies,
             user_created_at=user.created_at.date() if user.created_at else None,
+            industry_signal_weights=industry_risk_weights(user.business_type, user.industry_slug),
         )
 
         # ON CONFLICT DO NOTHING으로 race condition 방지
@@ -318,7 +319,7 @@ class ActionGenerator:
         # 사업자번호 PII 마스킹 (외부 LLM에 전송 시)
         masked_biz_num = f"{user.business_number[:3]}-**-*****" if user.business_number else "[사장님 작성 필요]"
 
-        bp_industry_block = industry_prompt_block(user.business_type)
+        bp_industry_block = industry_prompt_block(user.business_type, user.industry_slug)
 
         user_prompt = f"""## 사장님 정보
 - 상호: {user.business_name or '[사장님 작성 필요]'}
@@ -391,7 +392,7 @@ class ActionGenerator:
         context_docs: list,
     ) -> str:
         """음성 질의 처리."""
-        voice_industry_block = industry_prompt_block(user.business_type)
+        voice_industry_block = industry_prompt_block(user.business_type, user.industry_slug)
 
         system_prompt = f"""당신은 소상공인 AI 경영코치입니다. 음성 질의에 친절하게 답변합니다.
 

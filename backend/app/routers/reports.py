@@ -19,6 +19,7 @@ from app.services.report_generator import assemble_report_data, generate_pdf
 from app.services.risk_score_engine import RiskScoreEngine
 from app.services.seoul_api_service import SeoulAPIService
 from app.utils.auth import get_current_user
+from app.utils.industry import industry_risk_weights
 from io import BytesIO
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ async def get_weekly_report(
     btype = current_user.business_type or ""
 
     matched, sales_data, pop_data, competition_data, change_index_data = await asyncio.gather(
-        _safe(rag.search_subsidies_filtered(db=db, gu_name=gu, business_type=btype, top_k=5, user_id=current_user.id)),
+        _safe(rag.search_subsidies_filtered(db=db, gu_name=gu, business_type=btype, top_k=5, user_id=current_user.id, industry_slug=current_user.industry_slug)),
         _safe(seoul.get_commercial_sales(gu, dong, btype)),
         _safe(seoul.get_living_population(dong, gu)),
         _safe(seoul.get_business_openclose(gu, btype)),
@@ -133,11 +134,13 @@ async def get_weekly_report(
         user_created_at=current_user.created_at.date() if current_user.created_at else None,
         business_start_date=current_user.business_start_date,
         previous_scores=previous_scores,
+        industry_signal_weights=industry_risk_weights(current_user.business_type, current_user.industry_slug),
     )
 
     report = assemble_report_data(
         business_name=current_user.business_name or "사장님",
         business_type=current_user.business_type or "미등록",
+        industry_slug=current_user.industry_slug,
         location=f"{gu} {dong}".strip() or "미등록",
         sales_data=sales_data,
         population_data=pop_data,

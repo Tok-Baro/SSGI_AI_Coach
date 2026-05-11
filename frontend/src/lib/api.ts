@@ -18,6 +18,8 @@ import type {
   Coupon,
   CreateCouponRequest,
   VoiceQueryResponse,
+  IndustryPackInfo,
+  MyIndustryPack,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -181,6 +183,7 @@ class ApiClient {
     verification_token: string;
     business_name: string;
     business_type: string;
+    industry_slug?: string;
     address: string;
     dong_name: string;
     gu_name: string;
@@ -192,6 +195,15 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  // ===== 업종 지식팩 =====
+  async getIndustries(): Promise<IndustryPackInfo[]> {
+    return this.request("/knowledge/industries");
+  }
+
+  async getMyIndustryPack(): Promise<MyIndustryPack> {
+    return this.request("/knowledge/my-pack");
   }
 
   // ===== 대시보드 =====

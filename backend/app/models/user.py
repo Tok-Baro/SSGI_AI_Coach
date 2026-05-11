@@ -20,6 +20,9 @@ class User(Base):
     business_name = Column(String(200), nullable=True)
     business_type = Column(String(100), nullable=True)
     business_category = Column(String(100), nullable=True)
+    # 업종 지식팩(app/knowledge) pack id. 온보딩 시 raw 업종명으로 분류해 저장 — 다운스트림에서
+    # 매 요청 재분류 대신 이 값을 쓴다 (없으면 business_type 키워드 분류로 폴백).
+    industry_slug = Column(String(64), nullable=True, index=True)
     address = Column(String(500), nullable=True)
     dong_name = Column(String(50), nullable=True, index=True)
     gu_name = Column(String(50), nullable=True)

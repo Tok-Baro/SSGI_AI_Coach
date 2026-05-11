@@ -30,6 +30,7 @@ pydantic-settings>=2.3.4
 python-dotenv>=1.0.1
 apscheduler>=3.10.4
 tenacity>=8.4.1
+PyYAML>=6.0   # 업종 지식팩 (app/knowledge/packs/*.yaml) 로드
 
 # PDF 리포트
 reportlab>=4.2.0

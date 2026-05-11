@@ -92,6 +92,7 @@ class RiskScoreEngine:
         user_created_at: Optional[date] = None,
         business_start_date: Optional[date] = None,
         previous_scores: Optional[list[float]] = None,
+        industry_signal_weights: Optional[dict[str, float]] = None,
     ) -> RiskScoreResult:
         """복합 위험도 산출.
 
@@ -265,6 +266,11 @@ class RiskScoreEngine:
                 description="개점일 미입력",
                 data_available=False,
             ))
+
+        # 업종별 시그널 가중치 보정 (1.0 = 변화 없음). 재분배 단계에서 정규화되므로 안전.
+        if industry_signal_weights:
+            for f in factors:
+                f.weight = round(f.weight * industry_signal_weights.get(f.name, 1.0), 6)
 
         # 가중 평균 (데이터 없는 요인 제외 후 재분배)
         available = [f for f in factors if f.data_available]

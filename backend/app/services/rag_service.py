@@ -11,6 +11,8 @@ from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.utils.industry import industry_subsidy_tags
+from app.utils.subsidy_tags import infer_subsidy_category_tags
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +99,7 @@ class RAGService:
         business_type: str,
         top_k: int = 5,
         user_id: Optional[UUID] = None,
+        industry_slug: Optional[str] = None,
     ) -> list[dict]:
         """DB 기반 정확한 지역+업종 필터링 후 지원사업 반환.
 
@@ -104,15 +107,15 @@ class RAGService:
         - target_regions에 사용자 지역(gu_name), "전국", "서울시 전체" 포함
         - target_business_types에 사용자 업종 또는 "전 업종" 포함
         - 마감일이 지나지 않은 활성 지원사업만
-
-        user_id 제공 시 ICP Learner로 학습된 선호 프로필 기반 재순위 적용.
+        - 공고 category_tags 가 사용자 업종팩의 subsidy_tags 와 겹치면 relevance_score 부스트
+        - user_id 제공 시 ICP Learner로 학습된 선호 프로필 기반 재순위 적용
         """
         from app.models.subsidy import Subsidy
 
         today = date.today()
 
-        # ICP 재순위가 가능하도록 후보 풀을 top_k의 3배로 확장 후 자르기
-        candidate_limit = top_k * 3 if user_id else top_k
+        # 태그 부스트·ICP 재순위가 의미 있도록 후보 풀을 넉넉히 확장 후 정렬·자르기
+        candidate_limit = max(top_k * 4, 12)
 
         stmt = select(Subsidy).where(
             Subsidy.is_active == True,
@@ -133,12 +136,14 @@ class RAGService:
         result = await db.execute(stmt)
         subsidies = result.scalars().all()
 
+        user_tags = set(industry_subsidy_tags(business_type, industry_slug))
+
         matches = []
         for s in subsidies:
-            days_left = None
-            if s.deadline:
-                days_left = (s.deadline - today).days
-
+            days_left = (s.deadline - today).days if s.deadline else None
+            cats = s.category_tags or infer_subsidy_category_tags(f"{s.title} {s.description}")
+            overlap = len(set(cats) & user_tags) if user_tags else 0
+            boost = min(0.3, 0.12 * overlap)  # 태그 1개당 +0.12, 최대 +0.3
             matches.append({
                 "id": str(s.id),
                 "title": s.title,
@@ -148,9 +153,14 @@ class RAGService:
                 "eligibility_summary": s.eligibility_summary,
                 "description": s.description,
                 "application_url": s.application_url,
-                "relevance_score": 1.0,
+                "category_tags": list(cats),
+                "tag_match": overlap > 0,
+                "relevance_score": round(1.0 + boost, 3),
                 "days_until_deadline": days_left,
             })
+
+        # 태그 부스트 → 마감 임박 순으로 정렬 (ICP 재순위 전 기본 순서)
+        matches.sort(key=lambda m: (-m["relevance_score"], m["days_until_deadline"] if m["days_until_deadline"] is not None else 99999))
 
         # ICP 재순위 (user_id 제공 시)
         if user_id and matches:

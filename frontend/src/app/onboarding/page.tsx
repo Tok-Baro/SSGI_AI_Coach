@@ -6,7 +6,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { requestFCMToken } from "@/lib/firebase";
 import { normalizeBusinessType } from "@/lib/businessType";
-import type { KakaoLocalSearchResult } from "@/types";
+import type { KakaoLocalSearchResult, IndustryPackInfo } from "@/types";
+
+// 카카오 카테고리/업종명을 업종 지식팩 keywords 와 매칭해 기본 선택값을 고른다 (백엔드 분류 규칙 미러).
+function guessIndustrySlug(rawType: string, businessType: string, packs: IndustryPackInfo[]): string {
+  const texts = [rawType, businessType].filter(Boolean).map((t) => t.toLowerCase());
+  if (texts.length === 0) return "";
+  for (const p of [...packs].sort((a, b) => a.priority - b.priority)) {
+    for (const kw of p.keywords || []) {
+      if (texts.some((t) => t.includes(kw.toLowerCase()))) return p.id;
+    }
+  }
+  return "";
+}
 
 type Step = "business_number" | "business_search" | "confirm" | "loading" | "done";
 
@@ -23,10 +35,24 @@ export default function OnboardingPage() {
   const [businessStartDate, setBusinessStartDate] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ subsidy_count: number; message: string } | null>(null);
+  const [industries, setIndustries] = useState<IndustryPackInfo[]>([]);
+  const [industrySlug, setIndustrySlug] = useState(""); // "" = 자동 감지
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    api.getIndustries().then(setIndustries).catch(() => {});
+  }, []);
+
+  // 가게를 고르면 카테고리에서 기본 업종을 추정해 선택값 채움 (사용자가 바꿀 수 있음)
+  useEffect(() => {
+    if (!selectedBusiness || industries.length === 0) return;
+    const cats = selectedBusiness.category_name.split(" > ");
+    const rawType = cats.length >= 2 ? cats[1] : cats[0];
+    setIndustrySlug(guessIndustrySlug(rawType, normalizeBusinessType(rawType), industries));
+  }, [selectedBusiness, industries]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -113,6 +139,7 @@ export default function OnboardingPage() {
         verification_token: verificationToken,
         business_name: selectedBusiness.place_name,
         business_type: businessType,
+        industry_slug: industrySlug || undefined,
         address: selectedBusiness.road_address_name || selectedBusiness.address_name,
         dong_name: dongName,
         gu_name: guName,
@@ -280,6 +307,42 @@ export default function OnboardingPage() {
               </p>
               <p className="text-sm text-gray-500">{selectedBusiness.category_name}</p>
             </div>
+
+            {/* 업종 선택 (지식팩 매핑 — 진단/마케팅 조언이 업종별로 달라짐) */}
+            {industries.length > 0 && (
+              <div className="bg-gray-50 rounded-2xl p-5 mb-6">
+                <label className="block">
+                  <span className="text-base font-bold text-gray-900">우리 가게 업종</span>
+                  <p className="text-sm text-gray-500 mt-1 mb-3">
+                    맞으면 그대로 두세요. 업종에 맞춰 진단·마케팅 조언이 달라져요.
+                  </p>
+                  <select
+                    value={industrySlug}
+                    onChange={(e) => setIndustrySlug(e.target.value)}
+                    className="w-full px-4 py-3 bg-white rounded-xl text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-warn-500 border-2 border-transparent focus:border-warn-500"
+                  >
+                    <option value="">자동 감지 (가게 카테고리로)</option>
+                    {industries
+                      .filter((p) => p.group === null)
+                      .sort((a, b) => a.priority - b.priority)
+                      .flatMap((parent) => [
+                        <option key={parent.id} value={parent.id}>
+                          {parent.name}
+                        </option>,
+                        ...industries
+                          .filter((p) => p.group === parent.id)
+                          .sort((a, b) => a.priority - b.priority)
+                          .map((child) => (
+                            <option key={child.id} value={child.id}>
+                              {"  ↳ "}
+                              {child.name}
+                            </option>
+                          )),
+                      ])}
+                  </select>
+                </label>
+              </div>
+            )}
 
             {/* 개점일 입력 (선택) */}
             <div className="bg-gray-50 rounded-2xl p-5 mb-6">
