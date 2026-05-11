@@ -9,7 +9,7 @@ import type { VoiceQueryResponse } from "@/types";
 export default function STTButton() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isListening, transcript, transcriptRef, error, startListening, stopListening, isSupported } = useSTT();
+  const { isListening, transcript, error, startListening, stopListening, isSupported } = useSTT();
   const [response, setResponse] = useState<VoiceQueryResponse | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
@@ -40,19 +40,18 @@ export default function STTButton() {
     }
   };
 
-  const handleToggle = async () => {
+  const handleToggle = () => {
     if (isListening) {
+      // 멈춤만 시키면 useSTT의 onend → onFinal 콜백이 자동으로 AI 호출
       stopListening();
-      const finalText = transcriptRef.current;
-      if (finalText) {
-        setShowPanel(true);
-        await callVoiceQuery(finalText);
-      }
     } else {
       setResponse(null);
       setApiError(null);
       setShowPanel(true);
-      startListening();
+      startListening((text) => {
+        setShowPanel(true);
+        void callVoiceQuery(text);
+      });
     }
   };
 
