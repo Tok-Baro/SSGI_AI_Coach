@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
 
 // OAuth state 파라미터 발급 (CSRF 방어, RFC 6749 §10.12)
 function buildKakaoUrl(): string {
@@ -30,11 +31,30 @@ export default function HomePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading, user, checkAuth } = useAuth();
   const [kakaoUrl, setKakaoUrl] = useState("#");
+  const [demoLoading, setDemoLoading] = useState(false);
 
   useEffect(() => {
     checkAuth();
     setKakaoUrl(buildKakaoUrl());
   }, [checkAuth]);
+
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
+    try {
+      const r = await api.demoLogin();
+      api.setTokens(r.access_token, r.refresh_token);
+      useAuth.setState({
+        user: r.user,
+        isAuthenticated: true,
+        isLoading: false,
+        _hasChecked: true,
+      });
+      router.push("/dashboard");
+    } catch {
+      setDemoLoading(false);
+      alert("데모 진입에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
@@ -122,6 +142,18 @@ export default function HomePage() {
         )}
         <p className="mt-3 text-center text-xs text-gray-400">
           가입 = 카카오 로그인 + 상호명 입력 (15초 소요)
+        </p>
+
+        {/* 심사위원 체험 — 로그인 없이 데모 계정으로 둘러보기 */}
+        <button
+          onClick={handleDemoLogin}
+          disabled={demoLoading}
+          className="press-effect mt-4 w-full py-3 rounded-2xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {demoLoading ? "데모 준비 중…" : "심사위원 체험하기 — 로그인 없이 둘러보기"}
+        </button>
+        <p className="mt-2 text-center text-[11px] text-gray-300">
+          가공 데이터(관악구 신림동 학원 예시)로 모든 화면을 미리 볼 수 있어요
         </p>
       </div>
     </main>

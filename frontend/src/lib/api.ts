@@ -156,6 +156,10 @@ class ApiClient {
     );
   }
 
+  async demoLogin(): Promise<AuthResponse> {
+    return this.request<AuthResponse>("/auth/demo-login", { method: "POST" }, false);
+  }
+
   async getMe(): Promise<User> {
     return this.request<User>("/auth/me");
   }

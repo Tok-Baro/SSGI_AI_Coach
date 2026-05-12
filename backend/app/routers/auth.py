@@ -142,6 +142,55 @@ async def refresh_access_token(
     return {"access_token": new_access, "refresh_token": new_refresh}
 
 
+# 심사위원 체험용 데모 계정 — 실제 카카오 ID 와 절대 안 겹치는 음수 sentinel
+DEMO_KAKAO_ID = -10001
+
+
+@router.post("/demo-login", response_model=TokenResponse)
+async def demo_login(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """심사위원 체험용 데모 계정 로그인 — 카카오 OAuth 없이 둘러보기.
+
+    데모 계정 1개(kakao_id=-10001) 전용. 풍부한 더미 데이터(30일 액션·쿠폰·또래 10명)는
+    scripts.seed_demo 가 채우며, 시드가 안 돈 상태여도 최소 프로필로 생성해 버튼이 동작하게 한다.
+    """
+    from datetime import date as _date
+    _auth_rate.check(request.client.host if request.client else "unknown")
+
+    user = (await db.execute(
+        select(User).where(User.kakao_id == DEMO_KAKAO_ID)
+    )).scalar_one_or_none()
+    if user is None:
+        today = _date.today()
+        user = User(
+            kakao_id=DEMO_KAKAO_ID,
+            nickname="데모 사장님",
+            business_name="또랑수학학원",
+            business_type="학원",
+            business_category="학원",
+            industry_slug="academy.exam",
+            address="서울특별시 관악구 신림동",
+            dong_name="신림동",
+            gu_name="관악구",
+            plan_tier="free",
+            onboarding_completed=True,
+            business_start_date=_date(today.year - 3, 3, 2),
+        )
+        db.add(user)
+        await db.flush()
+
+    ver = user.token_version or 0
+    access_token = create_jwt_token(str(user.id), token_type="access", token_version=ver)
+    refresh_token = create_jwt_token(str(user.id), token_type="refresh", token_version=ver)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=UserResponse.model_validate(user),
+    )
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(
     current_user: User = Depends(get_current_user),
