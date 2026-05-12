@@ -1,6 +1,8 @@
 """서울시 열린데이터 API 서비스: 상권분석, 생활인구, 문화행사."""
 import asyncio
+import functools
 import logging
+import time
 from datetime import date, timedelta
 from typing import Optional
 
@@ -12,6 +14,46 @@ from app.utils.retry import retry_async
 logger = logging.getLogger(__name__)
 
 BASE_URL = "http://openapi.seoul.go.kr:8088"
+
+# ── 프로세스 내 응답 캐시 ──────────────────────────────────────────
+# 서울 열린데이터(openapi.seoul.go.kr:8088)는 응답이 매우 느림(호출당 3~15초).
+# 상권분석은 분기 갱신, 생활인구·문화행사는 일 단위라 길게 캐싱해도 무방.
+# 같은 (지역·업종) 조합의 두 번째 대시보드 호출부터는 즉시 응답.
+_RESPONSE_CACHE: dict[str, tuple[float, object]] = {}
+_TTL_QUARTERLY = 60 * 60 * 12   # 상권분석 계열 — 12시간
+_TTL_DAILY = 60 * 60 * 3        # 생활인구·문화행사 — 3시간
+_TTL_MISS = 60 * 10             # 데이터 없음/실패 — 10분 (재시도 여지)
+
+
+def _cache_get(key: str):
+    entry = _RESPONSE_CACHE.get(key)
+    if entry is None:
+        return False, None
+    expires_at, value = entry
+    if time.time() > expires_at:
+        _RESPONSE_CACHE.pop(key, None)
+        return False, None
+    return True, value
+
+
+def _cache_set(key: str, value, ttl: float) -> None:
+    _RESPONSE_CACHE[key] = (time.time() + ttl, value)
+
+
+def cached_seoul(ttl: float = _TTL_QUARTERLY):
+    """서울 API 메서드 응답을 프로세스 캐시에 보관 (self 제외 인자로 키 생성)."""
+    def deco(fn):
+        @functools.wraps(fn)
+        async def wrapper(self, *args, **kwargs):
+            key = f"{fn.__name__}|{args!r}|{tuple(sorted(kwargs.items()))!r}"
+            ok, cached = _cache_get(key)
+            if ok:
+                return cached
+            result = await fn(self, *args, **kwargs)
+            _cache_set(key, result, ttl if result not in (None, [], {}) else _TTL_MISS)
+            return result
+        return wrapper
+    return deco
 
 
 class SeoulAPIService:
@@ -107,6 +149,7 @@ class SeoulAPIService:
                 return val
         return user_type
 
+    @cached_seoul(_TTL_QUARTERLY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_commercial_sales(
         self, gu_name: str, dong_name: str, business_type: str
@@ -231,6 +274,7 @@ class SeoulAPIService:
         rows = data.get("SPOP_LOCAL_RESD_DONG", {}).get("row", [])
         return rows if rows else None
 
+    @cached_seoul(_TTL_DAILY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_living_population(self, dong_name: str, gu_name: str = "") -> Optional[dict]:
         """
@@ -280,6 +324,7 @@ class SeoulAPIService:
             "data_date": recent_date,
         }
 
+    @cached_seoul(_TTL_DAILY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_cultural_events(self, gu_name: str) -> Optional[list]:
         """
@@ -310,6 +355,7 @@ class SeoulAPIService:
 
         return sorted(events, key=lambda e: e.get("start_date", ""))
 
+    @cached_seoul(_TTL_QUARTERLY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_commercial_floating_pop(
         self, gu_name: str, dong_name: str, business_type: str
@@ -379,6 +425,7 @@ class SeoulAPIService:
             "sample_count": n,
         }
 
+    @cached_seoul(_TTL_QUARTERLY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_commercial_change_index(
         self, gu_name: str, dong_name: str
@@ -463,6 +510,7 @@ class SeoulAPIService:
             "sample_count": n,
         }
 
+    @cached_seoul(_TTL_QUARTERLY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_anchor_facilities(
         self, gu_name: str, dong_name: str
@@ -508,6 +556,7 @@ class SeoulAPIService:
             "sample_count": n,
         }
 
+    @cached_seoul(_TTL_QUARTERLY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_workplace_population(
         self, gu_name: str, dong_name: str
@@ -557,6 +606,7 @@ class SeoulAPIService:
             "sample_count": n,
         }
 
+    @cached_seoul(_TTL_QUARTERLY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_benchmark(
         self, gu_name: str, dong_name: str, business_type: str
@@ -632,6 +682,7 @@ class SeoulAPIService:
             "business_type": mapped_type,
         }
 
+    @cached_seoul(_TTL_QUARTERLY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_sales_detail(
         self, gu_name: str, dong_name: str, business_type: str
@@ -752,6 +803,7 @@ class SeoulAPIService:
             "avg_ticket_price": round(_avg("THSMON_SELNG_AMT") / _avg("THSMON_SELNG_CO")) if _avg("THSMON_SELNG_CO") > 0 else 0,
         }
 
+    @cached_seoul(_TTL_QUARTERLY)
     @retry_async(max_retries=2, delay=1.0)
     async def get_business_openclose(
         self, gu_name: str, business_type: str
